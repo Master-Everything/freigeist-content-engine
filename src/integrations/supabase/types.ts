@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      posts: {
+        Row: {
+          blocks: Json | null
+          created_at: string
+          guest_name: string
+          guest_profile_text: string | null
+          guest_website: string | null
+          id: string
+          interview_title: string
+          newsletter_text: string | null
+          prettylink_shortcodes: string | null
+          status: string
+          telegram_text: string | null
+          updated_at: string
+          youtube_url: string | null
+        }
+        Insert: {
+          blocks?: Json | null
+          created_at?: string
+          guest_name: string
+          guest_profile_text?: string | null
+          guest_website?: string | null
+          id?: string
+          interview_title: string
+          newsletter_text?: string | null
+          prettylink_shortcodes?: string | null
+          status?: string
+          telegram_text?: string | null
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Update: {
+          blocks?: Json | null
+          created_at?: string
+          guest_name?: string
+          guest_profile_text?: string | null
+          guest_website?: string | null
+          id?: string
+          interview_title?: string
+          newsletter_text?: string | null
+          prettylink_shortcodes?: string | null
+          status?: string
+          telegram_text?: string | null
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
