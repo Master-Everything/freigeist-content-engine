@@ -1,25 +1,25 @@
 
-## Feature Implementation: Preview Enhancements & Export HTML
+## Implementing Preview and Export Enhancements
 
-We will enhance the existing Preview and Export features to perfectly match the requested Freigeist post structure, including the new accordion summary and guest profile image.
+We will implement the Preview and Export screens exactly as specified, following the approved plan:
 
-### 1. Database & Type Updates
-- Add `guest_image_url` to the `posts` table (via a new Supabase migration).
-- Update `SourceFormData`, `Post`, and `PostBlocks` interfaces in `src/types/post.ts` to include the `guest_image_url`.
+### 1. Database and Types
+- Create a Supabase migration to add `guest_image_url` (text, nullable) to the `posts` table.
+- Update `src/types/post.ts` to include `guest_image_url` in `SourceFormData`, `Post`, and `PostBlocks`.
 
-### 2. Source Input & Editor Updates
-- **Source Input (`NewPost.tsx`)**: Add an optional "Guest Image URL" field to the initial data collection form.
-- **Block Editor (`EditPost.tsx`)**: Add an editable text field for the Guest Image URL within the Guest Profile block so it can be updated after generation.
+### 2. Form and Editor Updates
+- **`src/pages/NewPost.tsx`**: Add an optional "Guest Image URL" input field to the source data form.
+- **`src/pages/EditPost.tsx`**: Add an editable input field for `guest_image_url` in the Guest Profile section.
 
-### 3. Preview Screen (`PreviewPost.tsx`)
-- Ensure the strict order of elements: Headline → Excerpt → Main Video → Summary Accordion → Guest Profile (with image) → Content Sections 1-3 → Additional Video → PrettyLink → Resources.
-- **Summary Accordion**: Replace the static summary box with a native `<details>` and `<summary>` element, styled with Tailwind to look like a clean accordion.
-- **Guest Profile**: Render the guest image (if provided) alongside the guest bio text.
+### 3. Preview Screen (`src/pages/PreviewPost.tsx`)
+- Enforce the exact rendering order: Headline, Excerpt, Main video, Summary accordion, Guest profile (with image + text), Content 1-3, Additional video, PrettyLink, Resources.
+- **Summary Accordion**: Implement using native HTML `<details>` and `<summary>` tags styled appropriately.
+- **Guest Profile**: Display the `guest_image_url` alongside the biography.
 
-### 4. HTML Export Update (`export-html.ts` & `PreviewPost.tsx`)
-- Rename the export button to **"Generate WordPress HTML"**.
-- Improve the export action to open a **Modal/Dialog** displaying the raw HTML in a `<textarea>` for easy copying, rather than just copying it silently.
-- Update the HTML generation logic in `export-html.ts` to output:
-  - A `<details>` and `<summary>` block for the Summary Box.
-  - An `<img>` tag within the Guest Profile HTML.
-  - Clean semantic tags (`<h1>`, `<h2>`, `<p>`, `<ul>`, `<li>`) preserving PrettyLink shortcodes exactly as typed.
+### 4. Export functionality (`src/lib/export-html.ts` & `src/pages/PreviewPost.tsx`)
+- Change the button text to "Generate WordPress HTML".
+- Update the export function to output:
+  - `<details>` and `<summary>` tags for the summary box.
+  - `<img>` tag for the guest profile.
+  - Clean HTML matching the new structure exactly.
+- Implement a modal dialog displaying the generated raw HTML in a `<textarea>` for easy copying to WordPress.
