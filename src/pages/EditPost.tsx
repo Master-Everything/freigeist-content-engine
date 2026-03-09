@@ -9,10 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Eye, Download, Save, Loader2, Trash2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { ArrowLeft, Download, Save, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PostPreview } from "@/components/PostPreview";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const defaultBlocks: PostBlocks = {
   excerpt: "",
@@ -32,6 +36,7 @@ const defaultBlocks: PostBlocks = {
 export default function EditPost() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [post, setPost] = useState<Post | null>(null);
   const [blocks, setBlocks] = useState<PostBlocks>(defaultBlocks);
   const [loading, setLoading] = useState(true);
@@ -114,171 +119,190 @@ export default function EditPost() {
     );
   }
 
+  const editorContent = (
+    <div className="h-full overflow-y-auto p-6">
+      <h2 className="font-display text-lg font-semibold mb-1">Block-Editor</h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        {post?.guest_name} — {post?.interview_title}
+      </p>
+
+      <div className="space-y-5">
+        <BlockCard title="Kurzbeschreibung (Excerpt)" required>
+          <Textarea value={blocks.excerpt} onChange={(e) => updateBlock("excerpt", e.target.value)} rows={2} />
+        </BlockCard>
+
+        <BlockCard title="Hauptvideo (YouTube)" required>
+          <Input value={blocks.main_video_url} onChange={(e) => updateBlock("main_video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+        </BlockCard>
+
+        <BlockCard title="Zusammenfassungsbox" required>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Titel</Label>
+              <Input value={blocks.summary_box_title} onChange={(e) => updateBlock("summary_box_title", e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Einleitung</Label>
+              <Textarea value={blocks.summary_lead} onChange={(e) => updateBlock("summary_lead", e.target.value)} rows={2} />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Stichpunkte</Label>
+              {blocks.summary_points.map((b, i) => (
+                <div key={i} className="flex gap-2 mt-1">
+                  <Input value={b} onChange={(e) => updatePoint(i, e.target.value)} />
+                  <Button variant="ghost" size="icon" onClick={() => removePoint(i)} className="shrink-0 text-destructive">
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addPoint} className="mt-2">
+                + Stichpunkt
+              </Button>
+            </div>
+          </div>
+        </BlockCard>
+
+        <BlockCard title="Gast-Profil" required>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Bild-URL</Label>
+              <Input value={blocks.guest_image_url || ""} onChange={(e) => updateBlock("guest_image_url", e.target.value)} placeholder="https://example.com/photo.jpg" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Kurzbiografie</Label>
+              <Textarea value={blocks.guest_short_bio} onChange={(e) => updateBlock("guest_short_bio", e.target.value)} rows={3} />
+            </div>
+          </div>
+        </BlockCard>
+
+        {([1, 2, 3] as const).map((n) => (
+          <BlockCard key={n} title={`Inhaltsabschnitt ${n}`} required>
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Titel</Label>
+                <Input
+                  value={blocks[`section_${n}_title` as keyof PostBlocks] as string}
+                  onChange={(e) => updateBlock(`section_${n}_title` as keyof PostBlocks, e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Inhalt</Label>
+                <Textarea
+                  value={blocks[`section_${n}_body` as keyof PostBlocks] as string}
+                  onChange={(e) => updateBlock(`section_${n}_body` as keyof PostBlocks, e.target.value)}
+                  rows={5}
+                />
+              </div>
+            </div>
+          </BlockCard>
+        ))}
+
+        <div className="pt-2">
+          <h3 className="font-display text-base font-semibold mb-3">Optionale Blöcke</h3>
+          <div className="space-y-4">
+            <OptionalBlockToggle label="Zusätzliches Video" enabled={showAdditionalVideo} onToggle={setShowAdditionalVideo}>
+              <Input
+                value={blocks.additional_video_embed || ""}
+                onChange={(e) => updateBlock("additional_video_embed", e.target.value)}
+                placeholder="https://youtube.com/watch?v=..."
+              />
+            </OptionalBlockToggle>
+
+            <OptionalBlockToggle label="PrettyLink Block" enabled={showPrettyLink} onToggle={setShowPrettyLink}>
+              <Input
+                value={blocks.pretty_link_shortcode || ""}
+                onChange={(e) => updateBlock("pretty_link_shortcode", e.target.value)}
+                placeholder="[prettylink link=...]"
+              />
+            </OptionalBlockToggle>
+
+            <OptionalBlockToggle label="Ressourcen-Block" enabled={showResources} onToggle={setShowResources}>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Links</Label>
+                  <Textarea
+                    value={blocks.resource_links || ""}
+                    onChange={(e) => updateBlock("resource_links", e.target.value)}
+                    placeholder="Links, Bücher, weiterführende Materialien..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Notizen</Label>
+                  <Textarea
+                    value={blocks.resource_notes || ""}
+                    onChange={(e) => updateBlock("resource_notes", e.target.value)}
+                    placeholder="Zusätzliche Hinweise..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </OptionalBlockToggle>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const previewContent = post ? (
+    <div className="h-full overflow-y-auto bg-muted/30">
+      <div className="sticky top-0 z-10 border-b bg-muted/60 backdrop-blur px-6 py-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live-Vorschau</p>
+      </div>
+      <PostPreview post={post} blocks={blocks} />
+    </div>
+  ) : null;
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
+    <div className="flex h-screen flex-col bg-background">
+      {/* Sticky toolbar */}
+      <div className="shrink-0 border-b bg-card/80 backdrop-blur z-20">
+        <div className="flex items-center justify-between px-4 py-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Dashboard
           </Button>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="outline" onClick={handleDelete} className="gap-2 text-destructive hover:text-destructive">
+            <Button variant="outline" size="sm" onClick={handleDelete} className="gap-2 text-destructive hover:text-destructive">
               <Trash2 className="h-4 w-4" /> Löschen
             </Button>
-            <Button variant="outline" onClick={() => navigate(`/preview/${id}`)} className="gap-2">
-              <Eye className="h-4 w-4" /> Vorschau
+            <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+              <Download className="h-4 w-4" /> HTML
             </Button>
-            <Button variant="outline" onClick={handleExport} className="gap-2">
-              <Download className="h-4 w-4" /> HTML Export
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className="gap-2">
+            <Button size="sm" onClick={handleSave} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Speichern
             </Button>
           </div>
         </div>
+      </div>
 
-        <h1 className="font-display text-2xl font-bold mb-1">Block-Editor</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          {post?.guest_name} — {post?.interview_title}
-        </p>
-
-        <div className="space-y-6">
-          {/* Excerpt */}
-          <BlockCard title="Kurzbeschreibung (Excerpt)" required>
-            <Textarea value={blocks.excerpt} onChange={(e) => updateBlock("excerpt", e.target.value)} rows={2} />
-          </BlockCard>
-
-          {/* Main Video */}
-          <BlockCard title="Hauptvideo (YouTube)" required>
-            <Input value={blocks.main_video_url} onChange={(e) => updateBlock("main_video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
-            {blocks.main_video_url && <YouTubePreview url={blocks.main_video_url} />}
-          </BlockCard>
-
-          {/* Summary Box */}
-          <BlockCard title="Zusammenfassungsbox" required>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Titel</Label>
-                <Input value={blocks.summary_box_title} onChange={(e) => updateBlock("summary_box_title", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Einleitung</Label>
-                <Textarea value={blocks.summary_lead} onChange={(e) => updateBlock("summary_lead", e.target.value)} rows={2} />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Stichpunkte</Label>
-                {blocks.summary_points.map((b, i) => (
-                  <div key={i} className="flex gap-2 mt-1">
-                    <Input value={b} onChange={(e) => updatePoint(i, e.target.value)} />
-                    <Button variant="ghost" size="icon" onClick={() => removePoint(i)} className="shrink-0 text-destructive">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={addPoint} className="mt-2">
-                  + Stichpunkt
-                </Button>
-              </div>
-            </div>
-          </BlockCard>
-
-          {/* Guest Profile */}
-          <BlockCard title="Gast-Profil" required>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Bild-URL</Label>
-                <Input value={blocks.guest_image_url || ""} onChange={(e) => updateBlock("guest_image_url", e.target.value)} placeholder="https://example.com/photo.jpg" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Kurzbiografie</Label>
-                <Textarea value={blocks.guest_short_bio} onChange={(e) => updateBlock("guest_short_bio", e.target.value)} rows={3} />
-              </div>
-            </div>
-          </BlockCard>
-
-          {/* Content Sections */}
-          {([1, 2, 3] as const).map((n) => (
-            <BlockCard key={n} title={`Inhaltsabschnitt ${n}`} required>
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Titel</Label>
-                  <Input
-                    value={blocks[`section_${n}_title` as keyof PostBlocks] as string}
-                    onChange={(e) => updateBlock(`section_${n}_title` as keyof PostBlocks, e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Inhalt</Label>
-                  <Textarea
-                    value={blocks[`section_${n}_body` as keyof PostBlocks] as string}
-                    onChange={(e) => updateBlock(`section_${n}_body` as keyof PostBlocks, e.target.value)}
-                    rows={5}
-                  />
-                </div>
-              </div>
-            </BlockCard>
-          ))}
-
-          {/* Optional Blocks */}
-          <div className="pt-4">
-            <h2 className="font-display text-lg font-semibold mb-4">Optionale Blöcke</h2>
-            <div className="space-y-4">
-              <OptionalBlockToggle
-                label="Zusätzliches Video"
-                enabled={showAdditionalVideo}
-                onToggle={setShowAdditionalVideo}
-              >
-                <Input
-                  value={blocks.additional_video_embed || ""}
-                  onChange={(e) => updateBlock("additional_video_embed", e.target.value)}
-                  placeholder="https://youtube.com/watch?v=..."
-                />
-                {blocks.additional_video_embed && <YouTubePreview url={blocks.additional_video_embed} />}
-              </OptionalBlockToggle>
-
-              <OptionalBlockToggle
-                label="PrettyLink Block"
-                enabled={showPrettyLink}
-                onToggle={setShowPrettyLink}
-              >
-                <Input
-                  value={blocks.pretty_link_shortcode || ""}
-                  onChange={(e) => updateBlock("pretty_link_shortcode", e.target.value)}
-                  placeholder="[prettylink link=...]"
-                />
-              </OptionalBlockToggle>
-
-              <OptionalBlockToggle
-                label="Ressourcen-Block"
-                enabled={showResources}
-                onToggle={setShowResources}
-              >
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Links</Label>
-                    <Textarea
-                      value={blocks.resource_links || ""}
-                      onChange={(e) => updateBlock("resource_links", e.target.value)}
-                      placeholder="Links, Bücher, weiterführende Materialien..."
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Notizen</Label>
-                    <Textarea
-                      value={blocks.resource_notes || ""}
-                      onChange={(e) => updateBlock("resource_notes", e.target.value)}
-                      placeholder="Zusätzliche Hinweise..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </OptionalBlockToggle>
-            </div>
-          </div>
-        </div>
+      {/* Main content area */}
+      <div className="flex-1 min-h-0">
+        {isMobile ? (
+          <Tabs defaultValue="editor" className="flex h-full flex-col">
+            <TabsList className="mx-4 mt-2 shrink-0">
+              <TabsTrigger value="editor">Editor</TabsTrigger>
+              <TabsTrigger value="preview">Vorschau</TabsTrigger>
+            </TabsList>
+            <TabsContent value="editor" className="flex-1 min-h-0 mt-0">
+              {editorContent}
+            </TabsContent>
+            <TabsContent value="preview" className="flex-1 min-h-0 mt-0">
+              {previewContent}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={50} minSize={30}>
+              {editorContent}
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} minSize={30}>
+              {previewContent}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
     </div>
   );
@@ -286,11 +310,11 @@ export default function EditPost() {
 
 function BlockCard({ title, required, children }: { title: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <Card className="animate-fade-in">
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-base">{title}</CardTitle>
-          {required && <Badge variant="outline" className="text-xs">Pflicht</Badge>}
+          <CardTitle className="text-sm">{title}</CardTitle>
+          {required && <Badge variant="outline" className="text-[10px]">Pflicht</Badge>}
         </div>
       </CardHeader>
       <CardContent>{children}</CardContent>
@@ -313,31 +337,11 @@ function OptionalBlockToggle({
     <Card className={enabled ? "" : "opacity-60"}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{label}</CardTitle>
+          <CardTitle className="text-sm">{label}</CardTitle>
           <Switch checked={enabled} onCheckedChange={onToggle} />
         </div>
       </CardHeader>
       {enabled && <CardContent>{children}</CardContent>}
     </Card>
   );
-}
-
-function YouTubePreview({ url }: { url: string }) {
-  const videoId = extractYouTubeId(url);
-  if (!videoId) return null;
-  return (
-    <div className="mt-3 aspect-video w-full overflow-hidden rounded-lg border bg-muted">
-      <iframe
-        src={`https://www.youtube.com/embed/${videoId}`}
-        className="h-full w-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    </div>
-  );
-}
-
-function extractYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/);
-  return match?.[1] || null;
 }
