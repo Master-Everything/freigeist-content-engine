@@ -46,6 +46,9 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
   // Guest Bio
   if (blocks.guest_bio) {
     lines.push(`<div class="guest-profile">`);
+    if (blocks.guest_image_url) {
+      lines.push(`  <img src="${esc(blocks.guest_image_url)}" alt="${esc(guestName)}" class="guest-image" />`);
+    }
     lines.push(`  <h3>Über ${esc(guestName)}</h3>`);
     lines.push(`  <p>${esc(blocks.guest_bio)}</p>`);
     lines.push(`</div>`);

@@ -6,6 +6,7 @@ export interface PostBlocks {
   summary_lead: string;
   summary_bullets: string[];
   guest_bio: string;
+  guest_image_url?: string;
   section1_title: string;
   section1_content: string;
   section2_title: string;

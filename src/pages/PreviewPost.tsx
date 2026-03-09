@@ -107,10 +107,22 @@ export default function PreviewPost() {
           </AccordionItem>
         </Accordion>
 
-        {/* Guest Bio */}
-        <div className="rounded-xl bg-muted/50 p-6 mb-10">
-          <h3 className="font-display text-lg font-semibold mb-2">Über {post?.guest_name}</h3>
-          <p className="text-muted-foreground">{b.guest_bio}</p>
+        {/* Guest Profile */}
+        <div className="rounded-xl bg-muted/50 p-6 mb-10 flex gap-5 items-start">
+          {b.guest_image_url ? (
+            <Avatar className="h-20 w-20 shrink-0">
+              <AvatarImage src={b.guest_image_url} alt={post?.guest_name} />
+              <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
+            </Avatar>
+          ) : (
+            <Avatar className="h-20 w-20 shrink-0">
+              <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
+            </Avatar>
+          )}
+          <div>
+            <h3 className="font-display text-lg font-semibold mb-2">Über {post?.guest_name}</h3>
+            <p className="text-muted-foreground">{b.guest_bio}</p>
+          </div>
         </div>
 
         {/* Content Sections */}

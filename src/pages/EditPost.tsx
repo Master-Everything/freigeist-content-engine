@@ -194,7 +194,16 @@ export default function EditPost() {
 
           {/* Guest Profile */}
           <BlockCard title="Gast-Profil" required>
-            <Textarea value={blocks.guest_bio} onChange={(e) => updateBlock("guest_bio", e.target.value)} rows={3} />
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Bild-URL</Label>
+                <Input value={blocks.guest_image_url || ""} onChange={(e) => updateBlock("guest_image_url", e.target.value)} placeholder="https://example.com/photo.jpg" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Biografie</Label>
+                <Textarea value={blocks.guest_bio} onChange={(e) => updateBlock("guest_bio", e.target.value)} rows={3} />
+              </div>
+            </div>
           </BlockCard>
 
           {/* Content Sections */}
