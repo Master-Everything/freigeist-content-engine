@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Eye, Download, Save, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { generateHTML } from "@/lib/export-html";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const defaultBlocks: PostBlocks = {
   headline: "",
