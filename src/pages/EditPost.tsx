@@ -98,7 +98,7 @@ export default function EditPost() {
 
   function handleExport() {
     if (!post) return;
-    const html = generateHTML(blocks, post.guest_name);
+    const html = generateHTML(blocks, post.guest_name, post.interview_title);
     navigator.clipboard.writeText(html);
     toast({ title: "HTML kopiert!", description: "Der HTML-Code wurde in die Zwischenablage kopiert." });
     supabase.from("posts").update({ status: "exported" }).eq("id", id);
