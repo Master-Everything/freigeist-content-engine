@@ -8,10 +8,6 @@ function extractYouTubeId(url: string): string | null {
 export function generateHTML(blocks: PostBlocks, guestName: string): string {
   const lines: string[] = [];
 
-  // Headline
-  lines.push(`<h1>${esc(blocks.headline)}</h1>`);
-  lines.push("");
-
   // Excerpt
   if (blocks.excerpt) {
     lines.push(`<p><em>${esc(blocks.excerpt)}</em></p>`);
@@ -19,7 +15,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
   }
 
   // Main Video
-  const mainId = extractYouTubeId(blocks.youtube_url || "");
+  const mainId = extractYouTubeId(blocks.main_video_url || "");
   if (mainId) {
     lines.push(`<div class="video-embed">`);
     lines.push(`  <iframe width="100%" height="400" src="https://www.youtube.com/embed/${mainId}" frameborder="0" allowfullscreen></iframe>`);
@@ -28,13 +24,13 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
   }
 
   // Summary Box
-  if (blocks.summary_title) {
+  if (blocks.summary_box_title) {
     lines.push(`<details class="summary-box" open>`);
-    lines.push(`  <summary><h2>${esc(blocks.summary_title)}</h2></summary>`);
+    lines.push(`  <summary><h2>${esc(blocks.summary_box_title)}</h2></summary>`);
     if (blocks.summary_lead) lines.push(`  <p>${esc(blocks.summary_lead)}</p>`);
-    if (blocks.summary_bullets.length > 0) {
+    if (blocks.summary_points.length > 0) {
       lines.push(`  <ul>`);
-      for (const b of blocks.summary_bullets) {
+      for (const b of blocks.summary_points) {
         lines.push(`    <li>${esc(b)}</li>`);
       }
       lines.push(`  </ul>`);
@@ -44,21 +40,21 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
   }
 
   // Guest Bio
-  if (blocks.guest_bio) {
+  if (blocks.guest_short_bio) {
     lines.push(`<div class="guest-profile">`);
     if (blocks.guest_image_url) {
       lines.push(`  <img src="${esc(blocks.guest_image_url)}" alt="${esc(guestName)}" class="guest-image" />`);
     }
     lines.push(`  <h3>Über ${esc(guestName)}</h3>`);
-    lines.push(`  <p>${esc(blocks.guest_bio)}</p>`);
+    lines.push(`  <p>${esc(blocks.guest_short_bio)}</p>`);
     lines.push(`</div>`);
     lines.push("");
   }
 
   // Content Sections
   for (const n of [1, 2, 3] as const) {
-    const title = blocks[`section${n}_title` as keyof PostBlocks] as string;
-    const content = blocks[`section${n}_content` as keyof PostBlocks] as string;
+    const title = blocks[`section_${n}_title` as keyof PostBlocks] as string;
+    const content = blocks[`section_${n}_body` as keyof PostBlocks] as string;
     if (title || content) {
       if (title) lines.push(`<h2>${esc(title)}</h2>`);
       if (content) {
@@ -71,8 +67,8 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
   }
 
   // Additional Video
-  if (blocks.additional_video_url) {
-    const addId = extractYouTubeId(blocks.additional_video_url);
+  if (blocks.additional_video_embed) {
+    const addId = extractYouTubeId(blocks.additional_video_embed);
     if (addId) {
       lines.push(`<div class="video-embed">`);
       lines.push(`  <iframe width="100%" height="400" src="https://www.youtube.com/embed/${addId}" frameborder="0" allowfullscreen></iframe>`);
@@ -82,15 +78,21 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
   }
 
   // PrettyLink
-  if (blocks.prettylink_shortcodes) {
-    lines.push(`${blocks.prettylink_shortcodes}`);
+  if (blocks.pretty_link_shortcode) {
+    lines.push(`${blocks.pretty_link_shortcode}`);
     lines.push("");
   }
 
   // Resources
-  if (blocks.resources) {
+  if (blocks.resource_links) {
     lines.push(`<h2>Weiterführende Ressourcen</h2>`);
-    for (const line of blocks.resources.split("\n")) {
+    for (const line of blocks.resource_links.split("\n")) {
+      lines.push(`<p>${esc(line)}</p>`);
+    }
+    lines.push("");
+  }
+  if (blocks.resource_notes) {
+    for (const line of blocks.resource_notes.split("\n")) {
       lines.push(`<p>${esc(line)}</p>`);
     }
     lines.push("");

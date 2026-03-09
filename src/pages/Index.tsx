@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Post, PostBlocks } from "@/types/post";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ export default function Dashboard() {
       .select("*")
       .order("updated_at", { ascending: false });
     if (!error && data) {
-      setPosts(data.map(d => ({ ...d, blocks: d.blocks as unknown as PostBlocks | null })));
+      setPosts(data.map(d => ({ ...d, blocks: d.blocks as unknown as PostBlocks | null })) as Post[]);
     }
     setLoading(false);
   }
@@ -50,7 +50,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-6 py-10">
-        {/* Header */}
         <div className="mb-10 flex items-end justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight">
@@ -69,7 +68,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="mb-6 flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -93,7 +91,6 @@ export default function Dashboard() {
           </Select>
         </div>
 
-        {/* Posts list */}
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -129,7 +126,7 @@ export default function Dashboard() {
                   <CardContent className="flex items-center justify-between p-5">
                     <div className="min-w-0 flex-1">
                       <h3 className="font-display text-lg font-semibold truncate">
-                        {post.blocks?.headline || post.interview_title}
+                        {post.interview_title}
                       </h3>
                       <p className="mt-0.5 text-sm text-muted-foreground truncate">
                         {post.guest_name} · {new Date(post.updated_at).toLocaleDateString("de-DE")}

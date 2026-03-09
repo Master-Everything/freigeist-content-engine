@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { guest_name, interview_title, youtube_url, newsletter_text, telegram_text, guest_website, guest_profile_text, prettylink_shortcodes } = await req.json();
+    const { guest_name, interview_title, youtube_url, newsletter_text, telegram_text, guest_website_url, guest_short_bio, prettylink_shortcodes } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -22,18 +22,17 @@ serve(async (req) => {
 Gegeben werden dir Quelldaten zu einem Interview-Gast. Erstelle daraus folgende Inhaltsblöcke im JSON-Format:
 
 {
-  "headline": "Beitrags-Überschrift (SEO-optimiert, max 70 Zeichen)",
   "excerpt": "Kurzbeschreibung für die Vorschau (max 160 Zeichen)",
-  "summary_title": "Titel für die Zusammenfassungsbox",
+  "summary_box_title": "Titel für die Zusammenfassungsbox",
   "summary_lead": "Einleitender Satz für die Zusammenfassung",
-  "summary_bullets": ["Punkt 1", "Punkt 2", "Punkt 3", "Punkt 4", "Punkt 5"],
-  "guest_bio": "Kurze Biografie des Gastes (2-3 Sätze)",
-  "section1_title": "Titel Abschnitt 1",
-  "section1_content": "Inhalt Abschnitt 1 (2-3 Absätze)",
-  "section2_title": "Titel Abschnitt 2",
-  "section2_content": "Inhalt Abschnitt 2 (2-3 Absätze)",
-  "section3_title": "Titel Abschnitt 3",
-  "section3_content": "Inhalt Abschnitt 3 (2-3 Absätze)"
+  "summary_points": ["Punkt 1", "Punkt 2", "Punkt 3", "Punkt 4", "Punkt 5"],
+  "guest_short_bio": "Kurze Biografie des Gastes (2-3 Sätze)",
+  "section_1_title": "Titel Abschnitt 1",
+  "section_1_body": "Inhalt Abschnitt 1 (2-3 Absätze)",
+  "section_2_title": "Titel Abschnitt 2",
+  "section_2_body": "Inhalt Abschnitt 2 (2-3 Absätze)",
+  "section_3_title": "Titel Abschnitt 3",
+  "section_3_body": "Inhalt Abschnitt 3 (2-3 Absätze)"
 }
 
 Schreibe professionell, informativ und ansprechend. Verwende einen journalistischen Stil.`;
@@ -45,8 +44,8 @@ Interview-Titel: ${interview_title}
 ${youtube_url ? `YouTube URL: ${youtube_url}` : ""}
 ${newsletter_text ? `Newsletter-Text: ${newsletter_text}` : ""}
 ${telegram_text ? `Telegram-Post: ${telegram_text}` : ""}
-${guest_website ? `Gast-Website: ${guest_website}` : ""}
-${guest_profile_text ? `Gast-Profil: ${guest_profile_text}` : ""}
+${guest_website_url ? `Gast-Website: ${guest_website_url}` : ""}
+${guest_short_bio ? `Gast-Profil: ${guest_short_bio}` : ""}
 ${prettylink_shortcodes ? `PrettyLink Shortcodes: ${prettylink_shortcodes}` : ""}
 
 Antworte NUR mit dem JSON-Objekt.`;
@@ -72,23 +71,22 @@ Antworte NUR mit dem JSON-Objekt.`;
               parameters: {
                 type: "object",
                 properties: {
-                  headline: { type: "string" },
                   excerpt: { type: "string" },
-                  summary_title: { type: "string" },
+                  summary_box_title: { type: "string" },
                   summary_lead: { type: "string" },
-                  summary_bullets: { type: "array", items: { type: "string" } },
-                  guest_bio: { type: "string" },
-                  section1_title: { type: "string" },
-                  section1_content: { type: "string" },
-                  section2_title: { type: "string" },
-                  section2_content: { type: "string" },
-                  section3_title: { type: "string" },
-                  section3_content: { type: "string" },
+                  summary_points: { type: "array", items: { type: "string" } },
+                  guest_short_bio: { type: "string" },
+                  section_1_title: { type: "string" },
+                  section_1_body: { type: "string" },
+                  section_2_title: { type: "string" },
+                  section_2_body: { type: "string" },
+                  section_3_title: { type: "string" },
+                  section_3_body: { type: "string" },
                 },
                 required: [
-                  "headline", "excerpt", "summary_title", "summary_lead",
-                  "summary_bullets", "guest_bio", "section1_title", "section1_content",
-                  "section2_title", "section2_content", "section3_title", "section3_content",
+                  "excerpt", "summary_box_title", "summary_lead",
+                  "summary_points", "guest_short_bio", "section_1_title", "section_1_body",
+                  "section_2_title", "section_2_body", "section_3_title", "section_3_body",
                 ],
                 additionalProperties: false,
               },
@@ -121,7 +119,6 @@ Antworte NUR mit dem JSON-Objekt.`;
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     
     if (!toolCall) {
-      // Fallback: try to parse content directly
       const content = data.choices?.[0]?.message?.content;
       if (content) {
         try {
