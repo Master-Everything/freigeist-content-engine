@@ -48,4 +48,5 @@ export interface SourceFormData {
   guest_website_url: string;
   guest_short_bio: string;
   prettylink_shortcodes: string;
+  video_transcript: string;
 }

@@ -30,6 +30,7 @@ export type Database = {
           status: string
           telegram_text: string | null
           updated_at: string
+          video_transcript: string | null
           youtube_url: string | null
         }
         Insert: {
@@ -47,6 +48,7 @@ export type Database = {
           status?: string
           telegram_text?: string | null
           updated_at?: string
+          video_transcript?: string | null
           youtube_url?: string | null
         }
         Update: {
@@ -64,6 +66,7 @@ export type Database = {
           status?: string
           telegram_text?: string | null
           updated_at?: string
+          video_transcript?: string | null
           youtube_url?: string | null
         }
         Relationships: []

@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function NewPost() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [form, setForm] = useState<SourceFormData>({
     guest_name: "",
     interview_title: "",
@@ -23,10 +24,36 @@ export default function NewPost() {
     guest_website_url: "",
     guest_short_bio: "",
     prettylink_shortcodes: "",
+    video_transcript: "",
   });
 
   const update = (field: keyof SourceFormData, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
+
+  async function handleFetchTranscript() {
+    if (!form.youtube_url.trim()) {
+      toast({ title: "Error", description: "Please enter a YouTube URL first.", variant: "destructive" });
+      return;
+    }
+    setTranscriptLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("youtube-transcript", {
+        body: { youtube_url: form.youtube_url },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ title: "No transcript found", description: data.error, variant: "destructive" });
+        return;
+      }
+      update("video_transcript", data.transcript);
+      toast({ title: "Transcript loaded", description: `Language: ${data.language}` });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to fetch transcript", variant: "destructive" });
+    } finally {
+      setTranscriptLoading(false);
+    }
+  }
 
   async function handleAnalyze() {
     if (!form.guest_name.trim() || !form.interview_title.trim()) {
@@ -47,8 +74,9 @@ export default function NewPost() {
           guest_website_url: form.guest_website_url || null,
           guest_short_bio: form.guest_short_bio || null,
           prettylink_shortcodes: form.prettylink_shortcodes || null,
+          video_transcript: form.video_transcript || null,
           status: "in_progress",
-        })
+        } as any)
         .select()
         .single();
 
@@ -125,8 +153,38 @@ export default function NewPost() {
               </div>
               <div>
                 <Label htmlFor="youtube_url">YouTube Video URL</Label>
-                <Input id="youtube_url" value={form.youtube_url} onChange={(e) => update("youtube_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+                <div className="flex gap-2">
+                  <Input id="youtube_url" value={form.youtube_url} onChange={(e) => update("youtube_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleFetchTranscript}
+                    disabled={transcriptLoading || !form.youtube_url.trim()}
+                    className="gap-2 shrink-0"
+                  >
+                    {transcriptLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    Transcript
+                  </Button>
+                </div>
               </div>
+              {form.video_transcript && (
+                <div>
+                  <Label>Video Transcript</Label>
+                  <Textarea
+                    value={form.video_transcript}
+                    readOnly
+                    rows={6}
+                    className="text-xs opacity-80"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {form.video_transcript.length.toLocaleString()} characters — will be used as AI context
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
