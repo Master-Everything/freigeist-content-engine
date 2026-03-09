@@ -29,8 +29,8 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
 
   // Summary Box
   if (blocks.summary_title) {
-    lines.push(`<div class="summary-box">`);
-    lines.push(`  <h2>${esc(blocks.summary_title)}</h2>`);
+    lines.push(`<details class="summary-box" open>`);
+    lines.push(`  <summary><h2>${esc(blocks.summary_title)}</h2></summary>`);
     if (blocks.summary_lead) lines.push(`  <p>${esc(blocks.summary_lead)}</p>`);
     if (blocks.summary_bullets.length > 0) {
       lines.push(`  <ul>`);
@@ -39,7 +39,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string): string {
       }
       lines.push(`  </ul>`);
     }
-    lines.push(`</div>`);
+    lines.push(`</details>`);
     lines.push("");
   }
 
