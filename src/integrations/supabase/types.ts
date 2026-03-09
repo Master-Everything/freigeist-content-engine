@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           blocks: Json | null
           created_at: string
+          guest_image_url: string | null
           guest_name: string
           guest_profile_text: string | null
           guest_website: string | null
@@ -33,6 +34,7 @@ export type Database = {
         Insert: {
           blocks?: Json | null
           created_at?: string
+          guest_image_url?: string | null
           guest_name: string
           guest_profile_text?: string | null
           guest_website?: string | null
@@ -48,6 +50,7 @@ export type Database = {
         Update: {
           blocks?: Json | null
           created_at?: string
+          guest_image_url?: string | null
           guest_name?: string
           guest_profile_text?: string | null
           guest_website?: string | null
