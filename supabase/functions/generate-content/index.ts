@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { guest_name, interview_title, youtube_url, newsletter_text, telegram_text, guest_website_url, guest_short_bio, prettylink_shortcodes } = await req.json();
+    const { guest_name, interview_title, youtube_url, newsletter_text, telegram_text, guest_website_url, guest_short_bio, prettylink_shortcodes, video_transcript } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
