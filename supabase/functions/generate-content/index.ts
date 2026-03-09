@@ -47,6 +47,7 @@ ${telegram_text ? `Telegram-Post: ${telegram_text}` : ""}
 ${guest_website_url ? `Gast-Website: ${guest_website_url}` : ""}
 ${guest_short_bio ? `Gast-Profil: ${guest_short_bio}` : ""}
 ${prettylink_shortcodes ? `PrettyLink Shortcodes: ${prettylink_shortcodes}` : ""}
+${video_transcript ? `Video-Transkript: ${video_transcript}` : ""}
 
 Antworte NUR mit dem JSON-Objekt.`;
 
