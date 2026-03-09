@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: "Entwurf", className: "bg-muted text-muted-foreground" },
@@ -59,10 +60,13 @@ export default function Dashboard() {
               Interview-Beiträge erstellen und verwalten
             </p>
           </div>
-          <Button onClick={() => navigate("/new")} size="lg" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Neuer Beitrag
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button onClick={() => navigate("/new")} size="lg" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Neuer Beitrag
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
