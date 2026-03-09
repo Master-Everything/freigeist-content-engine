@@ -87,19 +87,25 @@ export default function PreviewPost() {
           </div>
         )}
 
-        {/* Summary Box */}
-        <div className="rounded-xl border-l-4 border-primary bg-primary/5 p-6 mb-10">
-          <h2 className="font-display text-xl font-bold mb-2">{b.summary_title}</h2>
-          <p className="text-muted-foreground mb-4">{b.summary_lead}</p>
-          <ul className="space-y-2">
-            {b.summary_bullets.map((bullet, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                <span>{bullet}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Summary Accordion Box */}
+        <Accordion type="single" collapsible defaultValue="summary" className="mb-10">
+          <AccordionItem value="summary" className="rounded-xl border-l-4 border-primary bg-primary/5 px-6 border-b-0">
+            <AccordionTrigger className="hover:no-underline">
+              <h2 className="font-display text-xl font-bold">{b.summary_title}</h2>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground mb-4">{b.summary_lead}</p>
+              <ul className="space-y-2">
+                {b.summary_bullets.map((bullet, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {/* Guest Bio */}
         <div className="rounded-xl bg-muted/50 p-6 mb-10">
