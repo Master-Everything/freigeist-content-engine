@@ -34,24 +34,22 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
       )}
 
       {(b.summary_box_title || b.summary_lead || b.summary_points.length > 0) && (
-        <Accordion type="single" collapsible defaultValue="summary" className="mb-10">
-          <AccordionItem value="summary" className="rounded-xl border-l-4 border-primary bg-primary/5 px-6 border-b-0">
-            <AccordionTrigger className="hover:no-underline">
-              <h2 className="font-display text-xl font-bold">{b.summary_box_title}</h2>
-            </AccordionTrigger>
-            <AccordionContent>
-              {b.summary_lead && <p className="text-muted-foreground mb-4">{b.summary_lead}</p>}
-              <ul className="space-y-2">
-                {b.summary_points.filter(Boolean).map((point, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        <details open className="mb-10 rounded-xl border-l-4 border-primary bg-primary/5 px-6 py-4">
+          <summary className="cursor-pointer list-none font-display text-xl font-bold [&::-webkit-details-marker]:hidden">
+            {b.summary_box_title}
+          </summary>
+          <div className="mt-4">
+            {b.summary_lead && <p className="text-muted-foreground mb-4">{b.summary_lead}</p>}
+            <ul className="space-y-2">
+              {b.summary_points.filter(Boolean).map((point, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
       )}
 
       {(b.guest_short_bio || b.guest_image_url) && (
