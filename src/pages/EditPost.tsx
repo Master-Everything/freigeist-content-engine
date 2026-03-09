@@ -15,19 +15,18 @@ import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const defaultBlocks: PostBlocks = {
-  headline: "",
   excerpt: "",
-  youtube_url: "",
-  summary_title: "",
+  main_video_url: "",
+  summary_box_title: "",
   summary_lead: "",
-  summary_bullets: [],
-  guest_bio: "",
-  section1_title: "",
-  section1_content: "",
-  section2_title: "",
-  section2_content: "",
-  section3_title: "",
-  section3_content: "",
+  summary_points: [],
+  guest_short_bio: "",
+  section_1_title: "",
+  section_1_body: "",
+  section_2_title: "",
+  section_2_body: "",
+  section_3_title: "",
+  section_3_body: "",
 };
 
 export default function EditPost() {
@@ -56,11 +55,11 @@ export default function EditPost() {
     setPost(p);
     if (p.blocks) {
       setBlocks({ ...defaultBlocks, ...p.blocks });
-      setShowAdditionalVideo(!!p.blocks.additional_video_url);
-      setShowPrettyLink(!!p.blocks.prettylink_shortcodes);
-      setShowResources(!!p.blocks.resources);
+      setShowAdditionalVideo(!!p.blocks.additional_video_embed);
+      setShowPrettyLink(!!p.blocks.pretty_link_shortcode);
+      setShowResources(!!p.blocks.resource_links || !!p.blocks.resource_notes);
     } else {
-      setBlocks({ ...defaultBlocks, youtube_url: p.youtube_url || "" });
+      setBlocks({ ...defaultBlocks, main_video_url: p.youtube_url || "" });
     }
     setLoading(false);
   }
@@ -69,16 +68,16 @@ export default function EditPost() {
     setBlocks((b) => ({ ...b, [field]: value }));
   }, []);
 
-  const updateBullet = useCallback((index: number, value: string) => {
+  const updatePoint = useCallback((index: number, value: string) => {
     setBlocks((b) => {
-      const bullets = [...b.summary_bullets];
-      bullets[index] = value;
-      return { ...b, summary_bullets: bullets };
+      const points = [...b.summary_points];
+      points[index] = value;
+      return { ...b, summary_points: points };
     });
   }, []);
 
-  const addBullet = () => setBlocks((b) => ({ ...b, summary_bullets: [...b.summary_bullets, ""] }));
-  const removeBullet = (i: number) => setBlocks((b) => ({ ...b, summary_bullets: b.summary_bullets.filter((_, idx) => idx !== i) }));
+  const addPoint = () => setBlocks((b) => ({ ...b, summary_points: [...b.summary_points, ""] }));
+  const removePoint = (i: number) => setBlocks((b) => ({ ...b, summary_points: b.summary_points.filter((_, idx) => idx !== i) }));
 
   async function handleSave() {
     if (!id) return;
@@ -97,7 +96,6 @@ export default function EditPost() {
     const html = generateHTML(blocks, post.guest_name);
     navigator.clipboard.writeText(html);
     toast({ title: "HTML kopiert!", description: "Der HTML-Code wurde in die Zwischenablage kopiert." });
-    // Update status to exported
     supabase.from("posts").update({ status: "exported" }).eq("id", id);
   }
 
@@ -119,7 +117,6 @@ export default function EditPost() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-6 py-10">
-        {/* Top bar */}
         <div className="mb-8 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Dashboard
@@ -148,11 +145,6 @@ export default function EditPost() {
         </p>
 
         <div className="space-y-6">
-          {/* Headline */}
-          <BlockCard title="Überschrift" required>
-            <Input value={blocks.headline} onChange={(e) => updateBlock("headline", e.target.value)} className="text-lg font-display font-semibold" />
-          </BlockCard>
-
           {/* Excerpt */}
           <BlockCard title="Kurzbeschreibung (Excerpt)" required>
             <Textarea value={blocks.excerpt} onChange={(e) => updateBlock("excerpt", e.target.value)} rows={2} />
@@ -160,8 +152,8 @@ export default function EditPost() {
 
           {/* Main Video */}
           <BlockCard title="Hauptvideo (YouTube)" required>
-            <Input value={blocks.youtube_url} onChange={(e) => updateBlock("youtube_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
-            {blocks.youtube_url && <YouTubePreview url={blocks.youtube_url} />}
+            <Input value={blocks.main_video_url} onChange={(e) => updateBlock("main_video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+            {blocks.main_video_url && <YouTubePreview url={blocks.main_video_url} />}
           </BlockCard>
 
           {/* Summary Box */}
@@ -169,7 +161,7 @@ export default function EditPost() {
             <div className="space-y-3">
               <div>
                 <Label className="text-xs text-muted-foreground">Titel</Label>
-                <Input value={blocks.summary_title} onChange={(e) => updateBlock("summary_title", e.target.value)} />
+                <Input value={blocks.summary_box_title} onChange={(e) => updateBlock("summary_box_title", e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Einleitung</Label>
@@ -177,15 +169,15 @@ export default function EditPost() {
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Stichpunkte</Label>
-                {blocks.summary_bullets.map((b, i) => (
+                {blocks.summary_points.map((b, i) => (
                   <div key={i} className="flex gap-2 mt-1">
-                    <Input value={b} onChange={(e) => updateBullet(i, e.target.value)} />
-                    <Button variant="ghost" size="icon" onClick={() => removeBullet(i)} className="shrink-0 text-destructive">
+                    <Input value={b} onChange={(e) => updatePoint(i, e.target.value)} />
+                    <Button variant="ghost" size="icon" onClick={() => removePoint(i)} className="shrink-0 text-destructive">
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 ))}
-                <Button variant="outline" size="sm" onClick={addBullet} className="mt-2">
+                <Button variant="outline" size="sm" onClick={addPoint} className="mt-2">
                   + Stichpunkt
                 </Button>
               </div>
@@ -200,8 +192,8 @@ export default function EditPost() {
                 <Input value={blocks.guest_image_url || ""} onChange={(e) => updateBlock("guest_image_url", e.target.value)} placeholder="https://example.com/photo.jpg" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Biografie</Label>
-                <Textarea value={blocks.guest_bio} onChange={(e) => updateBlock("guest_bio", e.target.value)} rows={3} />
+                <Label className="text-xs text-muted-foreground">Kurzbiografie</Label>
+                <Textarea value={blocks.guest_short_bio} onChange={(e) => updateBlock("guest_short_bio", e.target.value)} rows={3} />
               </div>
             </div>
           </BlockCard>
@@ -213,15 +205,15 @@ export default function EditPost() {
                 <div>
                   <Label className="text-xs text-muted-foreground">Titel</Label>
                   <Input
-                    value={blocks[`section${n}_title` as keyof PostBlocks] as string}
-                    onChange={(e) => updateBlock(`section${n}_title` as keyof PostBlocks, e.target.value)}
+                    value={blocks[`section_${n}_title` as keyof PostBlocks] as string}
+                    onChange={(e) => updateBlock(`section_${n}_title` as keyof PostBlocks, e.target.value)}
                   />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Inhalt</Label>
                   <Textarea
-                    value={blocks[`section${n}_content` as keyof PostBlocks] as string}
-                    onChange={(e) => updateBlock(`section${n}_content` as keyof PostBlocks, e.target.value)}
+                    value={blocks[`section_${n}_body` as keyof PostBlocks] as string}
+                    onChange={(e) => updateBlock(`section_${n}_body` as keyof PostBlocks, e.target.value)}
                     rows={5}
                   />
                 </div>
@@ -239,11 +231,11 @@ export default function EditPost() {
                 onToggle={setShowAdditionalVideo}
               >
                 <Input
-                  value={blocks.additional_video_url || ""}
-                  onChange={(e) => updateBlock("additional_video_url", e.target.value)}
+                  value={blocks.additional_video_embed || ""}
+                  onChange={(e) => updateBlock("additional_video_embed", e.target.value)}
                   placeholder="https://youtube.com/watch?v=..."
                 />
-                {blocks.additional_video_url && <YouTubePreview url={blocks.additional_video_url} />}
+                {blocks.additional_video_embed && <YouTubePreview url={blocks.additional_video_embed} />}
               </OptionalBlockToggle>
 
               <OptionalBlockToggle
@@ -252,8 +244,8 @@ export default function EditPost() {
                 onToggle={setShowPrettyLink}
               >
                 <Input
-                  value={blocks.prettylink_shortcodes || ""}
-                  onChange={(e) => updateBlock("prettylink_shortcodes", e.target.value)}
+                  value={blocks.pretty_link_shortcode || ""}
+                  onChange={(e) => updateBlock("pretty_link_shortcode", e.target.value)}
                   placeholder="[prettylink link=...]"
                 />
               </OptionalBlockToggle>
@@ -263,12 +255,26 @@ export default function EditPost() {
                 enabled={showResources}
                 onToggle={setShowResources}
               >
-                <Textarea
-                  value={blocks.resources || ""}
-                  onChange={(e) => updateBlock("resources", e.target.value)}
-                  placeholder="Links, Bücher, weiterführende Materialien..."
-                  rows={4}
-                />
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Links</Label>
+                    <Textarea
+                      value={blocks.resource_links || ""}
+                      onChange={(e) => updateBlock("resource_links", e.target.value)}
+                      placeholder="Links, Bücher, weiterführende Materialien..."
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Notizen</Label>
+                    <Textarea
+                      value={blocks.resource_notes || ""}
+                      onChange={(e) => updateBlock("resource_notes", e.target.value)}
+                      placeholder="Zusätzliche Hinweise..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
               </OptionalBlockToggle>
             </div>
           </div>

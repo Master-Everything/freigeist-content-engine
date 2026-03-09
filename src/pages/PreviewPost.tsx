@@ -52,8 +52,8 @@ export default function PreviewPost() {
   const b = post?.blocks;
   if (!b) return null;
 
-  const mainVideoId = extractYouTubeId(b.youtube_url || "");
-  const additionalVideoId = b.additional_video_url ? extractYouTubeId(b.additional_video_url) : null;
+  const mainVideoId = extractYouTubeId(b.main_video_url || "");
+  const additionalVideoId = b.additional_video_embed ? extractYouTubeId(b.additional_video_embed) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,8 +69,8 @@ export default function PreviewPost() {
       </div>
 
       <article className="mx-auto max-w-3xl px-6 py-12">
-        {/* Headline */}
-        <h1 className="font-display text-4xl font-bold leading-tight mb-4">{b.headline}</h1>
+        {/* Title from DB-level interview_title */}
+        <h1 className="font-display text-4xl font-bold leading-tight mb-4">{post?.interview_title}</h1>
 
         {/* Excerpt */}
         <p className="text-lg text-muted-foreground mb-8">{b.excerpt}</p>
@@ -91,15 +91,15 @@ export default function PreviewPost() {
         <Accordion type="single" collapsible defaultValue="summary" className="mb-10">
           <AccordionItem value="summary" className="rounded-xl border-l-4 border-primary bg-primary/5 px-6 border-b-0">
             <AccordionTrigger className="hover:no-underline">
-              <h2 className="font-display text-xl font-bold">{b.summary_title}</h2>
+              <h2 className="font-display text-xl font-bold">{b.summary_box_title}</h2>
             </AccordionTrigger>
             <AccordionContent>
               <p className="text-muted-foreground mb-4">{b.summary_lead}</p>
               <ul className="space-y-2">
-                {b.summary_bullets.map((bullet, i) => (
+                {b.summary_points.map((point, i) => (
                   <li key={i} className="flex gap-2">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    <span>{bullet}</span>
+                    <span>{point}</span>
                   </li>
                 ))}
               </ul>
@@ -121,14 +121,14 @@ export default function PreviewPost() {
           )}
           <div>
             <h3 className="font-display text-lg font-semibold mb-2">Über {post?.guest_name}</h3>
-            <p className="text-muted-foreground">{b.guest_bio}</p>
+            <p className="text-muted-foreground">{b.guest_short_bio}</p>
           </div>
         </div>
 
         {/* Content Sections */}
         {([1, 2, 3] as const).map((n) => {
-          const title = b[`section${n}_title` as keyof PostBlocks] as string;
-          const content = b[`section${n}_content` as keyof PostBlocks] as string;
+          const title = b[`section_${n}_title` as keyof PostBlocks] as string;
+          const content = b[`section_${n}_body` as keyof PostBlocks] as string;
           if (!title && !content) return null;
           return (
             <section key={n} className="mb-10">
@@ -153,18 +153,21 @@ export default function PreviewPost() {
         )}
 
         {/* PrettyLink */}
-        {b.prettylink_shortcodes && (
+        {b.pretty_link_shortcode && (
           <div className="rounded-xl bg-muted/50 p-6 mb-10">
-            <p className="font-mono text-sm">{b.prettylink_shortcodes}</p>
+            <p className="font-mono text-sm">{b.pretty_link_shortcode}</p>
           </div>
         )}
 
         {/* Resources */}
-        {b.resources && (
+        {(b.resource_links || b.resource_notes) && (
           <div className="mb-10">
             <h2 className="font-display text-2xl font-bold mb-4">Weiterführende Ressourcen</h2>
-            {b.resources.split("\n").map((line, i) => (
+            {b.resource_links?.split("\n").map((line, i) => (
               <p key={i} className="mb-2 text-foreground/90">{line}</p>
+            ))}
+            {b.resource_notes?.split("\n").map((line, i) => (
+              <p key={`n-${i}`} className="mb-2 text-muted-foreground">{line}</p>
             ))}
           </div>
         )}

@@ -20,8 +20,8 @@ export default function NewPost() {
     youtube_url: "",
     newsletter_text: "",
     telegram_text: "",
-    guest_website: "",
-    guest_profile_text: "",
+    guest_website_url: "",
+    guest_short_bio: "",
     prettylink_shortcodes: "",
   });
 
@@ -36,7 +36,6 @@ export default function NewPost() {
 
     setLoading(true);
     try {
-      // 1. Create post in DB
       const { data: post, error: insertError } = await supabase
         .from("posts")
         .insert({
@@ -45,8 +44,8 @@ export default function NewPost() {
           youtube_url: form.youtube_url || null,
           newsletter_text: form.newsletter_text || null,
           telegram_text: form.telegram_text || null,
-          guest_website: form.guest_website || null,
-          guest_profile_text: form.guest_profile_text || null,
+          guest_website_url: form.guest_website_url || null,
+          guest_short_bio: form.guest_short_bio || null,
           prettylink_shortcodes: form.prettylink_shortcodes || null,
           status: "in_progress",
         })
@@ -55,7 +54,6 @@ export default function NewPost() {
 
       if (insertError || !post) throw new Error(insertError?.message || "Insert failed");
 
-      // 2. Call AI generation
       const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-content", {
         body: form,
       });
@@ -67,24 +65,22 @@ export default function NewPost() {
         return;
       }
 
-      // 3. Save generated blocks
       const blocks = {
-        headline: aiData.headline || form.interview_title,
         excerpt: aiData.excerpt || "",
-        youtube_url: form.youtube_url || "",
-        summary_title: aiData.summary_title || "",
+        main_video_url: form.youtube_url || "",
+        summary_box_title: aiData.summary_box_title || "",
         summary_lead: aiData.summary_lead || "",
-        summary_bullets: aiData.summary_bullets || [],
-        guest_bio: aiData.guest_bio || "",
-        section1_title: aiData.section1_title || "",
-        section1_content: aiData.section1_content || "",
-        section2_title: aiData.section2_title || "",
-        section2_content: aiData.section2_content || "",
-        section3_title: aiData.section3_title || "",
-        section3_content: aiData.section3_content || "",
+        summary_points: aiData.summary_points || [],
+        guest_short_bio: aiData.guest_short_bio || "",
+        section_1_title: aiData.section_1_title || "",
+        section_1_body: aiData.section_1_body || "",
+        section_2_title: aiData.section_2_title || "",
+        section_2_body: aiData.section_2_body || "",
+        section_3_title: aiData.section_3_title || "",
+        section_3_body: aiData.section_3_body || "",
       };
 
-      await supabase.from("posts").update({ blocks }).eq("id", post.id);
+      await supabase.from("posts").update({ blocks: blocks as any }).eq("id", post.id);
 
       toast({ title: "Erfolg!", description: "Inhalte wurden generiert." });
       navigate(`/edit/${post.id}`);
@@ -114,7 +110,6 @@ export default function NewPost() {
         </p>
 
         <div className="space-y-6">
-          {/* Required fields */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Pflichtfelder</CardTitle>
@@ -135,7 +130,6 @@ export default function NewPost() {
             </CardContent>
           </Card>
 
-          {/* Optional fields */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Optionale Quelldaten</CardTitle>
@@ -151,12 +145,12 @@ export default function NewPost() {
                 <Textarea id="telegram_text" value={form.telegram_text} onChange={(e) => update("telegram_text", e.target.value)} placeholder="Telegram-Nachricht einfügen..." rows={3} />
               </div>
               <div>
-                <Label htmlFor="guest_website">Gast-Website URL</Label>
-                <Input id="guest_website" value={form.guest_website} onChange={(e) => update("guest_website", e.target.value)} placeholder="https://..." />
+                <Label htmlFor="guest_website_url">Gast-Website URL</Label>
+                <Input id="guest_website_url" value={form.guest_website_url} onChange={(e) => update("guest_website_url", e.target.value)} placeholder="https://..." />
               </div>
               <div>
-                <Label htmlFor="guest_profile_text">Gast-Profiltext</Label>
-                <Textarea id="guest_profile_text" value={form.guest_profile_text} onChange={(e) => update("guest_profile_text", e.target.value)} placeholder="Biografie oder Profil-Beschreibung..." rows={4} />
+                <Label htmlFor="guest_short_bio">Gast-Kurzbiografie</Label>
+                <Textarea id="guest_short_bio" value={form.guest_short_bio} onChange={(e) => update("guest_short_bio", e.target.value)} placeholder="Biografie oder Profil-Beschreibung..." rows={4} />
               </div>
               <div>
                 <Label htmlFor="prettylink_shortcodes">PrettyLink Shortcode(s)</Label>
