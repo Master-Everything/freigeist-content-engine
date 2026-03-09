@@ -30,7 +30,7 @@ export default function PreviewPost() {
 
   function handleExport() {
     if (!post?.blocks) return;
-    const html = generateHTML(post.blocks, post.guest_name);
+    const html = generateHTML(post.blocks, post.guest_name, post.interview_title);
     navigator.clipboard.writeText(html);
     toast({ title: "HTML kopiert!", description: "Der HTML-Code wurde in die Zwischenablage kopiert." });
   }
