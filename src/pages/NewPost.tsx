@@ -99,9 +99,12 @@ export default function NewPost() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <Button variant="ghost" onClick={() => navigate("/")} className="mb-6 gap-2">
-          <ArrowLeft className="h-4 w-4" /> Zurück
-        </Button>
+        <div className="mb-6 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
+            <ArrowLeft className="h-4 w-4" /> Zurück
+          </Button>
+          <ThemeToggle />
+        </div>
 
         <h1 className="font-display text-3xl font-bold tracking-tight mb-2">
           Neuer Interview-Beitrag

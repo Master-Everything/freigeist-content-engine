@@ -124,7 +124,8 @@ export default function EditPost() {
           <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Dashboard
           </Button>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="outline" onClick={handleDelete} className="gap-2 text-destructive hover:text-destructive">
               <Trash2 className="h-4 w-4" /> Löschen
             </Button>

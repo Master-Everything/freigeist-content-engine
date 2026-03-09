@@ -60,10 +60,13 @@ export default function Dashboard() {
               Interview-Beiträge erstellen und verwalten
             </p>
           </div>
-          <Button onClick={() => navigate("/new")} size="lg" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Neuer Beitrag
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button onClick={() => navigate("/new")} size="lg" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Neuer Beitrag
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
