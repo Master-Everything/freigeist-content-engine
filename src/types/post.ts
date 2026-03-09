@@ -22,6 +22,7 @@ export interface PostBlocks {
 
 export interface Post {
   id: string;
+  guest_id?: string | null;
   status: string;
   post_slug: string | null;
   guest_name: string;
