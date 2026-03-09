@@ -20,11 +20,12 @@ export type Database = {
           created_at: string
           guest_image_url: string | null
           guest_name: string
-          guest_profile_text: string | null
-          guest_website: string | null
+          guest_short_bio: string | null
+          guest_website_url: string | null
           id: string
           interview_title: string
           newsletter_text: string | null
+          post_slug: string | null
           prettylink_shortcodes: string | null
           status: string
           telegram_text: string | null
@@ -36,11 +37,12 @@ export type Database = {
           created_at?: string
           guest_image_url?: string | null
           guest_name: string
-          guest_profile_text?: string | null
-          guest_website?: string | null
+          guest_short_bio?: string | null
+          guest_website_url?: string | null
           id?: string
           interview_title: string
           newsletter_text?: string | null
+          post_slug?: string | null
           prettylink_shortcodes?: string | null
           status?: string
           telegram_text?: string | null
@@ -52,11 +54,12 @@ export type Database = {
           created_at?: string
           guest_image_url?: string | null
           guest_name?: string
-          guest_profile_text?: string | null
-          guest_website?: string | null
+          guest_short_bio?: string | null
+          guest_website_url?: string | null
           id?: string
           interview_title?: string
           newsletter_text?: string | null
+          post_slug?: string | null
           prettylink_shortcodes?: string | null
           status?: string
           telegram_text?: string | null
