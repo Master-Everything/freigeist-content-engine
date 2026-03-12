@@ -154,13 +154,11 @@ export function SourceDataEditor({ post, open, onOpenChange, onPostUpdate, onBlo
             </div>
           </div>
 
-          {(post as any).video_transcript && (
-            <div>
-              <Label className="text-xs text-muted-foreground">Video-Transkript</Label>
-              <Textarea value={(post as any).video_transcript} onChange={(e) => updateField("video_transcript" as keyof Post, e.target.value)} rows={4} className="text-xs" />
-              <p className="text-xs text-muted-foreground mt-1">{((post as any).video_transcript as string).length.toLocaleString()} Zeichen</p>
-            </div>
-          )}
+          <div>
+            <Label className="text-xs text-muted-foreground">Video-Transkript</Label>
+            <Textarea value={(post as any).video_transcript || ""} onChange={(e) => updateField("video_transcript" as keyof Post, e.target.value || null)} rows={4} className="text-xs" placeholder="Transkript hier einfügen oder per Button laden…" />
+            {(post as any).video_transcript && <p className="text-xs text-muted-foreground mt-1">{((post as any).video_transcript as string).length.toLocaleString()} Zeichen</p>}
+          </div>
 
           <div>
             <Label className="text-xs text-muted-foreground">Newsletter-Text</Label>
