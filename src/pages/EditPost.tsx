@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PostPreview } from "@/components/PostPreview";
+import { SourceDataEditor } from "@/components/SourceDataEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const defaultBlocks: PostBlocks = {
@@ -44,6 +45,7 @@ export default function EditPost() {
   const [showAdditionalVideo, setShowAdditionalVideo] = useState(false);
   const [showPrettyLink, setShowPrettyLink] = useState(false);
   const [showResources, setShowResources] = useState(false);
+  const [showSourceData, setShowSourceData] = useState(false);
 
   useEffect(() => {
     if (id) loadPost(id);
@@ -122,9 +124,21 @@ export default function EditPost() {
   const editorContent = (
     <div className="h-full overflow-y-auto p-6">
       <h2 className="font-display text-lg font-semibold mb-1">Block-Editor</h2>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-4">
         {post?.guest_name} — {post?.interview_title}
       </p>
+
+      {post && (
+        <div className="mb-6">
+          <SourceDataEditor
+            post={post}
+            open={showSourceData}
+            onOpenChange={setShowSourceData}
+            onPostUpdate={setPost}
+            onBlocksGenerated={(newBlocks) => setBlocks({ ...defaultBlocks, ...newBlocks })}
+          />
+        </div>
+      )}
 
       <div className="space-y-5">
         <BlockCard title="Kurzbeschreibung (Excerpt)" required>
