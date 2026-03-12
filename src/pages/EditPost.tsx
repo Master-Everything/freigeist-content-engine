@@ -139,6 +139,8 @@ export default function EditPost() {
           />
         </div>
       )}
+
+      <div className="space-y-5">
         <BlockCard title="Kurzbeschreibung (Excerpt)" required>
           <Textarea value={blocks.excerpt} onChange={(e) => updateBlock("excerpt", e.target.value)} rows={2} />
         </BlockCard>
