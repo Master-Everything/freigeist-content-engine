@@ -30,7 +30,6 @@ function decodeHtmlEntities(text: string): string {
 }
 
 function xmlToPlainText(xml: string): string {
-  // Extract text content from <text> elements
   const textRegex = /<text[^>]*>([\s\S]*?)<\/text>/g;
   const segments: string[] = [];
   let match;
@@ -39,6 +38,105 @@ function xmlToPlainText(xml: string): string {
     if (decoded) segments.push(decoded);
   }
   return segments.join(" ");
+}
+
+async function getCaptionsViaInnerTube(videoId: string): Promise<{ transcript: string; language: string } | null> {
+  // Use YouTube's InnerTube API to get video info including captions
+  const innertubeRes = await fetch("https://www.youtube.com/youtubei/v1/player", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    },
+    body: JSON.stringify({
+      context: {
+        client: {
+          hl: "de",
+          gl: "DE",
+          clientName: "WEB",
+          clientVersion: "2.20240101.00.00",
+        },
+      },
+      videoId,
+    }),
+  });
+
+  if (!innertubeRes.ok) {
+    console.error("InnerTube API returned", innertubeRes.status);
+    return null;
+  }
+
+  const data = await innertubeRes.json();
+  const captionTracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  
+  if (!captionTracks || captionTracks.length === 0) {
+    console.log("No caption tracks found via InnerTube");
+    return null;
+  }
+
+  // Prioritize: de > en > first available
+  let track = captionTracks.find((t: any) => t.languageCode === "de");
+  if (!track) track = captionTracks.find((t: any) => t.languageCode === "en");
+  if (!track) track = captionTracks[0];
+
+  const captionRes = await fetch(track.baseUrl);
+  if (!captionRes.ok) return null;
+
+  const captionXml = await captionRes.text();
+  const transcript = xmlToPlainText(captionXml);
+  
+  if (!transcript) return null;
+  return { transcript, language: track.languageCode };
+}
+
+async function getCaptionsViaPage(videoId: string): Promise<{ transcript: string; language: string } | null> {
+  const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Cookie": "CONSENT=YES+cb.20210328-17-p0.en+FX+1",
+    },
+  });
+
+  if (!pageRes.ok) return null;
+  const html = await pageRes.text();
+
+  // Try multiple patterns for player response
+  const patterns = [
+    /ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;\s*(?:var|const|let|<\/script>)/s,
+    /ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;/s,
+  ];
+
+  let playerData: any = null;
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) {
+      try {
+        playerData = JSON.parse(match[1]);
+        break;
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  if (!playerData) return null;
+
+  const captionTracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  if (!captionTracks || captionTracks.length === 0) return null;
+
+  let track = captionTracks.find((t: any) => t.languageCode === "de");
+  if (!track) track = captionTracks.find((t: any) => t.languageCode === "en");
+  if (!track) track = captionTracks[0];
+
+  const captionRes = await fetch(track.baseUrl);
+  if (!captionRes.ok) return null;
+
+  const captionXml = await captionRes.text();
+  const transcript = xmlToPlainText(captionXml);
+  
+  if (!transcript) return null;
+  return { transcript, language: track.languageCode };
 }
 
 serve(async (req) => {
@@ -63,75 +161,25 @@ serve(async (req) => {
       });
     }
 
-    // Fetch the YouTube video page
-    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-      },
-    });
+    console.log(`Fetching transcript for video: ${videoId}`);
 
-    if (!pageRes.ok) {
-      return new Response(JSON.stringify({ error: "Failed to fetch YouTube page" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Try InnerTube API first (more reliable), then fall back to page scraping
+    let result = await getCaptionsViaInnerTube(videoId);
+    if (!result) {
+      console.log("InnerTube failed, trying page scraping...");
+      result = await getCaptionsViaPage(videoId);
     }
 
-    const html = await pageRes.text();
-
-    // Extract captions data from ytInitialPlayerResponse
-    const playerMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
-    if (!playerMatch) {
-      return new Response(JSON.stringify({ error: "Could not parse YouTube player data. The video may be restricted." }), {
+    if (!result) {
+      return new Response(JSON.stringify({ error: "No captions available for this video. The video may not have captions enabled." }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    let playerData: any;
-    try {
-      playerData = JSON.parse(playerMatch[1]);
-    } catch {
-      return new Response(JSON.stringify({ error: "Failed to parse player response JSON" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    console.log(`Transcript fetched successfully. Language: ${result.language}, Length: ${result.transcript.length}`);
 
-    const captionTracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-    if (!captionTracks || captionTracks.length === 0) {
-      return new Response(JSON.stringify({ error: "No captions available for this video" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Prioritize: de > en > first available
-    let track = captionTracks.find((t: any) => t.languageCode === "de");
-    if (!track) track = captionTracks.find((t: any) => t.languageCode === "en");
-    if (!track) track = captionTracks[0];
-
-    const captionUrl = track.baseUrl;
-    const captionRes = await fetch(captionUrl);
-    if (!captionRes.ok) {
-      return new Response(JSON.stringify({ error: "Failed to fetch caption track" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const captionXml = await captionRes.text();
-    const transcript = xmlToPlainText(captionXml);
-
-    if (!transcript) {
-      return new Response(JSON.stringify({ error: "Captions were empty" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({ transcript, language: track.languageCode }), {
+    return new Response(JSON.stringify({ transcript: result.transcript, language: result.language }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
