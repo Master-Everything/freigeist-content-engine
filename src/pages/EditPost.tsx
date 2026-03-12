@@ -45,6 +45,7 @@ export default function EditPost() {
   const [showAdditionalVideo, setShowAdditionalVideo] = useState(false);
   const [showPrettyLink, setShowPrettyLink] = useState(false);
   const [showResources, setShowResources] = useState(false);
+  const [showSourceData, setShowSourceData] = useState(false);
 
   useEffect(() => {
     if (id) loadPost(id);
