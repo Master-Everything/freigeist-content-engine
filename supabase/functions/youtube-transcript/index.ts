@@ -171,8 +171,8 @@ serve(async (req) => {
     }
 
     if (!result) {
-      return new Response(JSON.stringify({ error: "No captions available for this video. The video may not have captions enabled." }), {
-        status: 404,
+      return new Response(JSON.stringify({ error: "Für dieses Video sind keine Untertitel verfügbar. Du kannst das Transkript manuell einfügen." }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
