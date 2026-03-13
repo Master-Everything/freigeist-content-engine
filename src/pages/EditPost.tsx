@@ -24,14 +24,21 @@ const defaultBlocks: PostBlocks = {
   main_video_url: "",
   summary_box_title: "",
   summary_lead: "",
-  summary_points: [],
+  summary_paragraphs: [],
   guest_short_bio: "",
+  guest_website_cta: "",
   section_1_title: "",
   section_1_body: "",
   section_2_title: "",
   section_2_body: "",
   section_3_title: "",
   section_3_body: "",
+  section_4_title: "",
+  section_4_body: "",
+  section_5_title: "",
+  section_5_body: "",
+  section_6_title: "",
+  section_6_body: "",
 };
 
 export default function EditPost() {
@@ -61,7 +68,12 @@ export default function EditPost() {
     const p = { ...data, blocks: data.blocks as unknown as PostBlocks | null } as Post;
     setPost(p);
     if (p.blocks) {
-      setBlocks({ ...defaultBlocks, ...p.blocks });
+      // Migrate old summary_points to summary_paragraphs if needed
+      const migrated = { ...defaultBlocks, ...p.blocks };
+      if (!migrated.summary_paragraphs?.length && (p.blocks as any).summary_points?.length) {
+        migrated.summary_paragraphs = (p.blocks as any).summary_points;
+      }
+      setBlocks(migrated);
       setShowAdditionalVideo(!!p.blocks.additional_video_embed);
       setShowPrettyLink(!!p.blocks.pretty_link_shortcode);
       setShowResources(!!p.blocks.resource_links || !!p.blocks.resource_notes);
@@ -74,17 +86,6 @@ export default function EditPost() {
   const updateBlock = useCallback((field: keyof PostBlocks, value: any) => {
     setBlocks((b) => ({ ...b, [field]: value }));
   }, []);
-
-  const updatePoint = useCallback((index: number, value: string) => {
-    setBlocks((b) => {
-      const points = [...b.summary_points];
-      points[index] = value;
-      return { ...b, summary_points: points };
-    });
-  }, []);
-
-  const addPoint = () => setBlocks((b) => ({ ...b, summary_points: [...b.summary_points, ""] }));
-  const removePoint = (i: number) => setBlocks((b) => ({ ...b, summary_points: b.summary_points.filter((_, idx) => idx !== i) }));
 
   async function handleSave() {
     if (!id) return;
@@ -160,17 +161,24 @@ export default function EditPost() {
               <Textarea value={blocks.summary_lead} onChange={(e) => updateBlock("summary_lead", e.target.value)} rows={2} />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Stichpunkte</Label>
-              {blocks.summary_points.map((b, i) => (
-                <div key={i} className="flex gap-2 mt-1">
-                  <Input value={b} onChange={(e) => updatePoint(i, e.target.value)} />
-                  <Button variant="ghost" size="icon" onClick={() => removePoint(i)} className="shrink-0 text-destructive">
+              <Label className="text-xs text-muted-foreground">Zusammenfassungs-Absätze</Label>
+              <p className="text-xs text-muted-foreground mb-2">Ausführliche Absätze mit **Fettdruck** für Einleitungen</p>
+              {blocks.summary_paragraphs.map((p, i) => (
+                <div key={i} className="flex gap-2 mt-2">
+                  <Textarea value={p} onChange={(e) => {
+                    const updated = [...blocks.summary_paragraphs];
+                    updated[i] = e.target.value;
+                    updateBlock("summary_paragraphs", updated);
+                  }} rows={3} />
+                  <Button variant="ghost" size="icon" onClick={() => {
+                    updateBlock("summary_paragraphs", blocks.summary_paragraphs.filter((_, idx) => idx !== i));
+                  }} className="shrink-0 text-destructive mt-1">
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={addPoint} className="mt-2">
-                + Stichpunkt
+              <Button variant="outline" size="sm" onClick={() => updateBlock("summary_paragraphs", [...blocks.summary_paragraphs, ""])} className="mt-2">
+                + Absatz
               </Button>
             </div>
           </div>
@@ -186,11 +194,15 @@ export default function EditPost() {
               <Label className="text-xs text-muted-foreground">Kurzbiografie</Label>
               <Textarea value={blocks.guest_short_bio} onChange={(e) => updateBlock("guest_short_bio", e.target.value)} rows={3} />
             </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Gast-Website CTA</Label>
+              <Input value={blocks.guest_website_cta || ""} onChange={(e) => updateBlock("guest_website_cta", e.target.value)} placeholder="https://gast-website.de" />
+            </div>
           </div>
         </BlockCard>
 
-        {([1, 2, 3] as const).map((n) => (
-          <BlockCard key={n} title={`Inhaltsabschnitt ${n}`} required>
+        {([1, 2, 3, 4, 5, 6] as const).map((n) => (
+          <BlockCard key={n} title={`Inhaltsabschnitt ${n}`} required={n <= 3}>
             <div className="space-y-2">
               <div>
                 <Label className="text-xs text-muted-foreground">Titel</Label>
@@ -200,11 +212,11 @@ export default function EditPost() {
                 />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Inhalt</Label>
+                <Label className="text-xs text-muted-foreground">Inhalt (Markdown: ## H3, ### H4, **fett**, - Listen)</Label>
                 <Textarea
                   value={blocks[`section_${n}_body` as keyof PostBlocks] as string}
                   onChange={(e) => updateBlock(`section_${n}_body` as keyof PostBlocks, e.target.value)}
-                  rows={5}
+                  rows={6}
                 />
               </div>
             </div>
@@ -269,7 +281,6 @@ export default function EditPost() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      {/* Sticky toolbar */}
       <div className="shrink-0 border-b bg-card/80 backdrop-blur z-20">
         <div className="flex items-center justify-between px-4 py-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-2">
@@ -291,7 +302,6 @@ export default function EditPost() {
         </div>
       </div>
 
-      {/* Main content area */}
       <div className="flex-1 min-h-0">
         {isMobile ? (
           <Tabs defaultValue="editor" className="flex h-full flex-col">

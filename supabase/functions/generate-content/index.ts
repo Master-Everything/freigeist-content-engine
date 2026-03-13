@@ -17,27 +17,46 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `Du bist ein Content-Redakteur für die Website "Freigeist Kongress". Du erstellst strukturierte Interview-Beiträge auf Deutsch.
+    const systemPrompt = `Du bist ein erfahrener Content-Redakteur für die Website "Freigeist Kongress". Du erstellst umfangreiche, tiefgehende Interview-Beiträge auf Deutsch.
 
-Gegeben werden dir Quelldaten zu einem Interview-Gast. Erstelle daraus folgende Inhaltsblöcke im JSON-Format:
+Gegeben werden dir Quelldaten zu einem Interview-Gast. Erstelle daraus folgende Inhaltsblöcke im JSON-Format.
 
+WICHTIGE REGELN:
+- Schreibe AUSFÜHRLICH und DETAILLIERT. Jeder Abschnitt soll 4-6 Absätze enthalten.
+- Verwende Markdown in den section_body Feldern: ## für Unterüberschriften (H3), ### für Sub-Unterüberschriften (H4), **fett** für Hervorhebungen, - für Aufzählungen.
+- Die summary_paragraphs sollen 3-4 AUSFÜHRLICHE Absätze sein (keine Stichpunkte!). Jeder Absatz beginnt mit einer **fettgedruckten Einleitung** gefolgt von einem erklärenden Satz.
+- Erstelle 6 inhaltliche Sektionen mit unterschiedlichen Aspekten des Interviews.
+- Verwende einen journalistischen, informativen und ansprechenden Stil.
+- Nutze Unterüberschriften (##, ###) INNERHALB der Sektions-Bodies um den Text zu strukturieren.
+- Integriere wo sinnvoll Aufzählungen mit - für bessere Lesbarkeit.
+
+STRUKTUR:
 {
-  "excerpt": "Kurzbeschreibung für die Vorschau (max 160 Zeichen)",
-  "summary_box_title": "Titel für die Zusammenfassungsbox",
+  "excerpt": "Kurzbeschreibung für die Vorschau (max 200 Zeichen)",
+  "summary_box_title": "Titel für die Zusammenfassungsbox (z.B. 'Die wichtigsten Erkenntnisse aus dem Interview')",
   "summary_lead": "Einleitender Satz für die Zusammenfassung",
-  "summary_points": ["Punkt 1", "Punkt 2", "Punkt 3", "Punkt 4", "Punkt 5"],
-  "guest_short_bio": "Kurze Biografie des Gastes (2-3 Sätze)",
+  "summary_paragraphs": [
+    "**Fettgedruckte Einleitung:** Gefolgt von einem ausführlichen Absatz der diesen Aspekt des Interviews zusammenfasst...",
+    "**Weitere Erkenntnis:** Noch ein ausführlicher Absatz...",
+    "**Dritter Punkt:** Detaillierte Zusammenfassung...",
+    "**Fazit:** Abschließender Zusammenfassungs-Absatz..."
+  ],
+  "guest_short_bio": "Ausführliche Biografie des Gastes (3-4 Sätze, inkl. Werdegang und Expertise)",
   "section_1_title": "Titel Abschnitt 1",
-  "section_1_body": "Inhalt Abschnitt 1 (2-3 Absätze)",
+  "section_1_body": "## Unterüberschrift\\n\\nAusführlicher Text mit mehreren Absätzen...\\n\\n## Weitere Unterüberschrift\\n\\nMehr Text...",
   "section_2_title": "Titel Abschnitt 2",
-  "section_2_body": "Inhalt Abschnitt 2 (2-3 Absätze)",
+  "section_2_body": "Umfangreicher Inhalt mit ## Unterüberschriften und **Hervorhebungen**...",
   "section_3_title": "Titel Abschnitt 3",
-  "section_3_body": "Inhalt Abschnitt 3 (2-3 Absätze)"
-}
+  "section_3_body": "...",
+  "section_4_title": "Titel Abschnitt 4",
+  "section_4_body": "...",
+  "section_5_title": "Titel Abschnitt 5",
+  "section_5_body": "...",
+  "section_6_title": "Titel Abschnitt 6 (Fazit / Ausblick)",
+  "section_6_body": "..."
+}`;
 
-Schreibe professionell, informativ und ansprechend. Verwende einen journalistischen Stil.`;
-
-    const userPrompt = `Erstelle Interview-Beitragsblöcke für folgende Quelldaten:
+    const userPrompt = `Erstelle einen umfangreichen Interview-Beitrag für folgende Quelldaten:
 
 Gastname: ${guest_name}
 Interview-Titel: ${interview_title}
@@ -49,7 +68,15 @@ ${guest_short_bio ? `Gast-Profil: ${guest_short_bio}` : ""}
 ${prettylink_shortcodes ? `PrettyLink Shortcodes: ${prettylink_shortcodes}` : ""}
 ${video_transcript ? `Video-Transkript: ${video_transcript}` : ""}
 
+WICHTIG: Schreibe SEHR ausführlich. Jede Sektion soll 4-6 Absätze mit Unterüberschriften enthalten. Die Zusammenfassung soll aus 3-4 detaillierten Absätzen bestehen, NICHT aus Stichpunkten.
+
 Antworte NUR mit dem JSON-Objekt.`;
+
+    const sectionProps: Record<string, { type: string }> = {};
+    for (let i = 1; i <= 6; i++) {
+      sectionProps[`section_${i}_title`] = { type: "string" };
+      sectionProps[`section_${i}_body`] = { type: "string" };
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -75,19 +102,19 @@ Antworte NUR mit dem JSON-Objekt.`;
                   excerpt: { type: "string" },
                   summary_box_title: { type: "string" },
                   summary_lead: { type: "string" },
-                  summary_points: { type: "array", items: { type: "string" } },
+                  summary_paragraphs: { type: "array", items: { type: "string" } },
                   guest_short_bio: { type: "string" },
-                  section_1_title: { type: "string" },
-                  section_1_body: { type: "string" },
-                  section_2_title: { type: "string" },
-                  section_2_body: { type: "string" },
-                  section_3_title: { type: "string" },
-                  section_3_body: { type: "string" },
+                  ...sectionProps,
                 },
                 required: [
                   "excerpt", "summary_box_title", "summary_lead",
-                  "summary_points", "guest_short_bio", "section_1_title", "section_1_body",
-                  "section_2_title", "section_2_body", "section_3_title", "section_3_body",
+                  "summary_paragraphs", "guest_short_bio",
+                  "section_1_title", "section_1_body",
+                  "section_2_title", "section_2_body",
+                  "section_3_title", "section_3_body",
+                  "section_4_title", "section_4_body",
+                  "section_5_title", "section_5_body",
+                  "section_6_title", "section_6_body",
                 ],
                 additionalProperties: false,
               },
