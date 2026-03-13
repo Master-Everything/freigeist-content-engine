@@ -54,7 +54,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
             {b.summary_lead && <p className="text-muted-foreground mb-4">{b.summary_lead}</p>}
             <div className="space-y-3">
               {summaryParagraphs.filter(Boolean).map((para: string, i: number) => (
-                <p key={i} className="leading-relaxed text-foreground/90">
+                <p key={i} className="text-sm font-normal leading-relaxed text-foreground/90">
                   {renderInlineBold(para)}
                 </p>
               ))}
@@ -102,7 +102,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
             {title && <h2 className="font-display text-2xl font-bold mb-4">{title}</h2>}
             {html && (
               <div
-                className="prose prose-sm max-w-none text-foreground/90 [&_h3]:font-display [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h4]:font-display [&_h4]:text-lg [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2 [&_p]:mb-4 [&_p]:leading-relaxed [&_ul]:space-y-1.5 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed [&_strong]:font-semibold"
+                className="max-w-none text-sm text-foreground/80 font-normal [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h4]:font-display [&_h4]:text-base [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2 [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:font-normal [&_ul]:space-y-1.5 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed [&_strong]:font-semibold"
                 dangerouslySetInnerHTML={{ __html: html }}
               />
             )}
