@@ -27,6 +27,9 @@ export interface PostBlocks {
   pretty_link_shortcode?: string;
   resource_links?: string;
   resource_notes?: string;
+  cta_affiliate_url?: string;
+  cta_affiliate_label?: string;
+  resource_notes?: string;
 }
 
 export interface Post {
