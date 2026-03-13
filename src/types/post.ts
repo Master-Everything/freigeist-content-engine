@@ -4,15 +4,24 @@ export interface PostBlocks {
   main_video_embed?: string;
   summary_box_title: string;
   summary_lead: string;
-  summary_points: string[];
+  summary_paragraphs: string[];
+  /** @deprecated Use summary_paragraphs instead */
+  summary_points?: string[];
   guest_short_bio: string;
   guest_image_url?: string;
+  guest_website_cta?: string;
   section_1_title: string;
   section_1_body: string;
   section_2_title: string;
   section_2_body: string;
   section_3_title: string;
   section_3_body: string;
+  section_4_title: string;
+  section_4_body: string;
+  section_5_title: string;
+  section_5_body: string;
+  section_6_title: string;
+  section_6_body: string;
   // Optional blocks
   additional_video_embed?: string;
   pretty_link_shortcode?: string;
