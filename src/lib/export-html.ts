@@ -67,15 +67,15 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     lines.push("");
   }
 
-  // Guest Website CTA
+  // Guest Website CTA Button
   if (blocks.guest_website_cta) {
-    lines.push(`<div class="freigeist-cta">`);
-    lines.push(`  <a href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer">Zur Website von ${esc(guestName)}</a>`);
+    lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
+    lines.push(`  <a href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;font-weight:600;text-decoration:none">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
     lines.push(`</div>`);
     lines.push("");
   }
 
-  // Content Sections (1-6)
+  // Content Sections (1-6) with affiliate CTA after section 3
   for (const n of [1, 2, 3, 4, 5, 6] as const) {
     const title = blocks[`section_${n}_title` as keyof PostBlocks] as string;
     const content = blocks[`section_${n}_body` as keyof PostBlocks] as string;
@@ -86,6 +86,14 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
         lines.push(markdownToHtml(content));
       }
       lines.push(`</section>`);
+      lines.push("");
+    }
+    // Affiliate CTA after section 3
+    if (n === 3 && blocks.cta_affiliate_url) {
+      lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
+      lines.push(`  <a href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;font-weight:600;text-decoration:none">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
+      lines.push(`  <p style="margin-top:8px;font-size:12px;color:#888;font-style:italic">Es handelt sich um einen Empfehlungslink</p>`);
+      lines.push(`</div>`);
       lines.push("");
     }
   }

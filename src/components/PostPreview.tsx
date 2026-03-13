@@ -79,15 +79,14 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
       )}
 
       {b.guest_website_cta && (
-        <div className="mb-10">
+        <div className="mb-10 text-center">
           <a
             href={b.guest_website_cta}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            <ExternalLink className="h-4 w-4" />
-            Zur Website von {post.guest_name}
+            ✨ 👉 Zur Website von {post.guest_name} ✨
           </a>
         </div>
       )}
@@ -98,15 +97,30 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         if (!title && !content) return null;
         const html = markdownToReactHtml(content || "");
         return (
-          <section key={n} className="mb-10">
-            {title && <h2 className="font-display text-2xl font-bold mb-4">{title}</h2>}
-            {html && (
-              <div
-                className="max-w-none text-sm text-foreground/80 font-normal [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h4]:font-display [&_h4]:text-base [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2 [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:font-normal [&_ul]:space-y-1.5 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed [&_strong]:font-semibold"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
+          <div key={n}>
+            <section className="mb-10">
+              {title && <h2 className="font-display text-2xl font-bold mb-4">{title}</h2>}
+              {html && (
+                <div
+                  className="max-w-none text-sm text-foreground/80 font-normal [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h4]:font-display [&_h4]:text-base [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2 [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:font-normal [&_ul]:space-y-1.5 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed [&_strong]:font-semibold"
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
+              )}
+            </section>
+            {n === 3 && b.cta_affiliate_url && (
+              <div className="mb-10 text-center">
+                <a
+                  href={b.cta_affiliate_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  🔗 {b.cta_affiliate_label || "Informationen & Store"}
+                </a>
+                <p className="mt-2 text-xs text-muted-foreground italic">Es handelt sich um einen Empfehlungslink</p>
+              </div>
             )}
-          </section>
+          </div>
         );
       })}
 

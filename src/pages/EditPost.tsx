@@ -195,8 +195,16 @@ export default function EditPost() {
               <Textarea value={blocks.guest_short_bio} onChange={(e) => updateBlock("guest_short_bio", e.target.value)} rows={3} />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Gast-Website CTA</Label>
+              <Label className="text-xs text-muted-foreground">Gast-Website CTA (Button 1)</Label>
               <Input value={blocks.guest_website_cta || ""} onChange={(e) => updateBlock("guest_website_cta", e.target.value)} placeholder="https://gast-website.de" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Affiliate-Button URL (Button 2, nach Sektion 3)</Label>
+              <Input value={blocks.cta_affiliate_url || ""} onChange={(e) => updateBlock("cta_affiliate_url", e.target.value)} placeholder="https://affiliate-link.de" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Affiliate-Button Text</Label>
+              <Input value={blocks.cta_affiliate_label || ""} onChange={(e) => updateBlock("cta_affiliate_label", e.target.value)} placeholder="Informationen & Store" />
             </div>
           </div>
         </BlockCard>
