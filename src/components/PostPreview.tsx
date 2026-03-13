@@ -54,7 +54,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
             {b.summary_lead && <p className="text-muted-foreground mb-4">{b.summary_lead}</p>}
             <div className="space-y-3">
               {summaryParagraphs.filter(Boolean).map((para: string, i: number) => (
-                <p key={i} className="leading-relaxed text-foreground/90">
+                <p key={i} className="text-sm font-normal leading-relaxed text-foreground/90">
                   {renderInlineBold(para)}
                 </p>
               ))}

@@ -5,6 +5,9 @@
 export function markdownToHtml(md: string): string {
   if (!md) return "";
 
+  // Normalize escaped newlines from AI JSON output
+  md = md.replace(/\\n/g, "\n");
+
   const blocks: string[] = [];
   let listBuffer: string[] = [];
 
