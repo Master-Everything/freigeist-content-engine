@@ -101,14 +101,21 @@ export function SourceDataEditor({ post, open, onOpenChange, onPostUpdate, onBlo
         main_video_url: post.youtube_url || "",
         summary_box_title: aiData.summary_box_title || "",
         summary_lead: aiData.summary_lead || "",
-        summary_points: aiData.summary_points || [],
+        summary_paragraphs: aiData.summary_paragraphs || [],
         guest_short_bio: aiData.guest_short_bio || "",
+        guest_website_cta: post.guest_website_url || "",
         section_1_title: aiData.section_1_title || "",
         section_1_body: aiData.section_1_body || "",
         section_2_title: aiData.section_2_title || "",
         section_2_body: aiData.section_2_body || "",
         section_3_title: aiData.section_3_title || "",
         section_3_body: aiData.section_3_body || "",
+        section_4_title: aiData.section_4_title || "",
+        section_4_body: aiData.section_4_body || "",
+        section_5_title: aiData.section_5_title || "",
+        section_5_body: aiData.section_5_body || "",
+        section_6_title: aiData.section_6_title || "",
+        section_6_body: aiData.section_6_body || "",
       };
 
       await supabase.from("posts").update({ blocks: newBlocks as any }).eq("id", post.id);

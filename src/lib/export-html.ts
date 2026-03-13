@@ -1,8 +1,21 @@
 import { PostBlocks } from "@/types/post";
+import { markdownToHtml } from "@/lib/markdown";
 
 function extractYouTubeId(url: string): string | null {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/);
   return match?.[1] || null;
+}
+
+function esc(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderInlineBold(text: string): string {
+  return esc(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 }
 
 export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: string): string {
@@ -28,16 +41,13 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
   }
 
   // Summary Box
-  if (blocks.summary_box_title) {
+  const summaryParagraphs = blocks.summary_paragraphs?.length ? blocks.summary_paragraphs : (blocks as any).summary_points || [];
+  if (blocks.summary_box_title || summaryParagraphs.length > 0) {
     lines.push(`<details class="freigeist-summary-box">`);
     lines.push(`  <summary>${esc(blocks.summary_box_title)}</summary>`);
     if (blocks.summary_lead) lines.push(`  <p>${esc(blocks.summary_lead)}</p>`);
-    if (blocks.summary_points.length > 0) {
-      lines.push(`  <ul>`);
-      for (const b of blocks.summary_points) {
-        lines.push(`    <li>${esc(b)}</li>`);
-      }
-      lines.push(`  </ul>`);
+    for (const para of summaryParagraphs) {
+      if (para) lines.push(`  <p>${renderInlineBold(para)}</p>`);
     }
     lines.push(`</details>`);
     lines.push("");
@@ -57,17 +67,23 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     lines.push("");
   }
 
-  // Content Sections
-  for (const n of [1, 2, 3] as const) {
+  // Guest Website CTA
+  if (blocks.guest_website_cta) {
+    lines.push(`<div class="freigeist-cta">`);
+    lines.push(`  <a href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer">Zur Website von ${esc(guestName)}</a>`);
+    lines.push(`</div>`);
+    lines.push("");
+  }
+
+  // Content Sections (1-6)
+  for (const n of [1, 2, 3, 4, 5, 6] as const) {
     const title = blocks[`section_${n}_title` as keyof PostBlocks] as string;
     const content = blocks[`section_${n}_body` as keyof PostBlocks] as string;
     if (title || content) {
       lines.push(`<section class="freigeist-content-section">`);
       if (title) lines.push(`  <h2>${esc(title)}</h2>`);
       if (content) {
-        for (const p of content.split("\n\n")) {
-          lines.push(`  <p>${esc(p)}</p>`);
-        }
+        lines.push(markdownToHtml(content));
       }
       lines.push(`</section>`);
       lines.push("");
@@ -109,12 +125,4 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
   }
 
   return lines.join("\n").trim();
-}
-
-function esc(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

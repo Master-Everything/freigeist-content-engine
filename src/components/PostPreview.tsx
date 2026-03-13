@@ -1,10 +1,21 @@
 import { Post, PostBlocks } from "@/types/post";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { User } from "lucide-react";
+import { User, ExternalLink } from "lucide-react";
+import { markdownToReactHtml } from "@/lib/markdown";
 
 function extractYouTubeId(url: string): string | null {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/);
   return match?.[1] || null;
+}
+
+function renderInlineBold(text: string) {
+  const parts = text.split(/(\*\*.+?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
 
 interface PostPreviewProps {
@@ -15,6 +26,7 @@ interface PostPreviewProps {
 export function PostPreview({ post, blocks: b }: PostPreviewProps) {
   const mainVideoId = extractYouTubeId(b.main_video_url || "");
   const additionalVideoId = b.additional_video_embed ? extractYouTubeId(b.additional_video_embed) : null;
+  const summaryParagraphs = b.summary_paragraphs?.length ? b.summary_paragraphs : (b as any).summary_points || [];
 
   return (
     <article className="mx-auto max-w-2xl px-6 py-10">
@@ -33,27 +45,26 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </div>
       )}
 
-      {(b.summary_box_title || b.summary_lead || b.summary_points.length > 0) && (
+      {(b.summary_box_title || b.summary_lead || summaryParagraphs.length > 0) && (
         <details open className="mb-10 rounded-xl border-l-4 border-primary bg-primary/5 px-6 py-4">
           <summary className="cursor-pointer list-none font-display text-xl font-bold [&::-webkit-details-marker]:hidden">
             {b.summary_box_title}
           </summary>
           <div className="mt-4">
             {b.summary_lead && <p className="text-muted-foreground mb-4">{b.summary_lead}</p>}
-            <ul className="space-y-2">
-              {b.summary_points.filter(Boolean).map((point, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                  <span>{point}</span>
-                </li>
+            <div className="space-y-3">
+              {summaryParagraphs.filter(Boolean).map((para: string, i: number) => (
+                <p key={i} className="leading-relaxed text-foreground/90">
+                  {renderInlineBold(para)}
+                </p>
               ))}
-            </ul>
+            </div>
           </div>
         </details>
       )}
 
       {(b.guest_short_bio || b.guest_image_url) && (
-        <div className="rounded-xl bg-muted/50 p-6 mb-10 flex gap-5 items-start">
+        <div className="rounded-xl bg-muted/50 p-6 mb-6 flex gap-5 items-start">
           <Avatar className="h-20 w-20 shrink-0">
             {b.guest_image_url ? (
               <AvatarImage src={b.guest_image_url} alt={post.guest_name} />
@@ -67,16 +78,34 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </div>
       )}
 
-      {([1, 2, 3] as const).map((n) => {
+      {b.guest_website_cta && (
+        <div className="mb-10">
+          <a
+            href={b.guest_website_cta}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Zur Website von {post.guest_name}
+          </a>
+        </div>
+      )}
+
+      {([1, 2, 3, 4, 5, 6] as const).map((n) => {
         const title = b[`section_${n}_title` as keyof PostBlocks] as string;
         const content = b[`section_${n}_body` as keyof PostBlocks] as string;
         if (!title && !content) return null;
+        const html = markdownToReactHtml(content || "");
         return (
           <section key={n} className="mb-10">
             {title && <h2 className="font-display text-2xl font-bold mb-4">{title}</h2>}
-            {content?.split("\n\n").map((p, i) => (
-              <p key={i} className="mb-4 leading-relaxed text-foreground/90">{p}</p>
-            ))}
+            {html && (
+              <div
+                className="prose prose-sm max-w-none text-foreground/90 [&_h3]:font-display [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h4]:font-display [&_h4]:text-lg [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2 [&_p]:mb-4 [&_p]:leading-relaxed [&_ul]:space-y-1.5 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed [&_strong]:font-semibold"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+            )}
           </section>
         );
       })}
