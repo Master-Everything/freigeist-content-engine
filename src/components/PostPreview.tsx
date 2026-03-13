@@ -81,6 +81,23 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </div>
       )}
 
+      {/* Top Image */}
+      {b.top_image_url ? (
+        <div className="mb-10">
+          {b.top_image_link ? (
+            <a href={b.top_image_link} target="_blank" rel="noopener noreferrer" className="block">
+              <img src={b.top_image_url} alt={b.top_image_alt || ""} className="w-full rounded-xl" />
+            </a>
+          ) : (
+            <img src={b.top_image_url} alt={b.top_image_alt || ""} className="w-full rounded-xl" />
+          )}
+        </div>
+      ) : (
+        <div className="mb-10 flex items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/20 py-16">
+          <p className="text-sm text-muted-foreground">Bild hier einfügen (Oberes Bild)</p>
+        </div>
+      )}
+
       {/* CTA Button 1: Guest Website */}
       {b.guest_website_cta && (
         <div className="mb-10 text-center">
