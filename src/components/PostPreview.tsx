@@ -52,8 +52,10 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
           {b.summary_box_title && (
             <h2 className="font-display text-2xl font-bold uppercase tracking-wide mb-4">{b.summary_box_title}</h2>
           )}
-          <details open className="rounded-xl border border-border bg-background px-6 py-4">
-            <summary className="cursor-pointer list-none font-display text-base font-semibold [&::-webkit-details-marker]:hidden">
+          <details className="group rounded-xl border border-border bg-background px-6 py-4">
+            <summary className="cursor-pointer list-none font-display text-base font-semibold [&::-webkit-details-marker]:hidden flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-6 h-6 shrink-0 text-lg font-bold text-foreground group-open:hidden">+</span>
+              <span className="hidden items-center justify-center w-6 h-6 shrink-0 text-lg font-bold text-foreground group-open:inline-flex">−</span>
               {b.summary_lead ? <>— {b.summary_lead}</> : "— Zusammenfassung"}
             </summary>
             <div className="mt-4 space-y-4">
