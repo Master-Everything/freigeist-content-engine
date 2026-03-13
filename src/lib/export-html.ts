@@ -67,10 +67,10 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     lines.push("");
   }
 
-  // Guest Website CTA
+  // Guest Website CTA Button
   if (blocks.guest_website_cta) {
-    lines.push(`<div class="freigeist-cta">`);
-    lines.push(`  <a href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer">Zur Website von ${esc(guestName)}</a>`);
+    lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
+    lines.push(`  <a href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;font-weight:600;text-decoration:none">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
     lines.push(`</div>`);
     lines.push("");
   }
