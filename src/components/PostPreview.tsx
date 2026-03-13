@@ -25,6 +25,7 @@ interface PostPreviewProps {
 }
 
 export function PostPreview({ post, blocks: b }: PostPreviewProps) {
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const mainVideoId = extractYouTubeId(b.main_video_url || "");
   const additionalVideoId = b.additional_video_embed ? extractYouTubeId(b.additional_video_embed) : null;
   const summaryParagraphs = b.summary_paragraphs?.length ? b.summary_paragraphs : (b as any).summary_points || [];
