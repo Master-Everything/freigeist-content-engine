@@ -129,6 +129,26 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
                 />
               )}
             </section>
+            {n === 3 && (
+              <>
+                {/* Mid Image */}
+                {b.mid_image_url ? (
+                  <div className="mb-10">
+                    {b.mid_image_link ? (
+                      <a href={b.mid_image_link} target="_blank" rel="noopener noreferrer" className="block">
+                        <img src={b.mid_image_url} alt={b.mid_image_alt || ""} className="w-full rounded-xl" />
+                      </a>
+                    ) : (
+                      <img src={b.mid_image_url} alt={b.mid_image_alt || ""} className="w-full rounded-xl" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="mb-10 flex items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/20 py-16">
+                    <p className="text-sm text-muted-foreground">Bild hier einfügen (Mittleres Bild)</p>
+                  </div>
+                )}
+              </>
+            )}
             {n === 3 && b.cta_affiliate_url && (
               <div className="mb-10 text-center">
                 <a

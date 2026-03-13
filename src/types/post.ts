@@ -29,6 +29,12 @@ export interface PostBlocks {
   resource_notes?: string;
   cta_affiliate_url?: string;
   cta_affiliate_label?: string;
+  top_image_url?: string;
+  top_image_link?: string;
+  top_image_alt?: string;
+  mid_image_url?: string;
+  mid_image_link?: string;
+  mid_image_alt?: string;
   end_image_url?: string;
   end_image_link?: string;
   end_image_alt?: string;
