@@ -67,6 +67,17 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     lines.push("");
   }
 
+  // Top Image
+  if (blocks.top_image_url) {
+    const imgTag = `<img src="${esc(blocks.top_image_url)}" alt="${esc(blocks.top_image_alt || "")}" style="width:100%;border-radius:12px" />`;
+    if (blocks.top_image_link) {
+      lines.push(`<div style="margin:2em 0"><a href="${esc(blocks.top_image_link)}" target="_blank" rel="noopener noreferrer">${imgTag}</a></div>`);
+    } else {
+      lines.push(`<div style="margin:2em 0">${imgTag}</div>`);
+    }
+    lines.push("");
+  }
+
   // Guest Website CTA Button
   if (blocks.guest_website_cta) {
     lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
