@@ -48,21 +48,23 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
 
       {/* Summary Accordion */}
       {(b.summary_box_title || b.summary_lead || summaryParagraphs.length > 0) && (
-        <details open className="mb-10 rounded-xl border-l-4 border-primary bg-primary/5 px-6 py-4">
-          <summary className="cursor-pointer list-none font-display text-xl font-bold [&::-webkit-details-marker]:hidden">
-            {b.summary_box_title}
-          </summary>
-          <div className="mt-4">
-            {b.summary_lead && <p className="text-muted-foreground mb-4">{b.summary_lead}</p>}
-            <div className="space-y-3">
+        <div className="mb-10">
+          {b.summary_box_title && (
+            <h2 className="font-display text-2xl font-bold uppercase tracking-wide mb-4">{b.summary_box_title}</h2>
+          )}
+          <details open className="rounded-xl border border-border bg-background px-6 py-4">
+            <summary className="cursor-pointer list-none font-display text-base font-semibold [&::-webkit-details-marker]:hidden">
+              {b.summary_lead ? <>— {b.summary_lead}</> : "— Zusammenfassung"}
+            </summary>
+            <div className="mt-4 space-y-4">
               {summaryParagraphs.filter(Boolean).map((para: string, i: number) => (
-                <p key={i} className="text-sm font-normal leading-relaxed text-foreground/90">
+                <p key={i} className="text-base font-normal leading-relaxed text-foreground/90">
                   {renderInlineBold(para)}
                 </p>
               ))}
             </div>
-          </div>
-        </details>
+          </details>
+        </div>
       )}
 
       {/* Guest Profile */}
