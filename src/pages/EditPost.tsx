@@ -209,6 +209,40 @@ export default function EditPost() {
           </div>
         </BlockCard>
 
+        <BlockCard title="Oberes Bild (nach Gast-Profil)">
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Bild-URL</Label>
+              <Input value={blocks.top_image_url || ""} onChange={(e) => updateBlock("top_image_url", e.target.value)} placeholder="https://example.com/bild.jpg" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Link-URL (wohin das Bild verlinkt)</Label>
+              <Input value={blocks.top_image_link || ""} onChange={(e) => updateBlock("top_image_link", e.target.value)} placeholder="https://example.com" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Alt-Text</Label>
+              <Input value={blocks.top_image_alt || ""} onChange={(e) => updateBlock("top_image_alt", e.target.value)} placeholder="Bildbeschreibung" />
+            </div>
+          </div>
+        </BlockCard>
+
+        <BlockCard title="Mittleres Bild (nach Sektion 3)">
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Bild-URL</Label>
+              <Input value={blocks.mid_image_url || ""} onChange={(e) => updateBlock("mid_image_url", e.target.value)} placeholder="https://example.com/bild.jpg" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Link-URL (wohin das Bild verlinkt)</Label>
+              <Input value={blocks.mid_image_link || ""} onChange={(e) => updateBlock("mid_image_link", e.target.value)} placeholder="https://example.com" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Alt-Text</Label>
+              <Input value={blocks.mid_image_alt || ""} onChange={(e) => updateBlock("mid_image_alt", e.target.value)} placeholder="Bildbeschreibung" />
+            </div>
+          </div>
+        </BlockCard>
+
         <BlockCard title="Bild am Textende">
           <div className="space-y-3">
             <div>
