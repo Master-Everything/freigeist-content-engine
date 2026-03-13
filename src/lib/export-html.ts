@@ -98,6 +98,19 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     }
   }
 
+  // End Image
+  if (blocks.end_image_url) {
+    const imgTag = `<img src="${esc(blocks.end_image_url)}" alt="${esc(blocks.end_image_alt || "")}" style="width:100%;border-radius:12px" />`;
+    if (blocks.end_image_link) {
+      lines.push(`<div class="freigeist-end-image" style="margin:2em 0">`);
+      lines.push(`  <a href="${esc(blocks.end_image_link)}" target="_blank" rel="noopener noreferrer">${imgTag}</a>`);
+      lines.push(`</div>`);
+    } else {
+      lines.push(`<div class="freigeist-end-image" style="margin:2em 0">${imgTag}</div>`);
+    }
+    lines.push("");
+  }
+
   // Additional Video
   if (blocks.additional_video_embed) {
     const addId = extractYouTubeId(blocks.additional_video_embed);

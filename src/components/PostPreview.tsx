@@ -1,6 +1,6 @@
 import { Post, PostBlocks } from "@/types/post";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { User, ExternalLink } from "lucide-react";
+import { User } from "lucide-react";
 import { markdownToReactHtml } from "@/lib/markdown";
 
 function extractYouTubeId(url: string): string | null {
@@ -30,10 +30,11 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
 
   return (
     <article className="mx-auto max-w-2xl px-6 py-10">
+      {/* Hero */}
       <h1 className="font-display text-3xl font-bold leading-tight mb-3">{post.interview_title}</h1>
-
       {b.excerpt && <p className="text-lg text-muted-foreground mb-8">{b.excerpt}</p>}
 
+      {/* Main Video */}
       {mainVideoId && (
         <div className="aspect-video w-full overflow-hidden rounded-xl mb-10">
           <iframe
@@ -45,6 +46,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </div>
       )}
 
+      {/* Summary Accordion */}
       {(b.summary_box_title || b.summary_lead || summaryParagraphs.length > 0) && (
         <details open className="mb-10 rounded-xl border-l-4 border-primary bg-primary/5 px-6 py-4">
           <summary className="cursor-pointer list-none font-display text-xl font-bold [&::-webkit-details-marker]:hidden">
@@ -63,6 +65,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </details>
       )}
 
+      {/* Guest Profile */}
       {(b.guest_short_bio || b.guest_image_url) && (
         <div className="rounded-xl bg-muted/50 p-6 mb-6 flex gap-5 items-start">
           <Avatar className="h-20 w-20 shrink-0">
@@ -78,6 +81,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </div>
       )}
 
+      {/* CTA Button 1: Guest Website */}
       {b.guest_website_cta && (
         <div className="mb-10 text-center">
           <a
@@ -91,6 +95,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </div>
       )}
 
+      {/* Content Sections 1-6 with Affiliate CTA after Section 3 */}
       {([1, 2, 3, 4, 5, 6] as const).map((n) => {
         const title = b[`section_${n}_title` as keyof PostBlocks] as string;
         const content = b[`section_${n}_body` as keyof PostBlocks] as string;
@@ -124,6 +129,32 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         );
       })}
 
+      {/* End Image (one image at the end, before additional video) */}
+      {b.end_image_url ? (
+        <div className="mb-10">
+          {b.end_image_link ? (
+            <a href={b.end_image_link} target="_blank" rel="noopener noreferrer" className="block">
+              <img
+                src={b.end_image_url}
+                alt={b.end_image_alt || ""}
+                className="w-full rounded-xl"
+              />
+            </a>
+          ) : (
+            <img
+              src={b.end_image_url}
+              alt={b.end_image_alt || ""}
+              className="w-full rounded-xl"
+            />
+          )}
+        </div>
+      ) : (
+        <div className="mb-10 flex items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/20 py-16">
+          <p className="text-sm text-muted-foreground">Bild hier einfügen (Bild am Textende)</p>
+        </div>
+      )}
+
+      {/* Additional Video */}
       {additionalVideoId && (
         <div className="aspect-video w-full overflow-hidden rounded-xl mb-10">
           <iframe

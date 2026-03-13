@@ -29,6 +29,9 @@ export interface PostBlocks {
   resource_notes?: string;
   cta_affiliate_url?: string;
   cta_affiliate_label?: string;
+  end_image_url?: string;
+  end_image_link?: string;
+  end_image_alt?: string;
 }
 
 export interface Post {
