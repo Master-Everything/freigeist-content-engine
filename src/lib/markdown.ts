@@ -13,7 +13,7 @@ export function markdownToHtml(md: string): string {
 
   function flushList() {
     if (listBuffer.length > 0) {
-      blocks.push(`<ul>${listBuffer.map((li) => `<li>${inlineFormat(li)}</li>`).join("")}</ul>`);
+      blocks.push(`<ul>${listBuffer.map((li) => `<li style="line-height:1.8">${inlineFormat(li)}</li>`).join("")}</ul>`);
       listBuffer = [];
     }
   }
@@ -39,18 +39,18 @@ export function markdownToHtml(md: string): string {
 
     // ### → h4 (because section title is already h2, ## maps to h3)
     if (/^###\s+/.test(line)) {
-      blocks.push(`<h4>${inlineFormat(line.replace(/^###\s+/, ""))}</h4>`);
+      blocks.push(`<h4 style="font-size:18px;font-weight:700;margin-top:1em;margin-bottom:0.5em">${inlineFormat(line.replace(/^###\s+/, ""))}</h4>`);
       continue;
     }
 
     // ## → h3
     if (/^##\s+/.test(line)) {
-      blocks.push(`<h3>${inlineFormat(line.replace(/^##\s+/, ""))}</h3>`);
+      blocks.push(`<h3 style="font-size:20px;font-weight:700;margin-top:1.5em;margin-bottom:0.75em">${inlineFormat(line.replace(/^##\s+/, ""))}</h3>`);
       continue;
     }
 
     // Regular paragraph line
-    blocks.push(`<p>${inlineFormat(line)}</p>`);
+    blocks.push(`<p style="font-size:16px;line-height:1.8;margin-bottom:1em">${inlineFormat(line)}</p>`);
   }
 
   flushList();

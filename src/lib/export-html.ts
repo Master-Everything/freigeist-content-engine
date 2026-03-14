@@ -63,8 +63,8 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
       lines.push(`  <img src="${esc(blocks.guest_image_url)}" alt="${esc(guestName)}" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:1/1" />`);
     }
     lines.push(`  <div class="freigeist-guest-bio">`);
-    lines.push(`    <h2 style="font-size:1.25em;font-weight:700;margin-bottom:0.75em">${esc(guestName)}</h2>`);
-    lines.push(`    <p style="text-align:justify;line-height:1.7">${esc(blocks.guest_short_bio)}</p>`);
+    lines.push(`    <h2 style="font-size:1.5em;font-weight:700;margin-bottom:0.75em">${esc(guestName)}</h2>`);
+    lines.push(`    <p style="text-align:justify;font-size:16px;line-height:1.7">${esc(blocks.guest_short_bio)}</p>`);
     lines.push(`  </div>`);
     lines.push(`</div>`);
     lines.push("");
