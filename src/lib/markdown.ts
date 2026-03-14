@@ -39,7 +39,7 @@ export function markdownToHtml(md: string): string {
 
     // ### → h4 (because section title is already h2, ## maps to h3)
     if (/^###\s+/.test(line)) {
-      blocks.push(`<h4>${inlineFormat(line.replace(/^###\s+/, ""))}</h4>`);
+      blocks.push(`<h4 style="font-size:18px;font-weight:700;margin-top:1em;margin-bottom:0.5em">${inlineFormat(line.replace(/^###\s+/, ""))}</h4>`);
       continue;
     }
 
