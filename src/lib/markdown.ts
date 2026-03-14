@@ -45,7 +45,7 @@ export function markdownToHtml(md: string): string {
 
     // ## → h3
     if (/^##\s+/.test(line)) {
-      blocks.push(`<h3>${inlineFormat(line.replace(/^##\s+/, ""))}</h3>`);
+      blocks.push(`<h3 style="font-size:20px;font-weight:700;margin-top:1.5em;margin-bottom:0.75em">${inlineFormat(line.replace(/^##\s+/, ""))}</h3>`);
       continue;
     }
 
