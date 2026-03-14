@@ -95,7 +95,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     const content = blocks[`section_${n}_body` as keyof PostBlocks] as string;
     if (title || content) {
       lines.push(`<section class="freigeist-content-section">`);
-      if (title) lines.push(`  <h2>${esc(title)}</h2>`);
+      if (title) lines.push(`  <h2 style="font-size:24px;font-weight:700;margin-bottom:1em">${esc(title)}</h2>`);
       if (content) {
         lines.push(markdownToHtml(content));
       }
