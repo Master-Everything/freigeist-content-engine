@@ -61,7 +61,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
             </summary>
             <div className="mt-4 space-y-4">
               {summaryParagraphs.filter(Boolean).map((para: string, i: number) => (
-                <p key={i} className="text-base font-normal leading-relaxed text-foreground/90">
+                <p key={i} className="text-base font-normal leading-[1.7] text-foreground/90">
                   {renderInlineBold(para)}
                 </p>
               ))}

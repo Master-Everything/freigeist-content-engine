@@ -13,7 +13,7 @@ export function markdownToHtml(md: string): string {
 
   function flushList() {
     if (listBuffer.length > 0) {
-      blocks.push(`<ul>${listBuffer.map((li) => `<li style="line-height:1.8">${inlineFormat(li)}</li>`).join("")}</ul>`);
+      blocks.push(`<ul style="list-style:disc;padding-left:1.25em;margin-bottom:1em">${listBuffer.map((li) => `<li style="font-size:16px;line-height:1.8">${inlineFormat(li)}</li>`).join("")}</ul>`);
       listBuffer = [];
     }
   }
@@ -39,7 +39,7 @@ export function markdownToHtml(md: string): string {
 
     // ### → h4 (because section title is already h2, ## maps to h3)
     if (/^###\s+/.test(line)) {
-      blocks.push(`<h4 style="font-size:18px;font-weight:700;margin-top:1em;margin-bottom:0.5em">${inlineFormat(line.replace(/^###\s+/, ""))}</h4>`);
+      blocks.push(`<h4 style="font-size:18px;font-weight:600;margin-top:1em;margin-bottom:0.5em">${inlineFormat(line.replace(/^###\s+/, ""))}</h4>`);
       continue;
     }
 
