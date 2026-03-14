@@ -57,13 +57,14 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
 
   // Guest Profile
   if (blocks.guest_short_bio) {
-    lines.push(`<div class="freigeist-guest-profile">`);
+    lines.push(`<h2 style="text-align:center;font-size:1.5em;font-weight:700;font-style:italic;font-family:Georgia,serif;color:#14b8a6;margin-bottom:1.5em">Entdecke mehr über ${esc(guestName)} und seine inspirierenden Projekte</h2>`);
+    lines.push(`<div class="freigeist-guest-profile" style="display:grid;grid-template-columns:2fr 3fr;gap:1.5em;align-items:start;background:#f5f5f5;border-radius:12px;padding:1.5em">`);
     if (blocks.guest_image_url) {
-      lines.push(`  <img src="${esc(blocks.guest_image_url)}" alt="${esc(guestName)}" />`);
+      lines.push(`  <img src="${esc(blocks.guest_image_url)}" alt="${esc(guestName)}" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:1/1" />`);
     }
     lines.push(`  <div class="freigeist-guest-bio">`);
-    lines.push(`    <h2>${esc(guestName)}</h2>`);
-    lines.push(`    <p>${esc(blocks.guest_short_bio)}</p>`);
+    lines.push(`    <h2 style="font-size:1.25em;font-weight:700;margin-bottom:0.75em">${esc(guestName)}</h2>`);
+    lines.push(`    <p style="text-align:justify;line-height:1.7">${esc(blocks.guest_short_bio)}</p>`);
     lines.push(`  </div>`);
     lines.push(`</div>`);
     lines.push("");

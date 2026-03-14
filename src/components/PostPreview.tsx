@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Post, PostBlocks } from "@/types/post";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
 import { User } from "lucide-react";
 import { markdownToReactHtml } from "@/lib/markdown";
 
@@ -72,16 +72,26 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
 
       {/* Guest Profile */}
       {(b.guest_short_bio || b.guest_image_url) && (
-        <div className="rounded-xl bg-muted/50 p-6 mb-6 flex gap-5 items-start">
-          <Avatar className="h-20 w-20 shrink-0">
+        <div className="mb-10">
+          <h2 className="text-center text-2xl font-bold italic text-primary mb-6" style={{ fontFamily: 'Georgia, serif' }}>
+            Entdecke mehr über {post.guest_name} und seine inspirierenden Projekte
+          </h2>
+          <div className="rounded-xl bg-muted/30 p-6 grid grid-cols-[2fr_3fr] gap-6 items-start">
             {b.guest_image_url ? (
-              <AvatarImage src={b.guest_image_url} alt={post.guest_name} />
-            ) : null}
-            <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-display text-lg font-semibold mb-2">Über {post.guest_name}</h3>
-            <p className="text-muted-foreground">{b.guest_short_bio}</p>
+              <img
+                src={b.guest_image_url}
+                alt={post.guest_name}
+                className="w-full rounded-lg object-cover aspect-square"
+              />
+            ) : (
+              <div className="w-full rounded-lg bg-muted flex items-center justify-center aspect-square">
+                <User className="h-12 w-12 text-muted-foreground" />
+              </div>
+            )}
+            <div>
+              <h3 className="font-display text-xl font-bold mb-3">{post.guest_name}</h3>
+              <p className="text-foreground/80 text-sm leading-relaxed text-justify">{b.guest_short_bio}</p>
+            </div>
           </div>
         </div>
       )}
