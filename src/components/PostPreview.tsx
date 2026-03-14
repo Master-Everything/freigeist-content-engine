@@ -89,7 +89,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
               </div>
             )}
             <div>
-              <h3 className="font-display text-xl font-bold mb-3">{post.guest_name}</h3>
+              <h3 className="font-display text-2xl font-bold mb-3">{post.guest_name}</h3>
               <p className="text-foreground/80 text-base leading-[1.7] text-justify">{b.guest_short_bio}</p>
             </div>
           </div>
