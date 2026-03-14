@@ -50,7 +50,7 @@ export function markdownToHtml(md: string): string {
     }
 
     // Regular paragraph line
-    blocks.push(`<p>${inlineFormat(line)}</p>`);
+    blocks.push(`<p style="font-size:16px;line-height:1.8;margin-bottom:1em">${inlineFormat(line)}</p>`);
   }
 
   flushList();
