@@ -13,7 +13,7 @@ export function markdownToHtml(md: string): string {
 
   function flushList() {
     if (listBuffer.length > 0) {
-      blocks.push(`<ul>${listBuffer.map((li) => `<li>${inlineFormat(li)}</li>`).join("")}</ul>`);
+      blocks.push(`<ul>${listBuffer.map((li) => `<li style="line-height:1.8">${inlineFormat(li)}</li>`).join("")}</ul>`);
       listBuffer = [];
     }
   }
