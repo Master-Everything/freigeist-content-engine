@@ -57,7 +57,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
           <details className="rounded-xl border border-border bg-background px-6 py-4" open={summaryOpen} onToggle={(e) => setSummaryOpen((e.target as HTMLDetailsElement).open)}>
             <summary className="cursor-pointer list-none font-display text-base font-semibold [&::-webkit-details-marker]:hidden flex items-center gap-3">
               <span className="inline-flex items-center justify-center w-6 h-6 shrink-0 text-lg font-bold text-foreground">{summaryOpen ? "−" : "+"}</span>
-              {b.summary_lead ? <>— {b.summary_lead}</> : "— Zusammenfassung"}
+              {b.summary_lead || "Zusammenfassung"}
             </summary>
             <div className="mt-4 space-y-4">
               {summaryParagraphs.filter(Boolean).map((para: string, i: number) => (

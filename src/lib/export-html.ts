@@ -47,7 +47,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
       lines.push(`<h2 style="font-size:1.5em;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1em">${esc(blocks.summary_box_title)}</h2>`);
     }
     lines.push(`<details class="freigeist-summary-box" style="border:1px solid #e5e7eb;border-radius:12px;padding:1.5em">`);
-    lines.push(`  <summary style="cursor:pointer;list-style:none;font-weight:600;display:flex;align-items:center;gap:0.75em"><span style="font-size:1.2em;font-weight:700">+</span> — ${esc(blocks.summary_lead || "Zusammenfassung")}</summary>`);
+    lines.push(`  <summary style="cursor:pointer;list-style:none;font-weight:600;display:flex;align-items:center;gap:0.75em"><span style="font-size:1.2em;font-weight:700">+</span> ${esc(blocks.summary_lead || "Zusammenfassung")}</summary>`);
     for (const para of summaryParagraphs) {
       if (para) lines.push(`  <p style="margin-top:1em;line-height:1.7">${renderInlineBold(para)}</p>`);
     }
