@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Post, PostBlocks } from "@/types/post";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
 import { User } from "lucide-react";
 import { markdownToReactHtml } from "@/lib/markdown";
 
