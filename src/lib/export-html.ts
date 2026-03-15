@@ -122,7 +122,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     // Affiliate CTA after section 3
     if (n === 3 && blocks.cta_affiliate_url) {
       lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
-      lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#6EC1E4;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
+      lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2A809B;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
       lines.push(`  <p style="margin-top:8px;font-size:12px;color:#888;font-style:italic">Es handelt sich um einen Empfehlungslink</p>`);
       lines.push(`</div>`);
       lines.push("");
