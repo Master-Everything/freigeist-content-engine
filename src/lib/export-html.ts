@@ -91,7 +91,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
   // Guest Website CTA Button
   if (blocks.guest_website_cta) {
     lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
-    lines.push(`  <a class="cta-button" href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#6EC1E4;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
+    lines.push(`  <a class="cta-button" href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2A809B;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
     lines.push(`</div>`);
     lines.push("");
   }
