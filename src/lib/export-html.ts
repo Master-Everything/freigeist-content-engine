@@ -64,7 +64,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
 
   // Guest Profile
   if (blocks.guest_short_bio) {
-    lines.push(`<h2 style="text-align:center;font-size:44px;font-weight:900;font-family:&quot;Roboto Condensed&quot;,sans-serif;color:#14b8a6;margin-bottom:1.5em">Entdecke mehr über ${esc(guestName)} und seine inspirierenden Projekte</h2>`);
+    lines.push(`<h2 style="text-align:center;font-size:44px;font-weight:900;font-family:&quot;Roboto Condensed&quot;,sans-serif;lines.push(`<h2 style="text-align:center;font-size:44px;font-weight:900;font-family:&quot;Roboto Condensed&quot;,sans-serif;color:#2A809B;margin-bottom:1.5em">Entdecke mehr über ${esc(guestName)} und seine inspirierenden Projekte</h2>`);;margin-bottom:1.5em">Entdecke mehr über ${esc(guestName)} und seine inspirierenden Projekte</h2>`);
     lines.push(`<div class="freigeist-guest-profile" style="display:grid;grid-template-columns:2fr 3fr;gap:1.5em;align-items:start;background:#f5f5f5;border-radius:12px;padding:1.5em">`);
     if (blocks.guest_image_url) {
       lines.push(`  <img src="${esc(blocks.guest_image_url)}" alt="${esc(guestName)}" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:1/1" />`);
