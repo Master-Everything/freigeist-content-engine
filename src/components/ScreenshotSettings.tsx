@@ -83,7 +83,7 @@ export function ScreenshotSettings() {
             {testResult && (
               <div className="flex items-center gap-1.5">
                 {testResult.success ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
                 ) : (
                   <XCircle className="h-4 w-4 text-destructive" />
                 )}
