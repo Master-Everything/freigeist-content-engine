@@ -206,6 +206,21 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
         </div>
       )}
 
+      {/* CTA Button 3: Affiliate (unter End-Bild) */}
+      {b.cta_affiliate_url && (
+        <div className="mb-10 text-center">
+          <a
+            href={b.cta_affiliate_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block rounded-[3px] bg-[#2A809B] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
+          >
+            🔗 {b.cta_affiliate_label || "Informationen & Store"}
+          </a>
+          <p className="mt-2 text-xs text-muted-foreground italic">Es handelt sich um einen Empfehlungslink</p>
+        </div>
+      )}
+
       {/* Additional Video */}
       {additionalVideoId && (
         <div className="aspect-video w-full overflow-hidden rounded-xl mb-10">
