@@ -52,8 +52,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      const imageBuffer = await response.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+      const imageBuffer = new Uint8Array(await response.arrayBuffer());
+      let binary = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < imageBuffer.length; i += chunkSize) {
+        binary += String.fromCharCode(...imageBuffer.subarray(i, i + chunkSize));
+      }
+      const base64 = btoa(binary);
 
       return new Response(JSON.stringify({ image: base64, format: 'png' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
