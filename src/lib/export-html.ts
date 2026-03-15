@@ -21,6 +21,13 @@ function renderInlineBold(text: string): string {
 export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: string): string {
   const lines: string[] = [];
 
+  // Inject bounce-in animation styles
+  lines.push(`<style>`);
+  lines.push(`@keyframes bounce-in { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }`);
+  lines.push(`.cta-button:hover { animation: bounce-in 0.4s ease; }`);
+  lines.push(`</style>`);
+  lines.push("");
+
   // Title
   lines.push(`<h1>${esc(postTitle)}</h1>`);
   lines.push("");
