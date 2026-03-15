@@ -457,7 +457,7 @@ export function ScreenshotTool({ post, blocks, onUpdateBlock }: ScreenshotToolPr
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-xs font-medium">{label}</span>
-                    {slot.status === "done" && <CheckCircle2 className="h-3 w-3 text-green-600" />}
+                    {slot.status === "done" && <CheckCircle2 className="h-3 w-3 text-primary" />}
                     {slot.status === "failed" && <XCircle className="h-3 w-3 text-destructive" />}
                     {slot.status === "uploading" && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
                     {slot.status === "empty" && <Badge variant="outline" className="text-[9px]">Leer</Badge>}
