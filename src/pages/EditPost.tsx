@@ -330,6 +330,10 @@ export default function EditPost() {
     </div>
   );
 
+  const screenshotContent = post ? (
+    <ScreenshotTool post={post} blocks={blocks} onUpdateBlock={updateBlock} />
+  ) : null;
+
   const previewContent = post ? (
     <div className="h-full overflow-y-auto bg-muted/30">
       <div className="sticky top-0 z-10 border-b bg-muted/60 backdrop-blur px-6 py-2">
