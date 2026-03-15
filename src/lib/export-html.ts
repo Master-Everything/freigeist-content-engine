@@ -23,8 +23,8 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
 
   // Inject bounce-in animation styles
   lines.push(`<style>`);
-  lines.push(`@keyframes bounce-in { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }`);
-  lines.push(`.cta-button:hover { animation: bounce-in 0.4s ease; }`);
+  lines.push(`.cta-button { transition: all 0.3s ease; }`);
+  lines.push(`.cta-button:hover { background: linear-gradient(to right, #35A89E, #2A809B) !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }`);
   lines.push(`</style>`);
   lines.push("");
 
@@ -91,7 +91,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
   // Guest Website CTA Button
   if (blocks.guest_website_cta) {
     lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
-    lines.push(`  <a class="cta-button" href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2A809B;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
+    lines.push(`  <a class="cta-button" href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 32px;background:linear-gradient(to right,#2A809B,#3BB8A8);color:#fff;border-radius:8px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
     lines.push(`</div>`);
     lines.push("");
   }
@@ -122,7 +122,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     // Affiliate CTA after section 3
     if (n === 3 && blocks.cta_affiliate_url) {
       lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
-      lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2A809B;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
+      lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 32px;background:linear-gradient(to right,#2A809B,#3BB8A8);color:#fff;border-radius:8px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
       lines.push(`  <p style="margin-top:8px;font-size:12px;color:#888;font-style:italic">Es handelt sich um einen Empfehlungslink</p>`);
       lines.push(`</div>`);
       lines.push("");
@@ -145,7 +145,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
   // CTA Button 3 (Affiliate, unter End-Bild)
   if (blocks.cta_affiliate_url) {
     lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
-    lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2A809B;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
+    lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 32px;background:linear-gradient(to right,#2A809B,#3BB8A8);color:#fff;border-radius:8px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
     lines.push(`  <p style="margin-top:8px;font-size:12px;color:#888;font-style:italic">Es handelt sich um einen Empfehlungslink</p>`);
     lines.push(`</div>`);
     lines.push("");
