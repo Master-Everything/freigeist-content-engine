@@ -17,6 +17,7 @@ import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PostPreview } from "@/components/PostPreview";
 import { SourceDataEditor } from "@/components/SourceDataEditor";
+import { ScreenshotTool } from "@/components/ScreenshotTool";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const defaultBlocks: PostBlocks = {
@@ -329,6 +330,10 @@ export default function EditPost() {
     </div>
   );
 
+  const screenshotContent = post ? (
+    <ScreenshotTool post={post} blocks={blocks} onUpdateBlock={updateBlock} />
+  ) : null;
+
   const previewContent = post ? (
     <div className="h-full overflow-y-auto bg-muted/30">
       <div className="sticky top-0 z-10 border-b bg-muted/60 backdrop-blur px-6 py-2">
@@ -366,25 +371,53 @@ export default function EditPost() {
           <Tabs defaultValue="editor" className="flex h-full flex-col">
             <TabsList className="mx-4 mt-2 shrink-0">
               <TabsTrigger value="editor">Editor</TabsTrigger>
+              <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
               <TabsTrigger value="preview">Vorschau</TabsTrigger>
             </TabsList>
             <TabsContent value="editor" className="flex-1 min-h-0 mt-0">
               {editorContent}
+            </TabsContent>
+            <TabsContent value="screenshots" className="flex-1 min-h-0 mt-0">
+              {screenshotContent}
             </TabsContent>
             <TabsContent value="preview" className="flex-1 min-h-0 mt-0">
               {previewContent}
             </TabsContent>
           </Tabs>
         ) : (
-          <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={50} minSize={30}>
-              {editorContent}
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50} minSize={30}>
-              {previewContent}
-            </ResizablePanel>
-          </ResizablePanelGroup>
+          <div className="flex h-full flex-col">
+            <Tabs defaultValue="editor" className="flex h-full flex-col">
+              <div className="flex">
+                <div className="w-1/2 border-b">
+                  <TabsList className="mx-4 mt-1">
+                    <TabsTrigger value="editor">Editor</TabsTrigger>
+                    <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
+                  </TabsList>
+                </div>
+                <div className="w-1/2 border-b px-6 py-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live-Vorschau</p>
+                </div>
+              </div>
+              <div className="flex-1 min-h-0">
+                <ResizablePanelGroup direction="horizontal">
+                  <ResizablePanel defaultSize={50} minSize={30}>
+                    <TabsContent value="editor" className="h-full mt-0">
+                      {editorContent}
+                    </TabsContent>
+                    <TabsContent value="screenshots" className="h-full mt-0">
+                      {screenshotContent}
+                    </TabsContent>
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel defaultSize={50} minSize={30}>
+                    <div className="h-full overflow-y-auto bg-muted/30">
+                      <PostPreview post={post!} blocks={blocks} />
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </div>
+            </Tabs>
+          </div>
         )}
       </div>
     </div>
