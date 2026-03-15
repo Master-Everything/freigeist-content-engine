@@ -170,7 +170,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
                   href={b.cta_affiliate_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="inline-block rounded-[3px] bg-[#6EC1E4] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
                 >
                   🔗 {b.cta_affiliate_label || "Informationen & Store"}
                 </a>
