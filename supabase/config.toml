@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.youtube-transcript]
 verify_jwt = false
+
+[functions.screenshot-capture]
+verify_jwt = false
+
+[functions.wp-upload]
+verify_jwt = false
+
+[functions.wp-upload-ftp]
+verify_jwt = false
