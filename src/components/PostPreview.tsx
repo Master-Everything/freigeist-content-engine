@@ -120,7 +120,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
             href={b.guest_website_cta}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block rounded-[3px] bg-[#6EC1E4] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
+            className="inline-block rounded-[3px] bg-[#2A809B] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
           >
             ✨ 👉 Zur Website von {post.guest_name} ✨
           </a>
