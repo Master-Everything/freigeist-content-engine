@@ -429,7 +429,7 @@ export function ScreenshotTool({ post, blocks, onUpdateBlock }: ScreenshotToolPr
               )}
             </div>
             {!nextEmptySlot() && (
-              <p className="text-xs text-amber-600 mt-2">Alle 3 Slots sind belegt. Entferne ein Bild, um einen neuen Screenshot zu machen.</p>
+              <p className="text-xs text-destructive mt-2">Alle 3 Slots sind belegt. Entferne ein Bild, um einen neuen Screenshot zu machen.</p>
             )}
           </CardContent>
         </Card>
