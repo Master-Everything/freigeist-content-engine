@@ -73,7 +73,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
       {/* Guest Profile */}
       {(b.guest_short_bio || b.guest_image_url) && (
         <div className="mb-10">
-          <h2 className="text-center font-black text-primary mb-6" style={{ fontFamily: '"Roboto Condensed", sans-serif', fontSize: '44px' }}>
+          <h2 className="text-center font-black text-[#2A809B] mb-6" style={{ fontFamily: '"Roboto Condensed", sans-serif', fontSize: '44px' }}>
             Entdecke mehr über {post.guest_name} und seine inspirierenden Projekte
           </h2>
           <div className="rounded-xl bg-muted/30 p-6 grid grid-cols-[2fr_3fr] gap-6 items-start">
