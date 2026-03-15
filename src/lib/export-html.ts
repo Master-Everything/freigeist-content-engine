@@ -23,8 +23,8 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
 
   // Inject bounce-in animation styles
   lines.push(`<style>`);
-  lines.push(`@keyframes bounce-in { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }`);
-  lines.push(`.cta-button:hover { animation: bounce-in 0.4s ease; }`);
+  lines.push(`.cta-button { transition: all 0.3s ease; }`);
+  lines.push(`.cta-button:hover { background: linear-gradient(to right, #35A89E, #2A809B) !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }`);
   lines.push(`</style>`);
   lines.push("");
 
