@@ -73,7 +73,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
       {/* Guest Profile */}
       {(b.guest_short_bio || b.guest_image_url) && (
         <div className="mb-10">
-          <h2 className="text-center font-black text-primary mb-6" style={{ fontFamily: '"Roboto Condensed", sans-serif', fontSize: '44px' }}>
+          <h2 className="text-center font-black text-[#2A809B] mb-6" style={{ fontFamily: '"Roboto Condensed", sans-serif', fontSize: '44px' }}>
             Entdecke mehr über {post.guest_name} und seine inspirierenden Projekte
           </h2>
           <div className="rounded-xl bg-muted/30 p-6 grid grid-cols-[2fr_3fr] gap-6 items-start">
@@ -120,7 +120,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
             href={b.guest_website_cta}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block rounded-[3px] bg-[#6EC1E4] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
+            className="inline-block rounded-[3px] bg-[#2A809B] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
           >
             ✨ 👉 Zur Website von {post.guest_name} ✨
           </a>
@@ -170,7 +170,7 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
                   href={b.cta_affiliate_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block rounded-[3px] bg-[#6EC1E4] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
+                  className="inline-block rounded-[3px] bg-[#2A809B] px-6 py-3 text-[15px] font-bold text-white no-underline hover:animate-bounce-in transition-colors"
                 >
                   🔗 {b.cta_affiliate_label || "Informationen & Store"}
                 </a>

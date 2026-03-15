@@ -64,7 +64,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
 
   // Guest Profile
   if (blocks.guest_short_bio) {
-    lines.push(`<h2 style="text-align:center;font-size:44px;font-weight:900;font-family:&quot;Roboto Condensed&quot;,sans-serif;color:#14b8a6;margin-bottom:1.5em">Entdecke mehr über ${esc(guestName)} und seine inspirierenden Projekte</h2>`);
+    lines.push(`<h2 style="text-align:center;font-size:44px;font-weight:900;font-family:&quot;Roboto Condensed&quot;,sans-serif;color:#2A809B;margin-bottom:1.5em">Entdecke mehr über ${esc(guestName)} und seine inspirierenden Projekte</h2>`);
     lines.push(`<div class="freigeist-guest-profile" style="display:grid;grid-template-columns:2fr 3fr;gap:1.5em;align-items:start;background:#f5f5f5;border-radius:12px;padding:1.5em">`);
     if (blocks.guest_image_url) {
       lines.push(`  <img src="${esc(blocks.guest_image_url)}" alt="${esc(guestName)}" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:1/1" />`);
@@ -91,7 +91,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
   // Guest Website CTA Button
   if (blocks.guest_website_cta) {
     lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
-    lines.push(`  <a class="cta-button" href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#6EC1E4;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
+    lines.push(`  <a class="cta-button" href="${esc(blocks.guest_website_cta)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2A809B;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">✨ 👉 Zur Website von ${esc(guestName)} ✨</a>`);
     lines.push(`</div>`);
     lines.push("");
   }
@@ -122,7 +122,7 @@ export function generateHTML(blocks: PostBlocks, guestName: string, postTitle: s
     // Affiliate CTA after section 3
     if (n === 3 && blocks.cta_affiliate_url) {
       lines.push(`<div class="freigeist-cta" style="text-align:center;margin:2em 0">`);
-      lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#6EC1E4;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
+      lines.push(`  <a class="cta-button" href="${esc(blocks.cta_affiliate_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;background:#2A809B;color:#fff;border-radius:3px;font-size:15px;font-weight:700;text-decoration:none">🔗 ${esc(blocks.cta_affiliate_label || "Informationen & Store")}</a>`);
       lines.push(`  <p style="margin-top:8px;font-size:12px;color:#888;font-style:italic">Es handelt sich um einen Empfehlungslink</p>`);
       lines.push(`</div>`);
       lines.push("");
