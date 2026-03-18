@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
+  erfassung: { label: "In Erfassung", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
   draft: { label: "Entwurf", className: "bg-muted text-muted-foreground" },
   in_progress: { label: "In Arbeit", className: "bg-warning text-warning-foreground" },
   exported: { label: "Exportiert", className: "bg-success text-success-foreground" },
@@ -84,6 +85,7 @@ export default function Dashboard() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Status</SelectItem>
+              <SelectItem value="erfassung">In Erfassung</SelectItem>
               <SelectItem value="draft">Entwurf</SelectItem>
               <SelectItem value="in_progress">In Arbeit</SelectItem>
               <SelectItem value="exported">Exportiert</SelectItem>

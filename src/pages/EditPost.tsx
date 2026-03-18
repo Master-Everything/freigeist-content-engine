@@ -17,6 +17,7 @@ import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PostPreview } from "@/components/PostPreview";
 import { SourceDataEditor } from "@/components/SourceDataEditor";
+import { InlineImageUpload } from "@/components/InlineImageUpload";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const defaultBlocks: PostBlocks = {
@@ -115,6 +116,9 @@ export default function EditPost() {
     );
   }
 
+  const guestName = post?.guest_name || "";
+  const postId = id || "";
+
   const editorContent = (
     <div className="h-full overflow-y-auto p-6">
       <h2 className="font-display text-lg font-semibold mb-1">Block-Editor</h2>
@@ -135,14 +139,17 @@ export default function EditPost() {
       )}
 
       <div className="space-y-5">
+        {/* 1. Excerpt */}
         <BlockCard title="Kurzbeschreibung (Excerpt)" required>
           <Textarea value={blocks.excerpt} onChange={(e) => updateBlock("excerpt", e.target.value)} rows={2} />
         </BlockCard>
 
+        {/* 2. Main Video */}
         <BlockCard title="Hauptvideo (YouTube)" required>
           <Input value={blocks.main_video_url} onChange={(e) => updateBlock("main_video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
         </BlockCard>
 
+        {/* 3. Summary Box */}
         <BlockCard title="Zusammenfassungsbox" required>
           <div className="space-y-3">
             <div>
@@ -177,12 +184,18 @@ export default function EditPost() {
           </div>
         </BlockCard>
 
+        {/* 4. Guest Profile */}
         <BlockCard title="Gast-Profil" required>
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Bild-URL</Label>
-              <Input value={blocks.guest_image_url || ""} onChange={(e) => updateBlock("guest_image_url", e.target.value)} placeholder="https://example.com/photo.jpg" />
-            </div>
+            <InlineImageUpload
+              value={blocks.guest_image_url || ""}
+              onChange={(url) => updateBlock("guest_image_url", url)}
+              guestName={guestName}
+              postId={postId}
+              slot="guest_profile"
+              filenameIndex={0}
+              label="Profilbild-URL"
+            />
             <div>
               <Label className="text-xs text-muted-foreground">Kurzbiografie</Label>
               <Textarea value={blocks.guest_short_bio} onChange={(e) => updateBlock("guest_short_bio", e.target.value)} rows={3} />
@@ -202,12 +215,17 @@ export default function EditPost() {
           </div>
         </BlockCard>
 
+        {/* 5. Top Image */}
         <BlockCard title="Oberes Bild (nach Gast-Profil)">
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Bild-URL</Label>
-              <Input value={blocks.top_image_url || ""} onChange={(e) => updateBlock("top_image_url", e.target.value)} placeholder="https://example.com/bild.jpg" />
-            </div>
+            <InlineImageUpload
+              value={blocks.top_image_url || ""}
+              onChange={(url) => updateBlock("top_image_url", url)}
+              guestName={guestName}
+              postId={postId}
+              slot="top"
+              filenameIndex={1}
+            />
             <div>
               <Label className="text-xs text-muted-foreground">Link-URL</Label>
               <Input value={blocks.top_image_link || ""} onChange={(e) => updateBlock("top_image_link", e.target.value)} />
@@ -219,12 +237,26 @@ export default function EditPost() {
           </div>
         </BlockCard>
 
+        {/* 6. Section 1 */}
+        <SectionCard n={1} blocks={blocks} updateBlock={updateBlock} />
+
+        {/* 7. Section 2 */}
+        <SectionCard n={2} blocks={blocks} updateBlock={updateBlock} />
+
+        {/* 8. Section 3 */}
+        <SectionCard n={3} blocks={blocks} updateBlock={updateBlock} />
+
+        {/* 9. Mid Image (after Section 3) */}
         <BlockCard title="Mittleres Bild (nach Sektion 3)">
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Bild-URL</Label>
-              <Input value={blocks.mid_image_url || ""} onChange={(e) => updateBlock("mid_image_url", e.target.value)} />
-            </div>
+            <InlineImageUpload
+              value={blocks.mid_image_url || ""}
+              onChange={(url) => updateBlock("mid_image_url", url)}
+              guestName={guestName}
+              postId={postId}
+              slot="mid"
+              filenameIndex={2}
+            />
             <div>
               <Label className="text-xs text-muted-foreground">Link-URL</Label>
               <Input value={blocks.mid_image_link || ""} onChange={(e) => updateBlock("mid_image_link", e.target.value)} />
@@ -236,12 +268,26 @@ export default function EditPost() {
           </div>
         </BlockCard>
 
+        {/* 10. Section 4 */}
+        <SectionCard n={4} blocks={blocks} updateBlock={updateBlock} />
+
+        {/* 11. Section 5 */}
+        <SectionCard n={5} blocks={blocks} updateBlock={updateBlock} />
+
+        {/* 12. Section 6 */}
+        <SectionCard n={6} blocks={blocks} updateBlock={updateBlock} />
+
+        {/* 13. End Image */}
         <BlockCard title="Bild am Textende">
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Bild-URL</Label>
-              <Input value={blocks.end_image_url || ""} onChange={(e) => updateBlock("end_image_url", e.target.value)} />
-            </div>
+            <InlineImageUpload
+              value={blocks.end_image_url || ""}
+              onChange={(url) => updateBlock("end_image_url", url)}
+              guestName={guestName}
+              postId={postId}
+              slot="end"
+              filenameIndex={3}
+            />
             <div>
               <Label className="text-xs text-muted-foreground">Link-URL</Label>
               <Input value={blocks.end_image_link || ""} onChange={(e) => updateBlock("end_image_link", e.target.value)} />
@@ -253,28 +299,7 @@ export default function EditPost() {
           </div>
         </BlockCard>
 
-        {([1, 2, 3, 4, 5, 6] as const).map((n) => (
-          <BlockCard key={n} title={`Inhaltsabschnitt ${n}`} required={n <= 3}>
-            <div className="space-y-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Titel</Label>
-                <Input
-                  value={blocks[`section_${n}_title` as keyof PostBlocks] as string}
-                  onChange={(e) => updateBlock(`section_${n}_title` as keyof PostBlocks, e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Inhalt (Markdown)</Label>
-                <Textarea
-                  value={blocks[`section_${n}_body` as keyof PostBlocks] as string}
-                  onChange={(e) => updateBlock(`section_${n}_body` as keyof PostBlocks, e.target.value)}
-                  rows={6}
-                />
-              </div>
-            </div>
-          </BlockCard>
-        ))}
-
+        {/* 14. Optional Blocks */}
         <div className="pt-2">
           <h3 className="font-display text-base font-semibold mb-3">Optionale Blöcke</h3>
           <div className="space-y-4">
@@ -377,6 +402,30 @@ function BlockCard({ title, required, children }: { title: string; required?: bo
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
+  );
+}
+
+function SectionCard({ n, blocks, updateBlock }: { n: number; blocks: PostBlocks; updateBlock: (field: keyof PostBlocks, value: any) => void }) {
+  return (
+    <BlockCard title={`Inhaltsabschnitt ${n}`} required={n <= 3}>
+      <div className="space-y-2">
+        <div>
+          <Label className="text-xs text-muted-foreground">Titel</Label>
+          <Input
+            value={blocks[`section_${n}_title` as keyof PostBlocks] as string}
+            onChange={(e) => updateBlock(`section_${n}_title` as keyof PostBlocks, e.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Inhalt (Markdown)</Label>
+          <Textarea
+            value={blocks[`section_${n}_body` as keyof PostBlocks] as string}
+            onChange={(e) => updateBlock(`section_${n}_body` as keyof PostBlocks, e.target.value)}
+            rows={6}
+          />
+        </div>
+      </div>
+    </BlockCard>
   );
 }
 
