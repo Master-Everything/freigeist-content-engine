@@ -9,15 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Download, Save, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PostPreview } from "@/components/PostPreview";
 import { SourceDataEditor } from "@/components/SourceDataEditor";
-import { ScreenshotTool } from "@/components/ScreenshotTool";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const defaultBlocks: PostBlocks = {
@@ -28,18 +27,12 @@ const defaultBlocks: PostBlocks = {
   summary_paragraphs: [],
   guest_short_bio: "",
   guest_website_cta: "",
-  section_1_title: "",
-  section_1_body: "",
-  section_2_title: "",
-  section_2_body: "",
-  section_3_title: "",
-  section_3_body: "",
-  section_4_title: "",
-  section_4_body: "",
-  section_5_title: "",
-  section_5_body: "",
-  section_6_title: "",
-  section_6_body: "",
+  section_1_title: "", section_1_body: "",
+  section_2_title: "", section_2_body: "",
+  section_3_title: "", section_3_body: "",
+  section_4_title: "", section_4_body: "",
+  section_5_title: "", section_5_body: "",
+  section_6_title: "", section_6_body: "",
 };
 
 export default function EditPost() {
@@ -69,7 +62,6 @@ export default function EditPost() {
     const p = { ...data, blocks: data.blocks as unknown as PostBlocks | null } as Post;
     setPost(p);
     if (p.blocks) {
-      // Migrate old summary_points to summary_paragraphs if needed
       const migrated = { ...defaultBlocks, ...p.blocks };
       if (!migrated.summary_paragraphs?.length && (p.blocks as any).summary_points?.length) {
         migrated.summary_paragraphs = (p.blocks as any).summary_points;
@@ -200,7 +192,7 @@ export default function EditPost() {
               <Input value={blocks.guest_website_cta || ""} onChange={(e) => updateBlock("guest_website_cta", e.target.value)} placeholder="https://gast-website.de" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Affiliate-Button URL (Button 2, nach Sektion 3)</Label>
+              <Label className="text-xs text-muted-foreground">Affiliate-Button URL (Button 2)</Label>
               <Input value={blocks.cta_affiliate_url || ""} onChange={(e) => updateBlock("cta_affiliate_url", e.target.value)} placeholder="https://affiliate-link.de" />
             </div>
             <div>
@@ -217,12 +209,12 @@ export default function EditPost() {
               <Input value={blocks.top_image_url || ""} onChange={(e) => updateBlock("top_image_url", e.target.value)} placeholder="https://example.com/bild.jpg" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Link-URL (wohin das Bild verlinkt)</Label>
-              <Input value={blocks.top_image_link || ""} onChange={(e) => updateBlock("top_image_link", e.target.value)} placeholder="https://example.com" />
+              <Label className="text-xs text-muted-foreground">Link-URL</Label>
+              <Input value={blocks.top_image_link || ""} onChange={(e) => updateBlock("top_image_link", e.target.value)} />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Alt-Text</Label>
-              <Input value={blocks.top_image_alt || ""} onChange={(e) => updateBlock("top_image_alt", e.target.value)} placeholder="Bildbeschreibung" />
+              <Input value={blocks.top_image_alt || ""} onChange={(e) => updateBlock("top_image_alt", e.target.value)} />
             </div>
           </div>
         </BlockCard>
@@ -231,15 +223,15 @@ export default function EditPost() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs text-muted-foreground">Bild-URL</Label>
-              <Input value={blocks.mid_image_url || ""} onChange={(e) => updateBlock("mid_image_url", e.target.value)} placeholder="https://example.com/bild.jpg" />
+              <Input value={blocks.mid_image_url || ""} onChange={(e) => updateBlock("mid_image_url", e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Link-URL (wohin das Bild verlinkt)</Label>
-              <Input value={blocks.mid_image_link || ""} onChange={(e) => updateBlock("mid_image_link", e.target.value)} placeholder="https://example.com" />
+              <Label className="text-xs text-muted-foreground">Link-URL</Label>
+              <Input value={blocks.mid_image_link || ""} onChange={(e) => updateBlock("mid_image_link", e.target.value)} />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Alt-Text</Label>
-              <Input value={blocks.mid_image_alt || ""} onChange={(e) => updateBlock("mid_image_alt", e.target.value)} placeholder="Bildbeschreibung" />
+              <Input value={blocks.mid_image_alt || ""} onChange={(e) => updateBlock("mid_image_alt", e.target.value)} />
             </div>
           </div>
         </BlockCard>
@@ -248,15 +240,15 @@ export default function EditPost() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs text-muted-foreground">Bild-URL</Label>
-              <Input value={blocks.end_image_url || ""} onChange={(e) => updateBlock("end_image_url", e.target.value)} placeholder="https://example.com/bild.jpg" />
+              <Input value={blocks.end_image_url || ""} onChange={(e) => updateBlock("end_image_url", e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Link-URL (wohin das Bild verlinkt)</Label>
-              <Input value={blocks.end_image_link || ""} onChange={(e) => updateBlock("end_image_link", e.target.value)} placeholder="https://example.com" />
+              <Label className="text-xs text-muted-foreground">Link-URL</Label>
+              <Input value={blocks.end_image_link || ""} onChange={(e) => updateBlock("end_image_link", e.target.value)} />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Alt-Text</Label>
-              <Input value={blocks.end_image_alt || ""} onChange={(e) => updateBlock("end_image_alt", e.target.value)} placeholder="Bildbeschreibung" />
+              <Input value={blocks.end_image_alt || ""} onChange={(e) => updateBlock("end_image_alt", e.target.value)} />
             </div>
           </div>
         </BlockCard>
@@ -272,7 +264,7 @@ export default function EditPost() {
                 />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Inhalt (Markdown: ## H3, ### H4, **fett**, - Listen)</Label>
+                <Label className="text-xs text-muted-foreground">Inhalt (Markdown)</Label>
                 <Textarea
                   value={blocks[`section_${n}_body` as keyof PostBlocks] as string}
                   onChange={(e) => updateBlock(`section_${n}_body` as keyof PostBlocks, e.target.value)}
@@ -287,40 +279,20 @@ export default function EditPost() {
           <h3 className="font-display text-base font-semibold mb-3">Optionale Blöcke</h3>
           <div className="space-y-4">
             <OptionalBlockToggle label="Zusätzliches Video" enabled={showAdditionalVideo} onToggle={setShowAdditionalVideo}>
-              <Input
-                value={blocks.additional_video_embed || ""}
-                onChange={(e) => updateBlock("additional_video_embed", e.target.value)}
-                placeholder="https://youtube.com/watch?v=..."
-              />
+              <Input value={blocks.additional_video_embed || ""} onChange={(e) => updateBlock("additional_video_embed", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
             </OptionalBlockToggle>
-
             <OptionalBlockToggle label="PrettyLink Block" enabled={showPrettyLink} onToggle={setShowPrettyLink}>
-              <Input
-                value={blocks.pretty_link_shortcode || ""}
-                onChange={(e) => updateBlock("pretty_link_shortcode", e.target.value)}
-                placeholder="[prettylink link=...]"
-              />
+              <Input value={blocks.pretty_link_shortcode || ""} onChange={(e) => updateBlock("pretty_link_shortcode", e.target.value)} placeholder="[prettylink link=...]" />
             </OptionalBlockToggle>
-
             <OptionalBlockToggle label="Ressourcen-Block" enabled={showResources} onToggle={setShowResources}>
               <div className="space-y-3">
                 <div>
                   <Label className="text-xs text-muted-foreground">Links</Label>
-                  <Textarea
-                    value={blocks.resource_links || ""}
-                    onChange={(e) => updateBlock("resource_links", e.target.value)}
-                    placeholder="Links, Bücher, weiterführende Materialien..."
-                    rows={3}
-                  />
+                  <Textarea value={blocks.resource_links || ""} onChange={(e) => updateBlock("resource_links", e.target.value)} rows={3} />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Notizen</Label>
-                  <Textarea
-                    value={blocks.resource_notes || ""}
-                    onChange={(e) => updateBlock("resource_notes", e.target.value)}
-                    placeholder="Zusätzliche Hinweise..."
-                    rows={3}
-                  />
+                  <Textarea value={blocks.resource_notes || ""} onChange={(e) => updateBlock("resource_notes", e.target.value)} rows={3} />
                 </div>
               </div>
             </OptionalBlockToggle>
@@ -330,15 +302,8 @@ export default function EditPost() {
     </div>
   );
 
-  const screenshotContent = post ? (
-    <ScreenshotTool post={post} blocks={blocks} onUpdateBlock={updateBlock} />
-  ) : null;
-
   const previewContent = post ? (
     <div className="h-full overflow-y-auto bg-muted/30">
-      <div className="sticky top-0 z-10 border-b bg-muted/60 backdrop-blur px-6 py-2">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live-Vorschau</p>
-      </div>
       <PostPreview post={post} blocks={blocks} />
     </div>
   ) : null;
@@ -371,53 +336,30 @@ export default function EditPost() {
           <Tabs defaultValue="editor" className="flex h-full flex-col">
             <TabsList className="mx-4 mt-2 shrink-0">
               <TabsTrigger value="editor">Editor</TabsTrigger>
-              <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
               <TabsTrigger value="preview">Vorschau</TabsTrigger>
             </TabsList>
             <TabsContent value="editor" className="flex-1 min-h-0 mt-0">
               {editorContent}
-            </TabsContent>
-            <TabsContent value="screenshots" className="flex-1 min-h-0 mt-0">
-              {screenshotContent}
             </TabsContent>
             <TabsContent value="preview" className="flex-1 min-h-0 mt-0">
               {previewContent}
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="flex h-full flex-col">
-            <Tabs defaultValue="editor" className="flex h-full flex-col">
-              <div className="flex">
-                <div className="w-1/2 border-b">
-                  <TabsList className="mx-4 mt-1">
-                    <TabsTrigger value="editor">Editor</TabsTrigger>
-                    <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
-                  </TabsList>
-                </div>
-                <div className="w-1/2 border-b px-6 py-2">
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={50} minSize={30}>
+              {editorContent}
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full overflow-y-auto bg-muted/30">
+                <div className="sticky top-0 z-10 border-b bg-muted/60 backdrop-blur px-6 py-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live-Vorschau</p>
                 </div>
+                {post && <PostPreview post={post} blocks={blocks} />}
               </div>
-              <div className="flex-1 min-h-0">
-                <ResizablePanelGroup direction="horizontal">
-                  <ResizablePanel defaultSize={50} minSize={30}>
-                    <TabsContent value="editor" className="h-full mt-0">
-                      {editorContent}
-                    </TabsContent>
-                    <TabsContent value="screenshots" className="h-full mt-0">
-                      {screenshotContent}
-                    </TabsContent>
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={50} minSize={30}>
-                    <div className="h-full overflow-y-auto bg-muted/30">
-                      <PostPreview post={post!} blocks={blocks} />
-                    </div>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              </div>
-            </Tabs>
-          </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         )}
       </div>
     </div>
@@ -438,17 +380,7 @@ function BlockCard({ title, required, children }: { title: string; required?: bo
   );
 }
 
-function OptionalBlockToggle({
-  label,
-  enabled,
-  onToggle,
-  children,
-}: {
-  label: string;
-  enabled: boolean;
-  onToggle: (v: boolean) => void;
-  children: React.ReactNode;
-}) {
+function OptionalBlockToggle({ label, enabled, onToggle, children }: { label: string; enabled: boolean; onToggle: (v: boolean) => void; children: React.ReactNode }) {
   return (
     <Card className={enabled ? "" : "opacity-60"}>
       <CardHeader className="pb-3">

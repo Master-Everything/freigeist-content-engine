@@ -10,11 +10,20 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Sparkles, Loader2, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ScreenshotUploader } from "@/components/ScreenshotUploader";
+import { ScreenshotSettings } from "@/components/ScreenshotSettings";
+
+interface ImageUrls {
+  top?: string;
+  mid?: string;
+  end?: string;
+}
 
 export default function NewPost() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [imageUrls, setImageUrls] = useState<ImageUrls>({});
   const [form, setForm] = useState<SourceFormData>({
     guest_name: "",
     interview_title: "",
@@ -55,7 +64,7 @@ export default function NewPost() {
     }
   }
 
-  async function handleAnalyze() {
+  async function handleGenerate() {
     if (!form.guest_name.trim() || !form.interview_title.trim()) {
       toast({ title: "Fehler", description: "Gastname und Interview-Titel sind Pflichtfelder.", variant: "destructive" });
       return;
@@ -88,7 +97,7 @@ export default function NewPost() {
 
       if (aiError) {
         console.error("AI error:", aiError);
-        toast({ title: "AI-Generierung fehlgeschlagen", description: "Beitrag wurde als Entwurf gespeichert. Sie können die Blöcke manuell bearbeiten.", variant: "destructive" });
+        toast({ title: "AI-Generierung fehlgeschlagen", description: "Beitrag wurde als Entwurf gespeichert.", variant: "destructive" });
         navigate(`/edit/${post.id}`);
         return;
       }
@@ -106,6 +115,10 @@ export default function NewPost() {
         section_2_body: aiData.section_2_body || "",
         section_3_title: aiData.section_3_title || "",
         section_3_body: aiData.section_3_body || "",
+        // Pre-fill image URLs from uploads
+        top_image_url: imageUrls.top || "",
+        mid_image_url: imageUrls.mid || "",
+        end_image_url: imageUrls.end || "",
       };
 
       await supabase.from("posts").update({ blocks: blocks as any }).eq("id", post.id);
@@ -134,10 +147,11 @@ export default function NewPost() {
           Neuer Interview-Beitrag
         </h1>
         <p className="text-muted-foreground mb-8">
-          Quelldaten eingeben, dann AI-gestützt Inhalte generieren.
+          Alle Daten eingeben, Screenshots hochladen, dann AI-gestützt Inhalte generieren.
         </p>
 
         <div className="space-y-6">
+          {/* Section 1: Source Data */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Pflichtfelder</CardTitle>
@@ -162,11 +176,7 @@ export default function NewPost() {
                     disabled={transcriptLoading || !form.youtube_url.trim()}
                     className="gap-2 shrink-0"
                   >
-                    {transcriptLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4" />
-                    )}
+                    {transcriptLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     Transcript
                   </Button>
                 </div>
@@ -174,14 +184,9 @@ export default function NewPost() {
               {form.video_transcript && (
                 <div>
                   <Label>Video Transcript</Label>
-                  <Textarea
-                    value={form.video_transcript}
-                    readOnly
-                    rows={6}
-                    className="text-xs opacity-80"
-                  />
+                  <Textarea value={form.video_transcript} readOnly rows={6} className="text-xs opacity-80" />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {form.video_transcript.length.toLocaleString()} characters — will be used as AI context
+                    {form.video_transcript.length.toLocaleString()} Zeichen — wird als AI-Kontext verwendet
                   </p>
                 </div>
               )}
@@ -217,7 +222,25 @@ export default function NewPost() {
             </CardContent>
           </Card>
 
-          <Button onClick={handleAnalyze} disabled={loading} size="lg" className="w-full gap-2">
+          {/* Section 2: Screenshot Upload */}
+          <div className="relative">
+            <div className="absolute top-4 right-4 z-10">
+              <ScreenshotSettings />
+            </div>
+            <ScreenshotUploader
+              guestName={form.guest_name}
+              urls={imageUrls}
+              onUrlsChange={setImageUrls}
+            />
+          </div>
+
+          {/* Section 3: Generate */}
+          <Button
+            onClick={handleGenerate}
+            disabled={loading || !form.guest_name.trim() || !form.interview_title.trim()}
+            size="lg"
+            className="w-full gap-2"
+          >
             {loading ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Analyse läuft...</>
             ) : (
