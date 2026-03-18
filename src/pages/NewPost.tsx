@@ -170,16 +170,12 @@ export default function NewPost() {
         </p>
 
         <div className="space-y-6">
-          {/* Pflichtfelder */}
+          {/* Interview */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Pflichtfelder</CardTitle>
+              <CardTitle className="text-lg">Interview</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="guest_name">Gastname *</Label>
-                <Input id="guest_name" value={form.guest_name} onChange={(e) => update("guest_name", e.target.value)} placeholder="z.B. Dr. Max Mustermann" />
-              </div>
+            <CardContent>
               <div>
                 <Label htmlFor="interview_title">Interview-Titel *</Label>
                 <Input id="interview_title" value={form.interview_title} onChange={(e) => update("interview_title", e.target.value)} placeholder="z.B. Bewusstsein und Transformation" />
@@ -187,122 +183,79 @@ export default function NewPost() {
             </CardContent>
           </Card>
 
-          {/* Video & Transcript */}
+          {/* Gast-Daten */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Video & Transcript</CardTitle>
+              <CardTitle className="text-lg">Gast-Daten</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="youtube_url">YouTube Video URL</Label>
-                <div className="flex gap-2">
-                  <Input id="youtube_url" value={form.youtube_url} onChange={(e) => update("youtube_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." className="flex-1" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleFetchTranscript}
-                    disabled={transcriptLoading || !form.youtube_url.trim()}
-                    className="gap-2 shrink-0"
-                  >
-                    {transcriptLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    Auto-Transcript
-                  </Button>
-                </div>
+                <Label htmlFor="guest_name">Gastname *</Label>
+                <Input id="guest_name" value={form.guest_name} onChange={(e) => update("guest_name", e.target.value)} placeholder="z.B. Dr. Max Mustermann" />
               </div>
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label htmlFor="video_transcript">Video Transcript</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => transcriptFileRef.current?.click()}
-                    className="gap-1.5 text-xs h-7"
-                  >
-                    <FileText className="h-3 w-3" />
-                    .txt hochladen
-                  </Button>
-                  <input
-                    ref={transcriptFileRef}
-                    type="file"
-                    accept=".txt,text/plain"
-                    className="hidden"
-                    onChange={handleTranscriptFileUpload}
-                  />
-                </div>
-                <Textarea
-                  id="video_transcript"
-                  value={form.video_transcript}
-                  onChange={(e) => update("video_transcript", e.target.value)}
-                  rows={6}
-                  placeholder="Transcript hier einfügen oder per Button oben automatisch laden / als .txt hochladen..."
-                />
-                {form.video_transcript && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {form.video_transcript.length.toLocaleString()} Zeichen
-                  </p>
-                )}
+                <Label htmlFor="guest_short_bio">Kurzbiografie</Label>
+                <Textarea id="guest_short_bio" value={form.guest_short_bio} onChange={(e) => update("guest_short_bio", e.target.value)} placeholder="Biografie oder Profil-Beschreibung..." rows={4} />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Gast-Profilbild */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Gast-Profilbild</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Tabs value={profilePicMode} onValueChange={(v) => setProfilePicMode(v as "link" | "upload")}>
-                <TabsList className="mb-3">
-                  <TabsTrigger value="link">Link</TabsTrigger>
-                  <TabsTrigger value="upload">Upload</TabsTrigger>
-                </TabsList>
-                <TabsContent value="link">
-                  <Input
-                    value={guestImageUrl}
-                    onChange={(e) => setGuestImageUrl(e.target.value)}
-                    placeholder="https://example.com/photo.jpg"
-                  />
-                </TabsContent>
-                <TabsContent value="upload">
-                  <div className="flex items-center gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => profileFileRef.current?.click()}
-                      disabled={profileUploading}
-                      className="gap-1.5"
-                    >
-                      {profileUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                      Bild auswählen & hochladen
-                    </Button>
-                    <input
-                      ref={profileFileRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleProfileImageUpload(f);
-                      }}
+              <div>
+                <Label htmlFor="guest_website_url">Website URL</Label>
+                <Input id="guest_website_url" value={form.guest_website_url} onChange={(e) => update("guest_website_url", e.target.value)} placeholder="https://..." />
+              </div>
+              {/* Profilbild */}
+              <div>
+                <Label>Profilbild</Label>
+                <Tabs value={profilePicMode} onValueChange={(v) => setProfilePicMode(v as "link" | "upload")} className="mt-1">
+                  <TabsList className="mb-3">
+                    <TabsTrigger value="link">Link</TabsTrigger>
+                    <TabsTrigger value="upload">Upload</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="link">
+                    <Input
+                      value={guestImageUrl}
+                      onChange={(e) => setGuestImageUrl(e.target.value)}
+                      placeholder="https://example.com/photo.jpg"
                     />
-                    {profilePreview && (
-                      <img src={profilePreview} alt="Vorschau" className="h-12 w-12 rounded-full object-cover" />
+                  </TabsContent>
+                  <TabsContent value="upload">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => profileFileRef.current?.click()}
+                        disabled={profileUploading}
+                        className="gap-1.5"
+                      >
+                        {profileUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                        Bild auswählen & hochladen
+                      </Button>
+                      <input
+                        ref={profileFileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleProfileImageUpload(f);
+                        }}
+                      />
+                      {profilePreview && (
+                        <img src={profilePreview} alt="Vorschau" className="h-12 w-12 rounded-full object-cover" />
+                      )}
+                    </div>
+                    {guestImageUrl && profilePicMode === "upload" && (
+                      <p className="text-xs text-muted-foreground mt-2 truncate">URL: {guestImageUrl}</p>
                     )}
-                  </div>
-                  {guestImageUrl && profilePicMode === "upload" && (
-                    <p className="text-xs text-muted-foreground mt-2 truncate">URL: {guestImageUrl}</p>
-                  )}
-                </TabsContent>
-              </Tabs>
+                  </TabsContent>
+                </Tabs>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Optionale Quelldaten */}
+          {/* Weitere Quelldaten */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Optionale Quelldaten</CardTitle>
+              <CardTitle className="text-lg">Weitere Quelldaten</CardTitle>
               <CardDescription>Mehr Kontext liefert bessere AI-Ergebnisse.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -313,14 +266,6 @@ export default function NewPost() {
               <div>
                 <Label htmlFor="telegram_text">Telegram-Post</Label>
                 <Textarea id="telegram_text" value={form.telegram_text} onChange={(e) => update("telegram_text", e.target.value)} placeholder="Telegram-Nachricht einfügen..." rows={3} />
-              </div>
-              <div>
-                <Label htmlFor="guest_website_url">Gast-Website URL</Label>
-                <Input id="guest_website_url" value={form.guest_website_url} onChange={(e) => update("guest_website_url", e.target.value)} placeholder="https://..." />
-              </div>
-              <div>
-                <Label htmlFor="guest_short_bio">Gast-Kurzbiografie</Label>
-                <Textarea id="guest_short_bio" value={form.guest_short_bio} onChange={(e) => update("guest_short_bio", e.target.value)} placeholder="Biografie oder Profil-Beschreibung..." rows={4} />
               </div>
               <div>
                 <Label htmlFor="prettylink_shortcodes">PrettyLink Shortcode(s)</Label>
