@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      images: {
+        Row: {
+          created_at: string | null
+          file_size: number | null
+          filename: string
+          id: string
+          original_name: string | null
+          post_id: string | null
+          slot: string
+          wp_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_size?: number | null
+          filename: string
+          id?: string
+          original_name?: string | null
+          post_id?: string | null
+          slot: string
+          wp_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_size?: number | null
+          filename?: string
+          id?: string
+          original_name?: string | null
+          post_id?: string | null
+          slot?: string
+          wp_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           blocks: Json | null
