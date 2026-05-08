@@ -7,6 +7,7 @@ import Dashboard from "./pages/Index";
 import NewPost from "./pages/NewPost";
 import EditPost from "./pages/EditPost";
 import PreviewPost from "./pages/PreviewPost";
+import TechStack from "./pages/TechStack";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/new" element={<NewPost />} />
           <Route path="/edit/:id" element={<EditPost />} />
           <Route path="/preview/:id" element={<PreviewPost />} />
+          <Route path="/tech-stack" element={<TechStack />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
