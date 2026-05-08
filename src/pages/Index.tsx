@@ -62,6 +62,9 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button variant="outline" onClick={() => navigate("/tech-stack")} size="lg">
+              Tech Stack
+            </Button>
             <Button onClick={() => navigate("/new")} size="lg" className="gap-2">
               <Plus className="h-4 w-4" />
               Neuer Beitrag
