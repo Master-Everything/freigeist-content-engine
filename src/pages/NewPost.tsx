@@ -143,7 +143,7 @@ export default function NewPost() {
       }
 
       toast({ title: "Gespeichert", description: "Beitrag wurde als 'In Erfassung' gespeichert." });
-      navigate(`/edit/${post.id}`);
+      navigate(`/module/interview-beitraege/edit/${post.id}`);
     } catch (e) {
       console.error(e);
       toast({ title: "Fehler", description: e instanceof Error ? e.message : "Unbekannter Fehler", variant: "destructive" });
@@ -156,7 +156,7 @@ export default function NewPost() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="mb-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
+          <Button variant="ghost" onClick={() => navigate("/module/interview-beitraege")} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Zurück
           </Button>
           <ThemeToggle />

@@ -57,7 +57,7 @@ export default function EditPost() {
     const { data, error } = await supabase.from("posts").select("*").eq("id", postId).single();
     if (error || !data) {
       toast({ title: "Fehler", description: "Beitrag nicht gefunden.", variant: "destructive" });
-      navigate("/");
+      navigate("/module/interview-beitraege");
       return;
     }
     const p = { ...data, blocks: data.blocks as unknown as PostBlocks | null } as Post;
@@ -105,7 +105,7 @@ export default function EditPost() {
     if (!id || !confirm("Beitrag wirklich löschen?")) return;
     await supabase.from("posts").delete().eq("id", id);
     toast({ title: "Gelöscht" });
-    navigate("/");
+    navigate("/module/interview-beitraege");
   }
 
   if (loading) {
@@ -337,7 +337,7 @@ export default function EditPost() {
     <div className="flex h-screen flex-col bg-background">
       <div className="shrink-0 border-b bg-card/80 backdrop-blur z-20">
         <div className="flex items-center justify-between px-4 py-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/module/interview-beitraege")} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Dashboard
           </Button>
           <div className="flex items-center gap-2">

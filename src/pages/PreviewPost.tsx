@@ -21,7 +21,7 @@ export default function PreviewPost() {
   async function loadPost(postId: string) {
     const { data, error } = await supabase.from("posts").select("*").eq("id", postId).single();
     if (error || !data) {
-      navigate("/");
+      navigate("/module/interview-beitraege");
       return;
     }
     setPost({ ...data, blocks: data.blocks as unknown as PostBlocks | null } as Post);
@@ -49,7 +49,7 @@ export default function PreviewPost() {
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 border-b bg-card/80 backdrop-blur">
         <div className="mx-auto max-w-3xl flex items-center justify-between px-6 py-3">
-          <Button variant="ghost" onClick={() => navigate(`/edit/${id}`)} className="gap-2">
+          <Button variant="ghost" onClick={() => navigate(`/module/interview-beitraege/edit/${id}`)} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Zurück zum Editor
           </Button>
           <Button variant="outline" onClick={handleExport} className="gap-2">
