@@ -48,23 +48,20 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div>
       <div className="mx-auto max-w-5xl px-6 py-10">
         <div className="mb-10 flex items-end justify-between">
           <div>
+            <div className="text-sm text-muted-foreground tabular-nums">Modul 7</div>
             <h1 className="font-display text-3xl font-bold tracking-tight">
-              Freigeist Content Engine
+              Interview-Beiträge
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Interview-Beiträge erstellen und verwalten
+              Blog-Beiträge zu realisierten Interviews erstellen und verwalten
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="outline" onClick={() => navigate("/tech-stack")} size="lg">
-              Tech Stack
-            </Button>
-            <Button onClick={() => navigate("/new")} size="lg" className="gap-2">
+            <Button onClick={() => navigate("/module/interview-beitraege/new")} size="lg" className="gap-2">
               <Plus className="h-4 w-4" />
               Neuer Beitrag
             </Button>
@@ -110,7 +107,7 @@ export default function Dashboard() {
                 : "Keine Ergebnisse gefunden"}
             </p>
             {posts.length === 0 && (
-              <Button onClick={() => navigate("/new")} variant="outline" className="mt-4 gap-2">
+              <Button onClick={() => navigate("/module/interview-beitraege/new")} variant="outline" className="mt-4 gap-2">
                 <Plus className="h-4 w-4" />
                 Ersten Beitrag erstellen
               </Button>
@@ -125,7 +122,7 @@ export default function Dashboard() {
                   key={post.id}
                   className="cursor-pointer transition-all hover:shadow-md hover:border-primary/20"
                   style={{ animationDelay: `${i * 50}ms` }}
-                  onClick={() => navigate(`/edit/${post.id}`)}
+                  onClick={() => navigate(`/module/interview-beitraege/edit/${post.id}`)}
                 >
                   <CardContent className="flex items-center justify-between p-5">
                     <div className="min-w-0 flex-1">
