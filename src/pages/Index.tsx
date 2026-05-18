@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   erfassung: { label: "In Erfassung", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
