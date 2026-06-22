@@ -76,6 +76,11 @@ export function SourceDataEditor({ post, open, onOpenChange, onPostUpdate, onBlo
         guest_short_bio: post.guest_short_bio,
         prettylink_shortcodes: post.prettylink_shortcodes,
         video_transcript: (post as any).video_transcript || null,
+        interview_topic: (post as any).interview_topic || null,
+        product: (post as any).product || null,
+        product_market_since: (post as any).product_market_since || null,
+        previous_interviews: (post as any).previous_interviews || null,
+        critical_voices: (post as any).critical_voices || null,
       }).eq("id", post.id);
       if (saveError) throw saveError;
 

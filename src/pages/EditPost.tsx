@@ -84,7 +84,15 @@ export default function EditPost() {
   async function handleSave() {
     if (!id) return;
     setSaving(true);
-    const { error } = await supabase.from("posts").update({ blocks: blocks as any }).eq("id", id);
+    const updatePayload: any = { blocks: blocks as any };
+    if (post) {
+      updatePayload.interview_topic = (post as any).interview_topic || null;
+      updatePayload.product = (post as any).product || null;
+      updatePayload.product_market_since = (post as any).product_market_since || null;
+      updatePayload.previous_interviews = (post as any).previous_interviews || null;
+      updatePayload.critical_voices = (post as any).critical_voices || null;
+    }
+    const { error } = await supabase.from("posts").update(updatePayload).eq("id", id);
     if (error) {
       toast({ title: "Fehler", description: "Speichern fehlgeschlagen.", variant: "destructive" });
     } else {
