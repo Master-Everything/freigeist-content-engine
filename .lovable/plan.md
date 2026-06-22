@@ -1,31 +1,25 @@
-# Plan: Inhaltliche Langfelder zu Textareas umwandeln
-
 ## Ziel
-In `src/pages/modules/erfassung/SpeakerForm.tsx` die einzeiligen `Input`-Felder mit inhaltlichem Text auf `Textarea` umstellen, damit die maximale Zeichenmenge sichtbar dargestellt werden kann. Höhe und Zeichenzähler wie bei den bestehenden Textareas.
 
-## Betroffene Felder (Input → Textarea)
-- `slogan` (max 300)
-- `title_role` (max 160)
-- `interview_topic` (max 300)
-- `product` (max 300)
-- `hot_topic_1`, `hot_topic_2`, `hot_topic_3` (max 300)
-- `aff_1_name`, `aff_2_name`, `aff_3_name` (max 160)
+- `thomas@master-everything.com` → Speaker (mit den bestehenden Profildaten)
+- `ai@master-everything.com` → nur Admin
 
-## Nicht betroffen (bleiben `Input`)
-- Namen: `first_name`, `last_name`
-- Kontakt: `phone`, `email`
-- `industry`, `product_market_since`
-- URLs: `website`, alle `social_*`, `affiliate_registration_url`, `aff_*_url`, `aff_*_freebie`, `aff_*_ebook`
-- Zahl: `email_list_size`
+## Ablauf
 
-## Umsetzung
-1. `TextInput`-Aufrufe für `slogan`, `title_role`, `interview_topic`, `product` durch `TextAreaInput` ersetzen (gleiche Props: `name`, `label`, ggf. `required`, `form`, `help`). Höhe ergibt sich automatisch aus `textareaHeightFor(max)` (für max ≤ 300 → `min-h-[6rem]`, ~3 Zeilen).
-2. Für die 3 brandaktuellen Themen den Block ersetzen: statt `Input` ein `Textarea` mit `maxLength={FIELD_MAX[name]}`, `min-h-[6rem]`, plus `WatchedCounter` darunter. Nummerierungs-Layout bleibt erhalten (Nummer links, Feld rechts; bei mehrzeiligem Feld Nummer oben ausgerichtet via `items-start` und `pt-2`).
-3. Für die Affiliate-Produktnamen (`aff_${i}_name`) ebenfalls auf `Textarea` mit passender Höhe und Counter umstellen; die danebenliegenden URL-Felder (`url`, `freebie`, `ebook`) bleiben `Input`.
+1. **Du registrierst** dich in der App neu mit `thomas@master-everything.com` (über `/auth`). Sobald das Konto existiert, gib mir kurz Bescheid.
+  1. Rückmeldung: Das Konto habe ich direkt in den Unsen angelegt
+2. **Ich übertrage die Daten** per Daten-Operation:
+  - `speakers.user_id` und `speakers.email` des bestehenden Profils auf die neue Thomas-User-ID umhängen
+  - Speaker-Rolle bei `ai@...` entfernen (Admin bleibt)
+  - Sicherstellen, dass `thomas@...` die Speaker-Rolle hat (wird beim Signup ohnehin automatisch via Trigger gesetzt)
+  - Admin-Rolle, die der Signup-Trigger eventuell nicht vergibt, bleibt nur bei `ai@...`
+3. **Ergebnis:**
+  - Login `thomas@...` → sieht in Modul 1 das bereits ausgefüllte Speaker-Profil
+  - Login `ai@...` → reiner Admin-Zugang, kein Speaker-Profil mehr
 
-## Keine Logikänderungen
-- Schema, Validierung, Submit-Payload und DB-Felder bleiben unverändert.
-- Nur Präsentation: Eingabeelement-Typ und Höhe.
+## Hinweis zum Formular
 
-## Betroffene Dateien
-- `src/pages/modules/erfassung/SpeakerForm.tsx`
+Das E-Mail-Feld im Erfassungs-Formular spiegelt nur die Login-E-Mail wider und ändert den Account selbst nicht — deshalb der Umweg über eine neue Registrierung statt einer Änderung im Formular.
+
+## Keine Code-Änderungen
+
+Reiner Daten-Umzug, keine Schema- oder UI-Änderungen nötig.
