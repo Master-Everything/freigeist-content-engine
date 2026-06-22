@@ -76,7 +76,12 @@ export default function ViewPost() {
       </div>
 
       {hasInterviewDetails && (
-        <div className="mx-auto max-w-3xl px-6 pt-6">
+        <div className="mx-auto max-w-3xl px-6 pt-6 space-y-4">
+          {post.interview_title && (
+            <h1 className="font-display text-3xl font-bold leading-tight">
+              {post.interview_title}
+            </h1>
+          )}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Interview-Details</CardTitle>
@@ -115,8 +120,9 @@ export default function ViewPost() {
         </div>
       )}
 
+
       {post.blocks ? (
-        <PostPreview post={post} blocks={post.blocks} />
+        <PostPreview post={post} blocks={post.blocks} hideTitle={hasInterviewDetails} />
       ) : (
         <div className="mx-auto max-w-3xl px-6 py-16 text-center text-muted-foreground">
           Für diesen Beitrag liegt noch kein finaler Inhalt vor.
