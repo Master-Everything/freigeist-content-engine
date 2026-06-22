@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Post, PostBlocks } from "@/types/post";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,6 +24,7 @@ import {
   FileText,
   Newspaper,
   Search,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
