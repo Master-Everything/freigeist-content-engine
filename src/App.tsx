@@ -25,6 +25,8 @@ import Module6Aufzeichnung from "./pages/modules/Module6Aufzeichnung";
 import Module8NewsPlattform from "./pages/modules/Module8NewsPlattform";
 import ErfassungDanke from "./pages/modules/erfassung/Danke";
 import InterviewForm from "./pages/modules/interview/InterviewForm";
+import VorabScanEingereicht from "./pages/modules/vorab-scan/Eingereicht";
+import SpeakerModulePlaceholder from "./pages/SpeakerModulePlaceholder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
