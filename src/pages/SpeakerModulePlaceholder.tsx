@@ -1,7 +1,6 @@
 import { useParams } from "react-router-dom";
 import {
   ClipboardList,
-  ScanSearch,
   UserCheck,
   BookOpen,
   MessagesSquare,
@@ -63,8 +62,6 @@ export default function SpeakerModulePlaceholder() {
   const { num } = useParams();
   const m = (num && modules[num]) || fallback;
   const n = num ? Number(num) : 0;
-  // dummy reference so ScanSearch import isn't flagged
-  void ScanSearch;
   return (
     <ModulePage
       num={n}
