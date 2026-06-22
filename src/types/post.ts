@@ -43,6 +43,7 @@ export interface PostBlocks {
 export interface Post {
   id: string;
   guest_id?: string | null;
+  speaker_id?: string | null;
   status: string;
   post_slug: string | null;
   guest_name: string;
@@ -55,6 +56,13 @@ export interface Post {
   guest_short_bio: string | null;
   prettylink_shortcodes: string | null;
   blocks: PostBlocks | null;
+  // Interview-spezifische Felder
+  interview_topic?: string | null;
+  product?: string | null;
+  product_market_since?: string | null;
+  previous_interviews?: string | null;
+  critical_voices?: string | null;
+  selected_affiliate_indices?: number[] | null;
   created_at: string;
   updated_at: string;
 }

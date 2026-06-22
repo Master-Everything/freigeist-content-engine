@@ -76,6 +76,11 @@ export function SourceDataEditor({ post, open, onOpenChange, onPostUpdate, onBlo
         guest_short_bio: post.guest_short_bio,
         prettylink_shortcodes: post.prettylink_shortcodes,
         video_transcript: (post as any).video_transcript || null,
+        interview_topic: (post as any).interview_topic || null,
+        product: (post as any).product || null,
+        product_market_since: (post as any).product_market_since || null,
+        previous_interviews: (post as any).previous_interviews || null,
+        critical_voices: (post as any).critical_voices || null,
       }).eq("id", post.id);
       if (saveError) throw saveError;
 
@@ -191,6 +196,53 @@ export function SourceDataEditor({ post, open, onOpenChange, onPostUpdate, onBlo
           <div>
             <Label className="text-xs text-muted-foreground">Gast-Kurzbiografie</Label>
             <Textarea value={post.guest_short_bio || ""} onChange={(e) => updateField("guest_short_bio", e.target.value || null)} rows={3} />
+          </div>
+
+          <div className="border-t pt-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Interview-Details
+            </div>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Thema des Interviews</Label>
+                <Textarea
+                  value={(post as any).interview_topic || ""}
+                  onChange={(e) => updateField("interview_topic" as keyof Post, e.target.value || null)}
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Produkt</Label>
+                <Textarea
+                  value={(post as any).product || ""}
+                  onChange={(e) => updateField("product" as keyof Post, e.target.value || null)}
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Produkt am Markt seit</Label>
+                <Input
+                  value={(post as any).product_market_since || ""}
+                  onChange={(e) => updateField("product_market_since" as keyof Post, e.target.value || null)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Vorherige Interviews</Label>
+                <Textarea
+                  value={(post as any).previous_interviews || ""}
+                  onChange={(e) => updateField("previous_interviews" as keyof Post, e.target.value || null)}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Kritische Stimmen / rechtliche Schwierigkeiten</Label>
+                <Textarea
+                  value={(post as any).critical_voices || ""}
+                  onChange={(e) => updateField("critical_voices" as keyof Post, e.target.value || null)}
+                  rows={3}
+                />
+              </div>
+            </div>
           </div>
 
           <Button onClick={() => setShowConfirm(true)} disabled={regenerating} className="w-full gap-2">

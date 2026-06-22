@@ -24,6 +24,7 @@ import Module5Vorgespraech from "./pages/modules/Module5Vorgespraech";
 import Module6Aufzeichnung from "./pages/modules/Module6Aufzeichnung";
 import Module8NewsPlattform from "./pages/modules/Module8NewsPlattform";
 import ErfassungDanke from "./pages/modules/erfassung/Danke";
+import InterviewForm from "./pages/modules/interview/InterviewForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
               {/* Gemeinsam: Speaker + Admin */}
               <Route path="/module/erfassung" element={<Module1Erfassung />} />
               <Route path="/module/erfassung/danke" element={<ErfassungDanke />} />
+              <Route path="/module/interview/neu" element={<InterviewForm />} />
 
               {/* Admin-only Module */}
               <Route

@@ -1,84 +1,95 @@
 ## Ziel
 
-Saubere Trennung von Admin- und Speaker-Bereich in einer gemeinsamen App-Shell. Speaker sehen nur, was sie brauchen (eigenes Profil + eigene Beiträge read-only). Admins behalten den vollen Workflow.
+Sechs interview-spezifische Felder aus dem Speaker-Profil entfernen und in ein neues, dediziertes **Interview-Formular** verlagern. Speaker bekommen einen eigenen Sidebar-Menüpunkt "Neues Interview". Affiliate-Produkte werden zentral im Profil gepflegt und im Interview-Formular per Dropdown ausgewählt.
 
-## 1. Route-Guard mit Rollenprüfung
+## 1. Felder verlagern (Profil → Interview)
 
-`ProtectedRoute` bekommt ein optionales `requiredRole`-Prop:
+Diese sechs Felder werden aus dem Speaker-Profilformular (Modul 1) entfernt und ziehen in das Interview-Formular:
 
-```tsx
-<ProtectedRoute requiredRole="admin"> ... </ProtectedRoute>
-```
+1. Thema des Interviews
+2. Produkt, über das gesprochen wird
+3. Wie lange ist das Produkt bereits am Markt?
+4. Vorherige Interviews zu diesem Thema/Produkt
+5. Kritische Stimmen / rechtliche Schwierigkeiten
+6. Affiliate-Produkt(e) (Auswahl aus Profil-Affiliates)
 
-- Nicht eingeloggt → Redirect `/auth`.
-- Eingeloggt, aber Rolle reicht nicht → Redirect auf die Startseite der eigenen Rolle (Speaker → `/speaker`, Admin → `/`).
-- Rolle ok → Inhalt rendern.
+Bestehende Werte in `speakers` werden **ersatzlos verworfen**.
 
-Sicherheit bleibt serverseitig durch RLS gewahrt; der Guard ist reine UX.
+## 2. Datenmodell
 
-## 2. Routenstruktur
+**`speakers`-Tabelle:** Spalten droppen — `interview_topic`, `product`, `product_market_since`, `previous_interviews`, `critical_voices`. (`top_affiliate_products` bleibt — wird zur Single Source of Truth für Affiliates.)
 
-Gemeinsame Shell (`AppLayout`), aber Routen werden nach Rolle gegated:
+**`posts`-Tabelle:** Neue Spalten ergänzen:
+- `interview_topic` text
+- `product` text
+- `product_market_since` text
+- `previous_interviews` text
+- `critical_voices` text
+- `selected_affiliate_indices` int[]  *(Indizes 0–2 auf `speakers.top_affiliate_products`)*
+
+Bestehender `interview_title` bleibt; `interview_topic` ergänzt ihn inhaltlich (Titel = öffentlicher Titel, Topic = inhaltliche Beschreibung).
+
+## 3. Neues Interview-Formular für Speaker
+
+**Neue Route:** `/module/interview/neu` (Speaker + Admin).
+
+**Page:** `src/pages/modules/interview/InterviewForm.tsx`
+
+Felder:
+- Interview-Titel (Pflicht, bereits in `posts`)
+- Thema des Interviews
+- Produkt
+- Produkt am Markt seit
+- Vorherige Interviews (Textarea)
+- Kritische Stimmen / rechtliche Schwierigkeiten (Textarea)
+- **Affiliate-Produkte:** Multi-Select / Checkboxen aus den im Profil gepflegten `top_affiliate_products` des aktuellen Speakers. Falls Speaker keine Affiliates pflegt → Hinweistext mit Link zum Profil.
+
+Verhalten:
+- Speichern legt `posts`-Eintrag mit `speaker_id = aktueller Speaker`, `status='erfassung'` an.
+- Speaker landet danach auf seinem Dashboard mit Toast "Interview angelegt".
+- Admin kann optional Speaker auswählen (Dropdown), Speaker ist automatisch er selbst.
+
+## 4. Einstieg in das Formular
+
+- **Sidebar (Speaker):** neuer Eintrag "Neues Interview" → `/module/interview/neu`.
+- **Sidebar (Admin):** ebenfalls "Neues Interview" zusätzlich zu vorhandenen Admin-Items.
+- Existierende "Neues Interview anstoßen"-Buttons (Speaker-Dashboard, SpeakerForm) verlinken auf dieselbe Route statt direkt einen Post anzulegen.
+- `triggerInterview()` aus `SpeakerForm.tsx` wird entfernt.
+
+## 5. Anzeige der Daten
+
+- **`MyPosts.tsx` / `Interview-Beiträge` Liste:** Spalte/Badge für `interview_topic` ergänzen (falls vorhanden).
+- **`ViewPost.tsx` (Speaker, read-only):** Sektion "Interview-Details" mit den 6 neuen Feldern + Liste der ausgewählten Affiliates (aufgelöst aus Speaker-Profil).
+- **`EditPost.tsx` (Admin):** Bestehender `SourceDataEditor` bekommt Block "Interview-Details" mit allen 6 Feldern, damit Admin sie nachbearbeiten kann.
+- **Block-Editor / Export:** Affiliate-CTA (`cta_affiliate_url`, `cta_affiliate_label`) wird beim ersten Öffnen automatisch aus dem ersten ausgewählten Affiliate vorbefüllt, bleibt aber überschreibbar.
+
+## 6. Technische Schritte
 
 ```text
-/auth                                  public
-/                                      Admin  → Workflow-Dashboard (heute)
-/speaker                               Speaker → schlankes Speaker-Dashboard (neu)
-/module/erfassung                      Speaker + Admin
-/module/erfassung/danke                Speaker + Admin
-/module/vorab-scan ... /module/news    Admin only
-/module/interview-beitraege            Admin (Liste, Edit, Preview)
-/module/interview-beitraege/mine       Speaker (read-only Liste eigener Beiträge, neu)
-/module/interview-beitraege/view/:id   Speaker (read-only Preview, neu)
-/tech-stack                            Admin only
+1. Migration:
+   - ALTER TABLE speakers DROP COLUMN interview_topic, product,
+       product_market_since, previous_interviews, critical_voices;
+   - ALTER TABLE posts ADD COLUMN interview_topic text,
+       product text, product_market_since text,
+       previous_interviews text, critical_voices text,
+       selected_affiliate_indices int[] DEFAULT '{}';
+2. Schema/Validation:
+   - speaker-schema.ts: 5 Felder entfernen.
+   - Neues interview-schema.ts mit Zod-Validation.
+3. SpeakerForm.tsx:
+   - "Interview-Themen"-Card schrumpft auf topic_suggestions + hot_topics.
+   - Submit-Payload: 5 Felder entfernen.
+   - triggerInterview-Button → Link zu /module/interview/neu.
+4. Neue Datei: src/pages/modules/interview/InterviewForm.tsx.
+5. App.tsx: Route /module/interview/neu (speaker+admin) registrieren.
+6. AppSidebar.tsx: Eintrag "Neues Interview" für beide Rollen.
+7. SpeakerDashboard.tsx: Button verlinkt auf neue Route.
+8. ViewPost.tsx + EditPost (SourceDataEditor): Anzeige/Edit der neuen Felder.
+9. types/post.ts: Post-Interface um neue Felder erweitern.
 ```
 
-Nach Login Redirect je nach Rolle: Admin → `/`, Speaker → `/speaker`.
+## 7. Out of Scope
 
-## 3. Speaker-Dashboard (`/speaker`, neu)
-
-Schlanke Seite mit:
-- Begrüßung + Status-Karte „Mein Profil" (ausgefüllt / unvollständig) mit Button „Profil bearbeiten" → `/module/erfassung`.
-- Karte „Meine Interview-Beiträge" mit Liste eigener Posts (RLS filtert ohnehin auf `speaker_id = auth.uid()`-Logik). Klick → `/module/interview-beitraege/view/:id` (read-only).
-- Kein 8-Modul-Workflow, keine Filter, keine „Neuer Post"-Aktion.
-
-## 4. Read-only Beitrags-Ansicht für Speaker
-
-Neue Route `/module/interview-beitraege/view/:id`, die `PostPreview` nutzt — keine Edit-Buttons, kein Export. RLS sorgt dafür, dass Speaker nur eigene Posts laden können.
-
-## 5. Sidebar rollenbasiert
-
-`AppSidebar` rendert je nach `role` aus `useAuth()`:
-
-- **Admin:** komplette 8-Module-Navigation wie heute + „Tech-Stack".
-- **Speaker:** zwei Einträge — „Mein Profil" (`/module/erfassung`) und „Meine Beiträge" (`/module/interview-beitraege/mine`). Plus „Übersicht" → `/speaker`.
-
-Solange `role` noch lädt, Skelett/leere Sidebar zeigen (kein Flackern).
-
-## 6. Login-Redirect
-
-In `Auth.tsx` nach erfolgreichem Sign-in einmalig Rolle laden und entsprechend redirecten (`/` für Admin, `/speaker` für Speaker). Fallback: `/speaker`.
-
-## 7. Was NICHT geändert wird
-
-- Keine Änderungen an RLS-Policies, `user_roles`, `has_role()` — das Fundament steht.
-- Kein neues Layout, keine neuen Provider.
-- Keine Schemaänderungen.
-
-## Technische Details
-
-- `AuthContext` liefert bereits `role: "admin" | "speaker" | null` — wird in Guard und Sidebar konsumiert.
-- Neue Dateien:
-  - `src/pages/SpeakerDashboard.tsx`
-  - `src/pages/modules/interview-beitraege/MyPosts.tsx` (oder direkt in `Index.tsx` einen `mine`-Modus)
-  - `src/pages/modules/interview-beitraege/ViewPost.tsx` (read-only Wrapper um `PostPreview`)
-- Geänderte Dateien:
-  - `src/components/ProtectedRoute.tsx` (Prop `requiredRole`)
-  - `src/App.tsx` (Routen-Gating, neue Routen)
-  - `src/components/AppSidebar.tsx` (rollenbasierte Items)
-  - `src/pages/Auth.tsx` (rollenbasierter Redirect)
-
-## Testfall mit deinen Accounts
-
-- Login `ai@master-everything.com` (Admin) → landet auf `/`, sieht volle Sidebar und alle Module.
-- Login `thomas@master-everything.com` (Speaker) → landet auf `/speaker`, sieht nur Profil + eigene Beiträge, kann Modul 2–8 nicht aufrufen (Redirect zurück auf `/speaker`).
+- Keine Änderung an RLS-Policies (bestehende `posts`-Policies decken `speaker_id`-Scope bereits ab — wird vor Migration verifiziert).
+- Keine Änderung am HTML-Export-Format (Affiliate-CTA-Logik bleibt wie heute).
+- Keine UI-Redesigns an anderen Modulen.

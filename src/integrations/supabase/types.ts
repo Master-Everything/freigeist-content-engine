@@ -59,15 +59,21 @@ export type Database = {
         Row: {
           blocks: Json | null
           created_at: string
+          critical_voices: string | null
           guest_image_url: string | null
           guest_name: string
           guest_short_bio: string | null
           guest_website_url: string | null
           id: string
           interview_title: string
+          interview_topic: string | null
           newsletter_text: string | null
           post_slug: string | null
           prettylink_shortcodes: string | null
+          previous_interviews: string | null
+          product: string | null
+          product_market_since: string | null
+          selected_affiliate_indices: number[]
           speaker_id: string | null
           status: string
           telegram_text: string | null
@@ -78,15 +84,21 @@ export type Database = {
         Insert: {
           blocks?: Json | null
           created_at?: string
+          critical_voices?: string | null
           guest_image_url?: string | null
           guest_name: string
           guest_short_bio?: string | null
           guest_website_url?: string | null
           id?: string
           interview_title: string
+          interview_topic?: string | null
           newsletter_text?: string | null
           post_slug?: string | null
           prettylink_shortcodes?: string | null
+          previous_interviews?: string | null
+          product?: string | null
+          product_market_since?: string | null
+          selected_affiliate_indices?: number[]
           speaker_id?: string | null
           status?: string
           telegram_text?: string | null
@@ -97,15 +109,21 @@ export type Database = {
         Update: {
           blocks?: Json | null
           created_at?: string
+          critical_voices?: string | null
           guest_image_url?: string | null
           guest_name?: string
           guest_short_bio?: string | null
           guest_website_url?: string | null
           id?: string
           interview_title?: string
+          interview_topic?: string | null
           newsletter_text?: string | null
           post_slug?: string | null
           prettylink_shortcodes?: string | null
+          previous_interviews?: string | null
+          product?: string | null
+          product_market_since?: string | null
+          selected_affiliate_indices?: number[]
           speaker_id?: string | null
           status?: string
           telegram_text?: string | null
@@ -131,7 +149,6 @@ export type Database = {
           avatar_url: string | null
           bio_third_person: string | null
           created_at: string
-          critical_voices: string | null
           email: string
           email_list_size: number | null
           first_name: string
@@ -139,13 +156,9 @@ export type Database = {
           hot_topics: Json | null
           id: string
           industry: string | null
-          interview_topic: string | null
           last_name: string
           phone: string | null
-          previous_interviews: string | null
           privacy_accepted_at: string | null
-          product: string | null
-          product_market_since: string | null
           salutation: string | null
           short_vita: string | null
           slogan: string | null
@@ -164,7 +177,6 @@ export type Database = {
           avatar_url?: string | null
           bio_third_person?: string | null
           created_at?: string
-          critical_voices?: string | null
           email: string
           email_list_size?: number | null
           first_name: string
@@ -172,13 +184,9 @@ export type Database = {
           hot_topics?: Json | null
           id?: string
           industry?: string | null
-          interview_topic?: string | null
           last_name: string
           phone?: string | null
-          previous_interviews?: string | null
           privacy_accepted_at?: string | null
-          product?: string | null
-          product_market_since?: string | null
           salutation?: string | null
           short_vita?: string | null
           slogan?: string | null
@@ -197,7 +205,6 @@ export type Database = {
           avatar_url?: string | null
           bio_third_person?: string | null
           created_at?: string
-          critical_voices?: string | null
           email?: string
           email_list_size?: number | null
           first_name?: string
@@ -205,13 +212,9 @@ export type Database = {
           hot_topics?: Json | null
           id?: string
           industry?: string | null
-          interview_topic?: string | null
           last_name?: string
           phone?: string | null
-          previous_interviews?: string | null
           privacy_accepted_at?: string | null
-          product?: string | null
-          product_market_since?: string | null
           salutation?: string | null
           short_vita?: string | null
           slogan?: string | null

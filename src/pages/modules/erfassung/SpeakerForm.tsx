@@ -31,11 +31,6 @@ const FIELD_MAX: Record<string, number> = {
   bio_third_person: 2000,
   short_vita: 2000,
   topic_suggestions: 2000,
-  interview_topic: 300,
-  product: 300,
-  product_market_since: 120,
-  previous_interviews: 2000,
-  critical_voices: 2000,
   hot_topic_1: 300,
   hot_topic_2: 300,
   hot_topic_3: 300,
@@ -107,11 +102,6 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
       bio_third_person: existing?.bio_third_person || "",
       short_vita: existing?.short_vita || "",
       topic_suggestions: existing?.topic_suggestions || "",
-      interview_topic: existing?.interview_topic || "",
-      product: existing?.product || "",
-      product_market_since: existing?.product_market_since || "",
-      previous_interviews: existing?.previous_interviews || "",
-      critical_voices: existing?.critical_voices || "",
       hot_topic_1: hot[0] || "",
       hot_topic_2: hot[1] || "",
       hot_topic_3: hot[2] || "",
@@ -192,11 +182,6 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
         short_vita: values.short_vita,
         avatar_url,
         topic_suggestions: values.topic_suggestions,
-        interview_topic: values.interview_topic || null,
-        product: values.product || null,
-        product_market_since: values.product_market_since || null,
-        previous_interviews: values.previous_interviews || null,
-        critical_voices: values.critical_voices || null,
         hot_topics: [values.hot_topic_1, values.hot_topic_2, values.hot_topic_3].filter(Boolean),
         social_links: {
           youtube: values.social_youtube || "",
@@ -227,21 +212,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
 
       if (spkErr) throw spkErr;
 
-      // Ersten posts-Eintrag mit Status 'erfassung' anlegen, falls noch keiner existiert
-      if (!existing) {
-        const { error: postErr } = await supabase.from("posts").insert({
-          speaker_id: speaker.id,
-          guest_name: `${values.first_name} ${values.last_name}`.trim(),
-          interview_title: values.interview_topic || values.topic_suggestions.slice(0, 120),
-          status: "erfassung",
-          guest_short_bio: values.bio_third_person,
-          guest_website_url: values.website || null,
-          guest_image_url: avatar_url
-            ? supabase.storage.from("speaker-avatars").getPublicUrl(avatar_url).data.publicUrl
-            : null,
-        });
-        if (postErr) throw postErr;
-      }
+      // Hinweis: Interview-Beiträge werden separat über das Interview-Formular angelegt.
 
       toast.success(existing ? "Profil aktualisiert" : "Anmeldung erfolgreich");
       navigate("/module/erfassung/danke");
@@ -253,27 +224,6 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
     }
   };
 
-  const triggerInterview = async () => {
-    if (!existing) return;
-    setSubmitting(true);
-    const { error } = await supabase.from("posts").insert({
-      speaker_id: existing.id,
-      guest_name: `${existing.first_name} ${existing.last_name}`.trim(),
-      interview_title: existing.interview_topic || existing.topic_suggestions?.slice(0, 120) || "Neues Interview",
-      status: "erfassung",
-      guest_short_bio: existing.bio_third_person,
-      guest_website_url: existing.website,
-      guest_image_url: existing.avatar_url
-        ? supabase.storage.from("speaker-avatars").getPublicUrl(existing.avatar_url).data.publicUrl
-        : null,
-    });
-    setSubmitting(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Neues Interview angestoßen");
-      navigate("/module/erfassung/danke");
-    }
-  };
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
@@ -293,7 +243,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
           </div>
         </div>
         {existing && (
-          <Button onClick={triggerInterview} disabled={submitting} size="lg">
+          <Button onClick={() => navigate("/module/interview/neu")} size="lg">
             <Send className="mr-1.5 h-4 w-4" />
             Neues Interview anstoßen
           </Button>
@@ -418,25 +368,6 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                   name="topic_suggestions"
                   label="Interview-Themenvorschläge"
                   required
-                  form={form}
-                  rows={3}
-                />
-                <TextAreaInput name="interview_topic" label="Thema des Interviews" form={form} />
-                <TextAreaInput name="product" label="Produkt, über das gesprochen wird" form={form} />
-                <TextInput
-                  name="product_market_since"
-                  label="Wie lange ist das Produkt bereits am Markt?"
-                  form={form}
-                />
-                <TextAreaInput
-                  name="previous_interviews"
-                  label="Liste aller Interviews, in denen bereits über dieses Thema oder Produkt gesprochen wurde"
-                  form={form}
-                  rows={3}
-                />
-                <TextAreaInput
-                  name="critical_voices"
-                  label="Gibt es kritische Stimmen oder rechtliche Schwierigkeiten zu Thema oder Produkt?"
                   form={form}
                   rows={3}
                 />
