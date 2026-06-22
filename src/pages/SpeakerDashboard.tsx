@@ -6,7 +6,7 @@ import { Post, PostBlocks } from "@/types/post";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import { ClipboardList, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight, Plus } from "lucide-react";
 
 export default function SpeakerDashboard() {
   const { user } = useAuth();
