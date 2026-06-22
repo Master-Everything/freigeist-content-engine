@@ -264,7 +264,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
           </div>
         </div>
         {existing && (
-          <Button onClick={triggerInterview} disabled={submitting} size="lg">
+          <Button onClick={() => navigate("/module/interview/neu")} size="lg">
             <Send className="mr-1.5 h-4 w-4" />
             Neues Interview anstoßen
           </Button>
@@ -389,25 +389,6 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                   name="topic_suggestions"
                   label="Interview-Themenvorschläge"
                   required
-                  form={form}
-                  rows={3}
-                />
-                <TextAreaInput name="interview_topic" label="Thema des Interviews" form={form} />
-                <TextAreaInput name="product" label="Produkt, über das gesprochen wird" form={form} />
-                <TextInput
-                  name="product_market_since"
-                  label="Wie lange ist das Produkt bereits am Markt?"
-                  form={form}
-                />
-                <TextAreaInput
-                  name="previous_interviews"
-                  label="Liste aller Interviews, in denen bereits über dieses Thema oder Produkt gesprochen wurde"
-                  form={form}
-                  rows={3}
-                />
-                <TextAreaInput
-                  name="critical_voices"
-                  label="Gibt es kritische Stimmen oder rechtliche Schwierigkeiten zu Thema oder Produkt?"
                   form={form}
                   rows={3}
                 />
