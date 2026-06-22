@@ -105,7 +105,7 @@ const speakerModules: Module[] = [
     icon: ScanSearch,
     status: "planned",
     items: [
-      { title: "Eingereichte Interviews (gescannt)", url: "/module/vorab-scan/eingereicht" },
+      { title: "Eingereichte Interviews", url: "/module/vorab-scan/eingereicht" },
     ],
   },
   { num: 3, title: "Profil & Sprechermappe", url: "/speaker/modul/3", icon: UserCheck, status: "planned" },
