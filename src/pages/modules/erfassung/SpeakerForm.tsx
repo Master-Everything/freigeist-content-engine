@@ -421,8 +421,8 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                   form={form}
                   rows={3}
                 />
-                <TextInput name="interview_topic" label="Thema des Interviews" form={form} />
-                <TextInput name="product" label="Produkt, über das gesprochen wird" form={form} />
+                <TextAreaInput name="interview_topic" label="Thema des Interviews" form={form} />
+                <TextAreaInput name="product" label="Produkt, über das gesprochen wird" form={form} />
                 <TextInput
                   name="product_market_since"
                   label="Wie lange ist das Produkt bereits am Markt?"
