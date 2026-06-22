@@ -61,15 +61,15 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-type Item = {
-  num?: number;
+type Module = {
+  num: number;
   title: string;
   url: string;
   icon: any;
   status: "active" | "planned";
 };
 
-const modules: Item[] = [
+const adminModules: Module[] = [
   { num: 1, title: "Erfassung", url: "/module/erfassung", icon: ClipboardList, status: "planned" },
   { num: 2, title: "Vorab-Scan", url: "/module/vorab-scan", icon: ScanSearch, status: "planned" },
   { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "planned" },
@@ -82,10 +82,14 @@ const modules: Item[] = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { role } = useAuth();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const isActive = (url: string) =>
-    url === "/" ? pathname === "/" : pathname.startsWith(url);
+    url === "/" || url === "/speaker" ? pathname === url : pathname.startsWith(url);
+
+  const isAdmin = role === "admin";
+  const homeUrl = isAdmin ? "/" : "/speaker";
 
   return (
     <Sidebar collapsible="icon">
@@ -95,8 +99,8 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/"}>
-                  <NavLink to="/" end className="flex items-center gap-2">
+                <SidebarMenuButton asChild isActive={pathname === homeUrl}>
+                  <NavLink to={homeUrl} end className="flex items-center gap-2">
                     <LayoutDashboard className="h-4 w-4" />
                     {!collapsed && <span>Dashboard</span>}
                   </NavLink>
@@ -106,53 +110,81 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Workflow-Module</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {modules.map((m) => (
-                <SidebarMenuItem key={m.url}>
-                  <SidebarMenuButton asChild isActive={isActive(m.url)}>
-                    <NavLink to={m.url} className="flex items-center gap-2">
-                      <m.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && (
-                        <>
-                          <span className="text-xs text-muted-foreground tabular-nums">
-                            {m.num}.
-                          </span>
-                          <span className="flex-1 truncate">{m.title}</span>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[10px] px-1.5 py-0 h-5",
-                              m.status === "active"
-                                ? "border-primary/40 text-primary"
-                                : "text-muted-foreground"
-                            )}
-                          >
-                            {m.status === "active" ? "Aktiv" : "Geplant"}
-                          </Badge>
-                        </>
-                      )}
+        {isAdmin ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Workflow-Module</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminModules.map((m) => (
+                  <SidebarMenuItem key={m.url}>
+                    <SidebarMenuButton asChild isActive={isActive(m.url)}>
+                      <NavLink to={m.url} className="flex items-center gap-2">
+                        <m.icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && (
+                          <>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {m.num}.
+                            </span>
+                            <span className="flex-1 truncate">{m.title}</span>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] px-1.5 py-0 h-5",
+                                m.status === "active"
+                                  ? "border-primary/40 text-primary"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {m.status === "active" ? "Aktiv" : "Geplant"}
+                            </Badge>
+                          </>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupLabel>Mein Bereich</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/module/erfassung")}>
+                    <NavLink to="/module/erfassung" className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span>Mein Profil</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/module/interview-beitraege/mine")}>
+                    <NavLink to="/module/interview-beitraege/mine" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span>Meine Beiträge</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/tech-stack"}>
-              <NavLink to="/tech-stack" className="flex items-center gap-2">
-                <Wrench className="h-4 w-4" />
-                {!collapsed && <span>Tech Stack</span>}
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {isAdmin && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === "/tech-stack"}>
+                <NavLink to="/tech-stack" className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4" />
+                  {!collapsed && <span>Tech Stack</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <UserMenu collapsed={collapsed} />
         </SidebarMenu>
       </SidebarFooter>

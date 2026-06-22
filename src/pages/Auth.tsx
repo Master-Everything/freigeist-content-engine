@@ -15,16 +15,20 @@ import { Loader2 } from "lucide-react";
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const redirectTo = (location.state as any)?.from || "/module/erfassung";
+  const explicitRedirect = (location.state as any)?.from as string | undefined;
+  const roleHome = role === "admin" ? "/" : "/speaker";
+  const redirectTo = explicitRedirect || roleHome;
 
   useEffect(() => {
-    if (!authLoading && user) navigate(redirectTo, { replace: true });
-  }, [user, authLoading, navigate, redirectTo]);
+    if (!authLoading && user && role !== null) {
+      navigate(explicitRedirect || (role === "admin" ? "/" : "/speaker"), { replace: true });
+    }
+  }, [user, role, authLoading, navigate, explicitRedirect]);
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +36,7 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) toast.error(error.message);
-    else navigate(redirectTo, { replace: true });
+    // Redirect übernimmt der useEffect, sobald die Rolle geladen ist.
   };
 
   const signUp = async (e: React.FormEvent) => {
