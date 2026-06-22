@@ -51,7 +51,7 @@ export default function SpeakerDashboard() {
             Dein persönlicher Bereich beim Freigeist Kongress.
           </p>
         </div>
-        <Button onClick={() => navigate("/module/erfassung")}>
+        <Button onClick={() => navigate("/module/interview/neu")}>
           <Plus className="mr-1.5 h-4 w-4" />
           Neues Interview anstoßen
         </Button>

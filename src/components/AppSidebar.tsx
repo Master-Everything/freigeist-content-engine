@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Wrench,
   LogOut,
+  Plus,
   User as UserIcon,
 } from "lucide-react";
 import {
@@ -156,6 +157,14 @@ export function AppSidebar() {
                     <NavLink to="/module/erfassung" className="flex items-center gap-2">
                       <ClipboardList className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>Mein Profil</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/module/interview/neu")}>
+                    <NavLink to="/module/interview/neu" className="flex items-center gap-2">
+                      <Plus className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span>Neues Interview</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
