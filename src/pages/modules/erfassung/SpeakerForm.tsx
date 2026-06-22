@@ -442,16 +442,24 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 />
                 <div>
                   <Label className="text-sm font-medium">3 brandaktuelle Themen</Label>
-                  <div className="mt-2 space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className="w-6 text-sm text-muted-foreground tabular-nums">{i}.</span>
-                        <Input
-                          {...form.register(`hot_topic_${i}` as any)}
-                          placeholder={`Thema ${i}`}
-                        />
-                      </div>
-                    ))}
+                  <div className="mt-2 space-y-3">
+                    {[1, 2, 3].map((i) => {
+                      const name = `hot_topic_${i}`;
+                      const max = FIELD_MAX[name];
+                      return (
+                        <div key={i}>
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 text-sm text-muted-foreground tabular-nums">{i}.</span>
+                            <Input
+                              {...form.register(name as any)}
+                              placeholder={`Thema ${i}`}
+                              maxLength={max}
+                            />
+                          </div>
+                          <WatchedCounter control={form.control} name={name} max={max} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>
