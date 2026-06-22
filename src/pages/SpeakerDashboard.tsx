@@ -42,13 +42,19 @@ export default function SpeakerDashboard() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          Willkommen{speaker?.full_name ? `, ${speaker.full_name.split(" ")[0]}` : ""}
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Dein persönlicher Bereich beim Freigeist Kongress.
-        </p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            Willkommen{speaker?.full_name ? `, ${speaker.full_name.split(" ")[0]}` : ""}
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Dein persönlicher Bereich beim Freigeist Kongress.
+          </p>
+        </div>
+        <Button onClick={() => navigate("/module/erfassung")}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          Neues Interview anstoßen
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
