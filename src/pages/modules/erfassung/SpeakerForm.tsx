@@ -567,22 +567,41 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 <div>
                   <Label className="text-sm font-medium">Top 3 Affiliate-Produkte</Label>
                   <div className="mt-3 space-y-5">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="rounded-lg border bg-muted/20 p-4 space-y-3">
-                        <div className="text-xs font-medium text-muted-foreground tabular-nums">
-                          Produkt {i}
+                    {[1, 2, 3].map((i) => {
+                      const fields = [
+                        { key: `aff_${i}_name`, placeholder: "Produkt" },
+                        { key: `aff_${i}_url`, placeholder: "URL" },
+                        { key: `aff_${i}_freebie`, placeholder: "Freebie URL" },
+                        { key: `aff_${i}_ebook`, placeholder: "E-Book URL" },
+                      ];
+                      return (
+                        <div key={i} className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                          <div className="text-xs font-medium text-muted-foreground tabular-nums">
+                            Produkt {i}
+                          </div>
+                          <div>
+                            <Input
+                              {...form.register(fields[0].key as any)}
+                              placeholder={fields[0].placeholder}
+                              maxLength={FIELD_MAX[fields[0].key]}
+                            />
+                            <WatchedCounter control={form.control} name={fields[0].key} max={FIELD_MAX[fields[0].key]} />
+                          </div>
+                          <div className="grid gap-3 md:grid-cols-3">
+                            {fields.slice(1).map((f) => (
+                              <div key={f.key}>
+                                <Input
+                                  {...form.register(f.key as any)}
+                                  placeholder={f.placeholder}
+                                  maxLength={FIELD_MAX[f.key]}
+                                />
+                                <WatchedCounter control={form.control} name={f.key} max={FIELD_MAX[f.key]} />
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <Input
-                          {...form.register(`aff_${i}_name` as any)}
-                          placeholder="Produkt"
-                        />
-                        <div className="grid gap-3 md:grid-cols-3">
-                          <Input {...form.register(`aff_${i}_url` as any)} placeholder="URL" />
-                          <Input {...form.register(`aff_${i}_freebie` as any)} placeholder="Freebie URL" />
-                          <Input {...form.register(`aff_${i}_ebook` as any)} placeholder="E-Book URL" />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>
