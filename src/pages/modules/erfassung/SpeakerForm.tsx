@@ -448,12 +448,13 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                       const max = FIELD_MAX[name];
                       return (
                         <div key={i}>
-                          <div className="flex items-center gap-3">
-                            <span className="w-6 text-sm text-muted-foreground tabular-nums">{i}.</span>
-                            <Input
+                          <div className="flex items-start gap-3">
+                            <span className="w-6 pt-2 text-sm text-muted-foreground tabular-nums">{i}.</span>
+                            <Textarea
                               {...form.register(name as any)}
                               placeholder={`Thema ${i}`}
                               maxLength={max}
+                              className="min-h-[6rem] flex-1"
                             />
                           </div>
                           <WatchedCounter control={form.control} name={name} max={max} />
