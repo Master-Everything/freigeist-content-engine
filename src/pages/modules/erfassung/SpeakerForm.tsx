@@ -581,10 +581,11 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                             Produkt {i}
                           </div>
                           <div>
-                            <Input
+                            <Textarea
                               {...form.register(fields[0].key as any)}
                               placeholder={fields[0].placeholder}
                               maxLength={FIELD_MAX[fields[0].key]}
+                              className="min-h-[6rem]"
                             />
                             <WatchedCounter control={form.control} name={fields[0].key} max={FIELD_MAX[fields[0].key]} />
                           </div>
