@@ -694,6 +694,7 @@ function TextInput({
   placeholder,
   help,
 }: any) {
+  const max = FIELD_MAX[name];
   return (
     <FormField
       control={form.control}
@@ -704,17 +705,25 @@ function TextInput({
             {label} {required && <span className="text-primary">*</span>}
           </FormLabel>
           <FormControl>
-            <Input type={type} placeholder={placeholder} {...field} />
+            <Input type={type} placeholder={placeholder} maxLength={max} {...field} />
           </FormControl>
           {help && <FormDescription>{help}</FormDescription>}
           <FormMessage />
+          {max && type !== "number" && (
+            <CharCounter
+              current={typeof field.value === "string" ? field.value.length : 0}
+              max={max}
+            />
+          )}
         </FormItem>
       )}
     />
   );
 }
 
-function TextAreaInput({ name, label, required, form, rows = 3, help }: any) {
+function TextAreaInput({ name, label, required, form, rows, help }: any) {
+  const max = FIELD_MAX[name];
+  const heightClass = max ? textareaHeightFor(max) : "";
   return (
     <FormField
       control={form.control}
@@ -725,10 +734,16 @@ function TextAreaInput({ name, label, required, form, rows = 3, help }: any) {
             {label} {required && <span className="text-primary">*</span>}
           </FormLabel>
           <FormControl>
-            <Textarea rows={rows} {...field} />
+            <Textarea rows={rows} maxLength={max} className={heightClass} {...field} />
           </FormControl>
           {help && <FormDescription>{help}</FormDescription>}
           <FormMessage />
+          {max && (
+            <CharCounter
+              current={typeof field.value === "string" ? field.value.length : 0}
+              max={max}
+            />
+          )}
         </FormItem>
       )}
     />
