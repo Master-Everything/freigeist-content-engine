@@ -15,7 +15,53 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { CharCounter } from "@/components/ui/char-counter";
 import { ClipboardList, Loader2, Send, Upload, CheckCircle2 } from "lucide-react";
+import { useWatch } from "react-hook-form";
+
+const FIELD_MAX: Record<string, number> = {
+  first_name: 80,
+  last_name: 80,
+  title_role: 160,
+  industry: 120,
+  phone: 40,
+  email: 255,
+  website: 255,
+  slogan: 300,
+  bio_third_person: 2000,
+  short_vita: 2000,
+  topic_suggestions: 2000,
+  interview_topic: 300,
+  product: 300,
+  product_market_since: 120,
+  previous_interviews: 2000,
+  critical_voices: 2000,
+  hot_topic_1: 300,
+  hot_topic_2: 300,
+  hot_topic_3: 300,
+  social_youtube: 255,
+  social_facebook: 255,
+  social_instagram: 255,
+  social_linkedin: 255,
+  social_twitter: 255,
+  social_telegram: 255,
+  affiliate_registration_url: 255,
+  aff_1_name: 160, aff_1_url: 255, aff_1_freebie: 255, aff_1_ebook: 255,
+  aff_2_name: 160, aff_2_url: 255, aff_2_freebie: 255, aff_2_ebook: 255,
+  aff_3_name: 160, aff_3_url: 255, aff_3_freebie: 255, aff_3_ebook: 255,
+};
+
+function textareaHeightFor(max: number): string {
+  if (max <= 300) return "min-h-[6rem]";
+  if (max <= 800) return "min-h-[10rem]";
+  if (max <= 1500) return "min-h-[16rem]";
+  return "min-h-[20rem]";
+}
+
+function WatchedCounter({ control, name, max }: { control: any; name: string; max: number }) {
+  const value = useWatch({ control, name });
+  return <CharCounter current={typeof value === "string" ? value.length : 0} max={max} />;
+}
 
 interface Props {
   existing: any | null;
