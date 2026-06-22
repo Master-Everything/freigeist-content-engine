@@ -224,27 +224,6 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
     }
   };
 
-  const triggerInterview = async () => {
-    if (!existing) return;
-    setSubmitting(true);
-    const { error } = await supabase.from("posts").insert({
-      speaker_id: existing.id,
-      guest_name: `${existing.first_name} ${existing.last_name}`.trim(),
-      interview_title: existing.interview_topic || existing.topic_suggestions?.slice(0, 120) || "Neues Interview",
-      status: "erfassung",
-      guest_short_bio: existing.bio_third_person,
-      guest_website_url: existing.website,
-      guest_image_url: existing.avatar_url
-        ? supabase.storage.from("speaker-avatars").getPublicUrl(existing.avatar_url).data.publicUrl
-        : null,
-    });
-    setSubmitting(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Neues Interview angestoßen");
-      navigate("/module/erfassung/danke");
-    }
-  };
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
