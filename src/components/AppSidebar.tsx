@@ -70,7 +70,7 @@ type Module = {
   title: string;
   url: string;
   icon: any;
-  status: "active" | "planned";
+  status: "active" | "in-progress" | "planned";
   items?: SubItem[];
 };
 
@@ -103,7 +103,7 @@ const speakerModules: Module[] = [
     title: "Vorab-Scan",
     url: "/module/vorab-scan/eingereicht",
     icon: ScanSearch,
-    status: "planned",
+    status: "in-progress",
     items: [
       { title: "Eingereichte Interviews", url: "/module/vorab-scan/eingereicht" },
     ],
@@ -174,10 +174,16 @@ export function AppSidebar() {
                                 "text-[10px] px-1.5 py-0 h-5",
                                 m.status === "active"
                                   ? "border-primary/40 text-primary"
+                                  : m.status === "in-progress"
+                                  ? "border-amber-500/40 text-amber-500"
                                   : "text-muted-foreground"
                               )}
                             >
-                              {m.status === "active" ? "Aktiv" : "Geplant"}
+                              {m.status === "active"
+                                ? "Aktiv"
+                                : m.status === "in-progress"
+                                ? "Umsetzung"
+                                : "Geplant"}
                             </Badge>
                           </>
                         )}
