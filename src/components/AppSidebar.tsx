@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   Wrench,
   LogOut,
-  Plus,
   User as UserIcon,
 } from "lucide-react";
 import {
@@ -24,6 +23,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
@@ -62,12 +64,14 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+type SubItem = { title: string; url: string };
 type Module = {
   num: number;
   title: string;
   url: string;
   icon: any;
   status: "active" | "planned";
+  items?: SubItem[];
 };
 
 const adminModules: Module[] = [
@@ -81,16 +85,52 @@ const adminModules: Module[] = [
   { num: 8, title: "News-Plattform", url: "/module/news", icon: Newspaper, status: "planned" },
 ];
 
+const speakerModules: Module[] = [
+  {
+    num: 1,
+    title: "Erfassung",
+    url: "/module/erfassung",
+    icon: ClipboardList,
+    status: "active",
+    items: [
+      { title: "Profil", url: "/module/erfassung" },
+      { title: "Neues Interview", url: "/module/interview/neu" },
+      { title: "Meine Interviews", url: "/module/interview-beitraege/mine" },
+    ],
+  },
+  {
+    num: 2,
+    title: "Vorab-Scan",
+    url: "/module/vorab-scan/eingereicht",
+    icon: ScanSearch,
+    status: "planned",
+    items: [
+      { title: "Eingereichte Interviews (gescannt)", url: "/module/vorab-scan/eingereicht" },
+    ],
+  },
+  { num: 3, title: "Profil & Sprechermappe", url: "/speaker/modul/3", icon: UserCheck, status: "planned" },
+  { num: 4, title: "Interview-Leitfaden", url: "/speaker/modul/4", icon: BookOpen, status: "planned" },
+  { num: 5, title: "Vorgespräch", url: "/speaker/modul/5", icon: MessagesSquare, status: "planned" },
+  { num: 6, title: "Aufzeichnung / Live", url: "/speaker/modul/6", icon: Video, status: "planned" },
+  { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "planned" },
+  { num: 8, title: "News-Plattform", url: "/speaker/modul/8", icon: Newspaper, status: "planned" },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const { role } = useAuth();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
-  const isActive = (url: string) =>
-    url === "/" || url === "/speaker" ? pathname === url : pathname.startsWith(url);
 
   const isAdmin = role === "admin";
   const homeUrl = isAdmin ? "/" : "/speaker";
+  const modules = isAdmin ? adminModules : speakerModules;
+
+  const isSubActive = (url: string) => pathname === url;
+  const isModuleActive = (m: Module) => {
+    if (m.items?.some((it) => pathname === it.url)) return true;
+    return pathname === m.url;
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -111,14 +151,15 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {isAdmin ? (
-          <SidebarGroup>
-            <SidebarGroupLabel>Workflow-Module</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminModules.map((m) => (
-                  <SidebarMenuItem key={m.url}>
-                    <SidebarMenuButton asChild isActive={isActive(m.url)}>
+        <SidebarGroup>
+          <SidebarGroupLabel>Workflow-Module</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {modules.map((m) => {
+                const active = isModuleActive(m);
+                return (
+                  <SidebarMenuItem key={`${m.num}-${m.url}`}>
+                    <SidebarMenuButton asChild isActive={active}>
                       <NavLink to={m.url} className="flex items-center gap-2">
                         <m.icon className="h-4 w-4 shrink-0" />
                         {!collapsed && (
@@ -142,44 +183,23 @@ export function AppSidebar() {
                         )}
                       </NavLink>
                     </SidebarMenuButton>
+                    {!collapsed && m.items && active && (
+                      <SidebarMenuSub>
+                        {m.items.map((it) => (
+                          <SidebarMenuSubItem key={it.url}>
+                            <SidebarMenuSubButton asChild isActive={isSubActive(it.url)}>
+                              <NavLink to={it.url}>{it.title}</NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
                   </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ) : (
-          <SidebarGroup>
-            <SidebarGroupLabel>Mein Bereich</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/module/erfassung")}>
-                    <NavLink to="/module/erfassung" className="flex items-center gap-2">
-                      <ClipboardList className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span>Mein Profil</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/module/interview/neu")}>
-                    <NavLink to="/module/interview/neu" className="flex items-center gap-2">
-                      <Plus className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span>Neues Interview</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/module/interview-beitraege/mine")}>
-                    <NavLink to="/module/interview-beitraege/mine" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span>Meine Beiträge</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
