@@ -118,6 +118,7 @@ export function AppSidebar() {
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <UserMenu collapsed={collapsed} />
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

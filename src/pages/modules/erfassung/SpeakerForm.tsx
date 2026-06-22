@@ -1,0 +1,690 @@
+import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
+import { speakerSchema, SpeakerFormValues } from "@/lib/validation/speaker-schema";
+import { convertToWebP } from "@/lib/image-utils";
+import { toast } from "sonner";
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { ClipboardList, Loader2, Send, Upload, CheckCircle2 } from "lucide-react";
+
+interface Props {
+  existing: any | null;
+  userId: string;
+  userEmail: string;
+}
+
+const sections = [
+  { id: "personal", label: "Persönliche Informationen" },
+  { id: "profile", label: "Profil & Bio" },
+  { id: "topics", label: "Interview-Themen" },
+  { id: "social", label: "Social Media" },
+  { id: "newsletter", label: "Newsletter & Reichweite" },
+  { id: "affiliate", label: "Affiliate & Produkte" },
+  { id: "legal", label: "Rechtliches" },
+];
+
+export default function SpeakerForm({ existing, userId, userEmail }: Props) {
+  const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(existing?.avatar_url ?? null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const social = (existing?.social_links as Record<string, string>) || {};
+  const hot: string[] = Array.isArray(existing?.hot_topics) ? existing.hot_topics : [];
+  const affs: any[] = Array.isArray(existing?.top_affiliate_products)
+    ? existing.top_affiliate_products
+    : [];
+
+  const form = useForm<SpeakerFormValues>({
+    resolver: zodResolver(speakerSchema),
+    defaultValues: {
+      salutation: existing?.salutation || undefined,
+      first_name: existing?.first_name || "",
+      last_name: existing?.last_name || "",
+      title_role: existing?.title_role || "",
+      industry: existing?.industry || "",
+      phone: existing?.phone || "",
+      email: existing?.email || userEmail,
+      website: existing?.website || "",
+      slogan: existing?.slogan || "",
+      bio_third_person: existing?.bio_third_person || "",
+      short_vita: existing?.short_vita || "",
+      topic_suggestions: existing?.topic_suggestions || "",
+      interview_topic: existing?.interview_topic || "",
+      product: existing?.product || "",
+      product_market_since: existing?.product_market_since || "",
+      previous_interviews: existing?.previous_interviews || "",
+      critical_voices: existing?.critical_voices || "",
+      hot_topic_1: hot[0] || "",
+      hot_topic_2: hot[1] || "",
+      hot_topic_3: hot[2] || "",
+      social_youtube: social.youtube || "",
+      social_facebook: social.facebook || "",
+      social_instagram: social.instagram || "",
+      social_linkedin: social.linkedin || "",
+      social_twitter: social.twitter || "",
+      social_telegram: social.telegram || "",
+      has_newsletter: existing?.has_newsletter === true ? "ja" : existing?.has_newsletter === false ? "nein" : undefined,
+      email_list_size: existing?.email_list_size ?? 0,
+      affiliate_available: existing?.affiliate_available === true ? "ja" : existing?.affiliate_available === false ? "nein" : undefined,
+      affiliate_registration_url: existing?.affiliate_registration_url || "",
+      aff_1_name: affs[0]?.name || "",
+      aff_1_url: affs[0]?.url || "",
+      aff_1_freebie: affs[0]?.freebie || "",
+      aff_1_ebook: affs[0]?.ebook || "",
+      aff_2_name: affs[1]?.name || "",
+      aff_2_url: affs[1]?.url || "",
+      aff_2_freebie: affs[1]?.freebie || "",
+      aff_2_ebook: affs[1]?.ebook || "",
+      aff_3_name: affs[2]?.name || "",
+      aff_3_url: affs[2]?.url || "",
+      aff_3_freebie: affs[2]?.freebie || "",
+      aff_3_ebook: affs[2]?.ebook || "",
+      agb_accepted: existing?.agb_accepted_at ? true : (undefined as any),
+      privacy_accepted: existing?.privacy_accepted_at ? true : (undefined as any),
+    },
+  });
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) {
+      toast.error("Bild zu groß (max. 5 MB Original)");
+      return;
+    }
+    setAvatarFile(f);
+    setAvatarPreview(URL.createObjectURL(f));
+  };
+
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatarFile) return existing?.avatar_url ?? null;
+    const webp = await convertToWebP(avatarFile);
+    if (webp.size > 500_000) {
+      toast.error("Profilbild über 500 KB nach Konvertierung – bitte kleineres Bild wählen");
+      throw new Error("avatar too large");
+    }
+    const path = `${userId}/avatar-${Date.now()}.webp`;
+    const { error } = await supabase.storage
+      .from("speaker-avatars")
+      .upload(path, webp, { contentType: "image/webp", upsert: true });
+    if (error) throw error;
+    return path;
+  };
+
+  const onSubmit = async (values: SpeakerFormValues) => {
+    if (!avatarFile && !existing?.avatar_url) {
+      toast.error("Bitte ein Profilbild hochladen");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const avatar_url = await uploadAvatar();
+
+      const payload = {
+        user_id: userId,
+        salutation: values.salutation,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        title_role: values.title_role || null,
+        industry: values.industry || null,
+        phone: values.phone,
+        email: values.email,
+        website: values.website || null,
+        slogan: values.slogan,
+        bio_third_person: values.bio_third_person,
+        short_vita: values.short_vita,
+        avatar_url,
+        topic_suggestions: values.topic_suggestions,
+        interview_topic: values.interview_topic || null,
+        product: values.product || null,
+        product_market_since: values.product_market_since || null,
+        previous_interviews: values.previous_interviews || null,
+        critical_voices: values.critical_voices || null,
+        hot_topics: [values.hot_topic_1, values.hot_topic_2, values.hot_topic_3].filter(Boolean),
+        social_links: {
+          youtube: values.social_youtube || "",
+          facebook: values.social_facebook || "",
+          instagram: values.social_instagram || "",
+          linkedin: values.social_linkedin || "",
+          twitter: values.social_twitter || "",
+          telegram: values.social_telegram || "",
+        },
+        has_newsletter: values.has_newsletter === "ja",
+        email_list_size: values.email_list_size,
+        affiliate_available: values.affiliate_available === "ja",
+        affiliate_registration_url: values.affiliate_registration_url || null,
+        top_affiliate_products: [
+          { name: values.aff_1_name, url: values.aff_1_url, freebie: values.aff_1_freebie, ebook: values.aff_1_ebook },
+          { name: values.aff_2_name, url: values.aff_2_url, freebie: values.aff_2_freebie, ebook: values.aff_2_ebook },
+          { name: values.aff_3_name, url: values.aff_3_url, freebie: values.aff_3_freebie, ebook: values.aff_3_ebook },
+        ].filter((a) => a.name || a.url),
+        agb_accepted_at: values.agb_accepted ? new Date().toISOString() : null,
+        privacy_accepted_at: values.privacy_accepted ? new Date().toISOString() : null,
+      };
+
+      const { data: speaker, error: spkErr } = await supabase
+        .from("speakers")
+        .upsert(payload, { onConflict: "user_id" })
+        .select()
+        .single();
+
+      if (spkErr) throw spkErr;
+
+      // Ersten posts-Eintrag mit Status 'erfassung' anlegen, falls noch keiner existiert
+      if (!existing) {
+        const { error: postErr } = await supabase.from("posts").insert({
+          speaker_id: speaker.id,
+          guest_name: `${values.first_name} ${values.last_name}`.trim(),
+          interview_title: values.interview_topic || values.topic_suggestions.slice(0, 120),
+          status: "erfassung",
+          guest_short_bio: values.bio_third_person,
+          guest_website_url: values.website || null,
+          guest_image_url: avatar_url
+            ? supabase.storage.from("speaker-avatars").getPublicUrl(avatar_url).data.publicUrl
+            : null,
+        });
+        if (postErr) throw postErr;
+      }
+
+      toast.success(existing ? "Profil aktualisiert" : "Anmeldung erfolgreich");
+      navigate("/module/erfassung/danke");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Fehler beim Speichern");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const triggerInterview = async () => {
+    if (!existing) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("posts").insert({
+      speaker_id: existing.id,
+      guest_name: `${existing.first_name} ${existing.last_name}`.trim(),
+      interview_title: existing.interview_topic || existing.topic_suggestions?.slice(0, 120) || "Neues Interview",
+      status: "erfassung",
+      guest_short_bio: existing.bio_third_person,
+      guest_website_url: existing.website,
+      guest_image_url: existing.avatar_url
+        ? supabase.storage.from("speaker-avatars").getPublicUrl(existing.avatar_url).data.publicUrl
+        : null,
+    });
+    setSubmitting(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Neues Interview angestoßen");
+      navigate("/module/erfassung/danke");
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 py-10">
+      <div className="mb-10 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="rounded-lg border bg-card p-3">
+            <ClipboardList className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground tabular-nums">Modul 1</div>
+            <h1 className="font-display text-3xl font-bold tracking-tight">
+              Anmeldung zum Freigeist Kongress
+            </h1>
+            <p className="mt-1 text-muted-foreground">
+              Registrieren Sie sich als Speaker oder Interview-Gast
+            </p>
+          </div>
+        </div>
+        {existing && (
+          <Button onClick={triggerInterview} disabled={submitting} size="lg">
+            <Send className="mr-1.5 h-4 w-4" />
+            Neues Interview anstoßen
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-10 lg:grid-cols-[1fr_220px]">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* PERSÖNLICH */}
+            <Card id="personal">
+              <CardHeader>
+                <CardTitle>Persönliche Informationen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="salutation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Anrede <span className="text-primary">*</span></FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex gap-6"
+                        >
+                          {["Herr", "Frau", "Divers"].map((v) => (
+                            <div key={v} className="flex items-center gap-2">
+                              <RadioGroupItem value={v} id={`anr-${v}`} />
+                              <Label htmlFor={`anr-${v}`} className="font-normal">{v}</Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <TextInput name="first_name" label="Vorname" required form={form} />
+                  <TextInput name="last_name" label="Nachname" required form={form} />
+                  <TextInput name="title_role" label="Titel & Berufsbezeichnung" form={form} />
+                  <TextInput name="industry" label="Branche" form={form} />
+                  <TextInput name="phone" label="Telefonnummer" required form={form} />
+                  <TextInput name="email" label="E-Mail-Adresse" type="email" required form={form} />
+                  <TextInput name="website" label="Homepage" form={form} placeholder="https://..." />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* PROFIL */}
+            <Card id="profile">
+              <CardHeader>
+                <CardTitle>Profil & Bio</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <TextInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required form={form} />
+                <TextAreaInput
+                  name="bio_third_person"
+                  label="Ich über mich in 3. Person"
+                  required
+                  form={form}
+                  rows={4}
+                />
+                <TextAreaInput
+                  name="short_vita"
+                  label="Kurze Vita"
+                  required
+                  form={form}
+                  rows={5}
+                  help="Wer du bist, was du machst und warum dein Thema wichtig ist."
+                />
+
+                <div>
+                  <Label className="text-sm font-medium">
+                    Profilbild <span className="text-primary">*</span>
+                  </Label>
+                  <p className="mt-1 mb-2 text-xs text-muted-foreground">
+                    Bitte ein klares Profilbild hochladen. Max. 500 KB (wird automatisch optimiert).
+                  </p>
+                  <div className="flex items-center gap-4">
+                    {avatarPreview && (
+                      <img
+                        src={avatarPreview.startsWith("http") || avatarPreview.startsWith("blob:")
+                          ? avatarPreview
+                          : supabase.storage.from("speaker-avatars").getPublicUrl(avatarPreview).data.publicUrl}
+                        alt="Vorschau"
+                        className="h-20 w-20 rounded-full border object-cover"
+                      />
+                    )}
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileRef}
+                        onChange={onFileChange}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        <Upload className="mr-1.5 h-4 w-4" />
+                        Bild auswählen
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* THEMEN */}
+            <Card id="topics">
+              <CardHeader>
+                <CardTitle>Interview-Themen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <TextAreaInput
+                  name="topic_suggestions"
+                  label="Interview-Themenvorschläge"
+                  required
+                  form={form}
+                  rows={3}
+                />
+                <TextInput name="interview_topic" label="Thema des Interviews" form={form} />
+                <TextInput name="product" label="Produkt, über das gesprochen wird" form={form} />
+                <TextInput
+                  name="product_market_since"
+                  label="Wie lange ist das Produkt bereits am Markt?"
+                  form={form}
+                />
+                <TextAreaInput
+                  name="previous_interviews"
+                  label="Liste aller Interviews, in denen bereits über dieses Thema oder Produkt gesprochen wurde"
+                  form={form}
+                  rows={3}
+                />
+                <TextAreaInput
+                  name="critical_voices"
+                  label="Gibt es kritische Stimmen oder rechtliche Schwierigkeiten zu Thema oder Produkt?"
+                  form={form}
+                  rows={3}
+                />
+                <div>
+                  <Label className="text-sm font-medium">3 brandaktuelle Themen</Label>
+                  <div className="mt-2 space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <span className="w-6 text-sm text-muted-foreground tabular-nums">{i}.</span>
+                        <Input
+                          {...form.register(`hot_topic_${i}` as any)}
+                          placeholder={`Thema ${i}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SOCIAL */}
+            <Card id="social">
+              <CardHeader>
+                <CardTitle>Social Media</CardTitle>
+                <CardDescription>URLs Ihrer Profile (optional)</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-5 md:grid-cols-2">
+                <TextInput name="social_youtube" label="YouTube" form={form} placeholder="https://..." />
+                <TextInput name="social_facebook" label="Facebook" form={form} placeholder="https://..." />
+                <TextInput name="social_instagram" label="Instagram" form={form} placeholder="https://..." />
+                <TextInput name="social_linkedin" label="LinkedIn" form={form} placeholder="https://..." />
+                <TextInput name="social_twitter" label="Twitter / X" form={form} placeholder="https://..." />
+                <TextInput name="social_telegram" label="Telegram" form={form} placeholder="https://..." />
+              </CardContent>
+            </Card>
+
+            {/* NEWSLETTER */}
+            <Card id="newsletter">
+              <CardHeader>
+                <CardTitle>Newsletter & Reichweite</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="has_newsletter"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Newsletter-Anmeldung auf Homepage <span className="text-primary">*</span></FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex gap-6"
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="ja" id="nl-ja" />
+                            <Label htmlFor="nl-ja" className="font-normal">Ja</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="nein" id="nl-nein" />
+                            <Label htmlFor="nl-nein" className="font-normal">Nein</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <TextInput
+                  name="email_list_size"
+                  label="Größe Ihrer E-Mail-Liste"
+                  type="number"
+                  required
+                  form={form}
+                  help="Wie viele Kontakte werden Sie nutzen, um den Freigeist Kongress zu bewerben?"
+                />
+              </CardContent>
+            </Card>
+
+            {/* AFFILIATE */}
+            <Card id="affiliate">
+              <CardHeader>
+                <CardTitle>Affiliate & Produkte</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="affiliate_available"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Affiliate-Anmeldung möglich? <span className="text-primary">*</span></FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex gap-6"
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="ja" id="aff-ja" />
+                            <Label htmlFor="aff-ja" className="font-normal">Ja</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="nein" id="aff-nein" />
+                            <Label htmlFor="aff-nein" className="font-normal">Nein</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <TextInput
+                  name="affiliate_registration_url"
+                  label="Affiliate-Registrierungslink"
+                  form={form}
+                  placeholder="https://..."
+                  help="Wo können wir uns registrieren? (z. B. Digistore)"
+                />
+
+                <div>
+                  <Label className="text-sm font-medium">Top 3 Affiliate-Produkte</Label>
+                  <div className="mt-3 space-y-5">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                        <div className="text-xs font-medium text-muted-foreground tabular-nums">
+                          Produkt {i}
+                        </div>
+                        <Input
+                          {...form.register(`aff_${i}_name` as any)}
+                          placeholder="Produkt"
+                        />
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <Input {...form.register(`aff_${i}_url` as any)} placeholder="URL" />
+                          <Input {...form.register(`aff_${i}_freebie` as any)} placeholder="Freebie URL" />
+                          <Input {...form.register(`aff_${i}_ebook` as any)} placeholder="E-Book URL" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* RECHTLICHES */}
+            <Card id="legal">
+              <CardHeader>
+                <CardTitle>Rechtliches</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="agb_accepted"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-start gap-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="mt-0.5"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-tight">
+                          <FormLabel className="font-normal">
+                            AGB-Bestätigung inkl. E-Mail-Promotion <span className="text-primary">*</span>
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Mit der Einreichung bestätige ich, die AGB zu akzeptieren und meine
+                            E-Mail-Liste mindestens dreimal vor dem Kongress mit dem Link
+                            freigeistkongress.com anzuschreiben.
+                          </p>
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="privacy_accepted"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-start gap-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="mt-0.5"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-tight">
+                          <FormLabel className="font-normal">
+                            Datenschutz <span className="text-primary">*</span>
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Ich bestätige die Datenschutzbestimmungen und die Verarbeitung meiner
+                            Daten. (Bestätigungs-E-Mail folgt.)
+                          </p>
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+              Ihre Daten werden sicher verarbeitet. Sie erhalten eine Bestätigungs-E-Mail.
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit" size="lg" disabled={submitting} className="min-w-[220px]">
+                {submitting ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                )}
+                {existing ? "Profil speichern" : "Anmeldung absenden"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+
+        {/* Sticky Sektions-Nav */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-6 rounded-lg border bg-card p-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Abschnitte
+            </div>
+            <nav className="space-y-1">
+              {sections.map((s) => (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  className="block rounded px-2 py-1.5 text-sm text-foreground/80 hover:bg-accent/40 hover:text-foreground"
+                >
+                  {s.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function TextInput({
+  name,
+  label,
+  required,
+  form,
+  type = "text",
+  placeholder,
+  help,
+}: any) {
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>
+            {label} {required && <span className="text-primary">*</span>}
+          </FormLabel>
+          <FormControl>
+            <Input type={type} placeholder={placeholder} {...field} />
+          </FormControl>
+          {help && <FormDescription>{help}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function TextAreaInput({ name, label, required, form, rows = 3, help }: any) {
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>
+            {label} {required && <span className="text-primary">*</span>}
+          </FormLabel>
+          <FormControl>
+            <Textarea rows={rows} {...field} />
+          </FormControl>
+          {help && <FormDescription>{help}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
