@@ -15,11 +15,6 @@ export const speakerSchema = z.object({
   short_vita: z.string().trim().min(1, "Pflichtfeld").max(2000),
 
   topic_suggestions: z.string().trim().min(1, "Pflichtfeld").max(2000),
-  interview_topic: z.string().trim().max(300).optional().or(z.literal("")),
-  product: z.string().trim().max(300).optional().or(z.literal("")),
-  product_market_since: z.string().trim().max(120).optional().or(z.literal("")),
-  previous_interviews: z.string().trim().max(2000).optional().or(z.literal("")),
-  critical_voices: z.string().trim().max(2000).optional().or(z.literal("")),
   hot_topic_1: z.string().trim().max(300).optional().or(z.literal("")),
   hot_topic_2: z.string().trim().max(300).optional().or(z.literal("")),
   hot_topic_3: z.string().trim().max(300).optional().or(z.literal("")),
