@@ -122,7 +122,7 @@ export default function ViewPost() {
 
 
       {post.blocks ? (
-        <PostPreview post={post} blocks={post.blocks} />
+        <PostPreview post={post} blocks={post.blocks} hideTitle={hasInterviewDetails} />
       ) : (
         <div className="mx-auto max-w-3xl px-6 py-16 text-center text-muted-foreground">
           Für diesen Beitrag liegt noch kein finaler Inhalt vor.
