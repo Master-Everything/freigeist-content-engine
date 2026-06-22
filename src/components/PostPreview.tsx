@@ -22,9 +22,10 @@ function renderInlineBold(text: string) {
 interface PostPreviewProps {
   post: Post;
   blocks: PostBlocks;
+  hideTitle?: boolean;
 }
 
-export function PostPreview({ post, blocks: b }: PostPreviewProps) {
+export function PostPreview({ post, blocks: b, hideTitle }: PostPreviewProps) {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const mainVideoId = extractYouTubeId(b.main_video_url || "");
   const additionalVideoId = b.additional_video_embed ? extractYouTubeId(b.additional_video_embed) : null;
@@ -33,7 +34,8 @@ export function PostPreview({ post, blocks: b }: PostPreviewProps) {
   return (
     <article className="mx-auto max-w-2xl px-6 py-10">
       {/* Hero */}
-      <h1 className="font-display text-3xl font-bold leading-tight mb-3">{post.interview_title}</h1>
+      {!hideTitle && <h1 className="font-display text-3xl font-bold leading-tight mb-3">{post.interview_title}</h1>}
+
       {b.excerpt && <p className="text-lg text-muted-foreground mb-8">{b.excerpt}</p>}
 
       {/* Main Video */}
