@@ -337,7 +337,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 <div className="grid gap-5 md:grid-cols-2">
                   <TextInput name="first_name" label="Vorname" required form={form} />
                   <TextInput name="last_name" label="Nachname" required form={form} />
-                  <TextInput name="title_role" label="Titel & Berufsbezeichnung" form={form} />
+                  <TextAreaInput name="title_role" label="Titel & Berufsbezeichnung" form={form} />
                   <TextInput name="industry" label="Branche" form={form} />
                   <TextInput name="phone" label="Telefonnummer" required form={form} />
                   <TextInput name="email" label="E-Mail-Adresse" type="email" required form={form} />
@@ -352,7 +352,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 <CardTitle>Profil & Bio</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                <TextInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required form={form} />
+                <TextAreaInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required form={form} />
                 <TextAreaInput
                   name="bio_third_person"
                   label="Ich über mich in 3. Person"
@@ -421,8 +421,8 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                   form={form}
                   rows={3}
                 />
-                <TextInput name="interview_topic" label="Thema des Interviews" form={form} />
-                <TextInput name="product" label="Produkt, über das gesprochen wird" form={form} />
+                <TextAreaInput name="interview_topic" label="Thema des Interviews" form={form} />
+                <TextAreaInput name="product" label="Produkt, über das gesprochen wird" form={form} />
                 <TextInput
                   name="product_market_since"
                   label="Wie lange ist das Produkt bereits am Markt?"
@@ -448,12 +448,13 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                       const max = FIELD_MAX[name];
                       return (
                         <div key={i}>
-                          <div className="flex items-center gap-3">
-                            <span className="w-6 text-sm text-muted-foreground tabular-nums">{i}.</span>
-                            <Input
+                          <div className="flex items-start gap-3">
+                            <span className="w-6 pt-2 text-sm text-muted-foreground tabular-nums">{i}.</span>
+                            <Textarea
                               {...form.register(name as any)}
                               placeholder={`Thema ${i}`}
                               maxLength={max}
+                              className="min-h-[6rem] flex-1"
                             />
                           </div>
                           <WatchedCounter control={form.control} name={name} max={max} />
@@ -580,10 +581,11 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                             Produkt {i}
                           </div>
                           <div>
-                            <Input
+                            <Textarea
                               {...form.register(fields[0].key as any)}
                               placeholder={fields[0].placeholder}
                               maxLength={FIELD_MAX[fields[0].key]}
+                              className="min-h-[6rem]"
                             />
                             <WatchedCounter control={form.control} name={fields[0].key} max={FIELD_MAX[fields[0].key]} />
                           </div>

@@ -1,50 +1,31 @@
-# Plan: Textfelder vergrößern und Zeichenzähler hinzufügen
+# Plan: Inhaltliche Langfelder zu Textareas umwandeln
 
 ## Ziel
-In `src/pages/Auth.tsx` und im Erfassungsformular `src/pages/modules/erfassung/SpeakerForm.tsx`:
-1. Alle Eingabefelder (Input + Textarea) so hoch dimensionieren, dass der gesamte erlaubte Text bequem sichtbar ist.
-2. Unter jedem Feld einen Hinweis anzeigen: `aktuelle Zeichen / maximale Zeichen` (z. B. `123 / 2000`).
+In `src/pages/modules/erfassung/SpeakerForm.tsx` die einzeiligen `Input`-Felder mit inhaltlichem Text auf `Textarea` umstellen, damit die maximale Zeichenmenge sichtbar dargestellt werden kann. Höhe und Zeichenzähler wie bei den bestehenden Textareas.
 
-## Vorgehen
+## Betroffene Felder (Input → Textarea)
+- `slogan` (max 300)
+- `title_role` (max 160)
+- `interview_topic` (max 300)
+- `product` (max 300)
+- `hot_topic_1`, `hot_topic_2`, `hot_topic_3` (max 300)
+- `aff_1_name`, `aff_2_name`, `aff_3_name` (max 160)
 
-### 1. Wiederverwendbare Helfer
-Neue kleine Komponente `src/components/ui/char-counter.tsx`:
-- Props: `current: number`, `max: number`
-- Rendert rechtsbündig unter dem Feld: `{current} / {max}` in `text-xs text-muted-foreground`, wird bei `current > max` rot (`text-destructive`).
+## Nicht betroffen (bleiben `Input`)
+- Namen: `first_name`, `last_name`
+- Kontakt: `phone`, `email`
+- `industry`, `product_market_since`
+- URLs: `website`, alle `social_*`, `affiliate_registration_url`, `aff_*_url`, `aff_*_freebie`, `aff_*_ebook`
+- Zahl: `email_list_size`
 
-### 2. Höhe der Felder dynamisch aus `maxLength` ableiten
-Faustregel zur Höhenwahl (passt zum bestehenden Tailwind-Stil):
-- `Input` (einzeilig, max ≤ 255): bleibt Input, keine Höhenänderung sinnvoll → nur Zeichenzähler darunter.
-- `Textarea`:
-  - max ≤ 300 → `min-h-[6rem]` (~3 Zeilen)
-  - max ≤ 800 → `min-h-[10rem]`
-  - max ≤ 1500 → `min-h-[16rem]`
-  - max ≤ 2000 → `min-h-[20rem]` (passt ca. 2000 Zeichen ohne Scrollen bei ~80 Zeichen/Zeile)
+## Umsetzung
+1. `TextInput`-Aufrufe für `slogan`, `title_role`, `interview_topic`, `product` durch `TextAreaInput` ersetzen (gleiche Props: `name`, `label`, ggf. `required`, `form`, `help`). Höhe ergibt sich automatisch aus `textareaHeightFor(max)` (für max ≤ 300 → `min-h-[6rem]`, ~3 Zeilen).
+2. Für die 3 brandaktuellen Themen den Block ersetzen: statt `Input` ein `Textarea` mit `maxLength={FIELD_MAX[name]}`, `min-h-[6rem]`, plus `WatchedCounter` darunter. Nummerierungs-Layout bleibt erhalten (Nummer links, Feld rechts; bei mehrzeiligem Feld Nummer oben ausgerichtet via `items-start` und `pt-2`).
+3. Für die Affiliate-Produktnamen (`aff_${i}_name`) ebenfalls auf `Textarea` mit passender Höhe und Counter umstellen; die danebenliegenden URL-Felder (`url`, `freebie`, `ebook`) bleiben `Input`.
 
-Werte werden pro Feld einzeln gesetzt; keine globale Änderung an `textarea.tsx`.
-
-### 3. `SpeakerForm.tsx` anpassen
-Für jedes Feld aus `speakerSchema` (siehe `src/lib/validation/speaker-schema.ts`):
-- `maxLength={<schema-max>}` am Input/Textarea setzen.
-- Bei Textareas die obige Höhe via `className` setzen.
-- Unter dem Feld (innerhalb von `FormItem`, nach `FormMessage`) `<CharCounter current={field.value?.length ?? 0} max={<schema-max>} />` einfügen.
-- Numerische und Enum-/Checkbox-Felder (`salutation`, `has_newsletter`, `affiliate_available`, `email_list_size`, `agb_accepted`, `privacy_accepted`) erhalten keinen Zähler.
-
-### 4. `Auth.tsx` anpassen
-- E-Mail-Feld: `maxLength={255}` + Counter `x / 255`.
-- Passwort-Feld: `maxLength={72}` (bcrypt-Grenze, passt zum bestehenden Auth-Flow) + Counter `x / 72`.
-- Ggf. weitere Felder (Name etc.) analog, falls vorhanden — wird beim Lesen der Datei bestätigt.
-
-### 5. Keine Logikänderungen
-- Keine Schema-Änderungen, keine Submit-Logik, keine DB-Änderungen.
-- Nur Präsentationsschicht (Höhe, `maxLength`, Counter).
-
-## Technische Details
-- Counter liest live aus `field.value` (react-hook-form `Controller`/`FormField`), kein zusätzlicher State.
-- `maxLength` am DOM-Element verhindert auch das Überschreiten beim Tippen — konsistent mit den Zod-Limits.
-- Bestehende Validierung/Fehlertexte bleiben unverändert.
+## Keine Logikänderungen
+- Schema, Validierung, Submit-Payload und DB-Felder bleiben unverändert.
+- Nur Präsentation: Eingabeelement-Typ und Höhe.
 
 ## Betroffene Dateien
-- neu: `src/components/ui/char-counter.tsx`
-- geändert: `src/pages/modules/erfassung/SpeakerForm.tsx`
-- geändert: `src/pages/Auth.tsx`
+- `src/pages/modules/erfassung/SpeakerForm.tsx`
