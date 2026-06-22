@@ -113,9 +113,11 @@ export default function Auth() {
                       id="signin-email"
                       type="email"
                       required
+                      maxLength={255}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
+                    <CharCounter current={email.length} max={255} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="signin-password">Passwort</Label>
@@ -123,9 +125,11 @@ export default function Auth() {
                       id="signin-password"
                       type="password"
                       required
+                      maxLength={72}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
+                    <CharCounter current={password.length} max={72} />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -142,9 +146,11 @@ export default function Auth() {
                       id="signup-email"
                       type="email"
                       required
+                      maxLength={255}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
+                    <CharCounter current={email.length} max={255} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="signup-password">Passwort</Label>
@@ -152,11 +158,13 @@ export default function Auth() {
                       id="signup-password"
                       type="password"
                       minLength={6}
+                      maxLength={72}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">Mindestens 6 Zeichen</p>
+                    <CharCounter current={password.length} max={72} />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
