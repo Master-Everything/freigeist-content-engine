@@ -352,7 +352,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 <CardTitle>Profil & Bio</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                <TextInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required form={form} />
+                <TextAreaInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required form={form} />
                 <TextAreaInput
                   name="bio_third_person"
                   label="Ich über mich in 3. Person"
