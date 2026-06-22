@@ -55,6 +55,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function DashboardHome() {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -62,6 +63,8 @@ export default function DashboardHome() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
+    // RLS sorgt automatisch dafür, dass Speaker nur eigene Posts sehen,
+    // Admins alle.
     supabase
       .from("posts")
       .select("*")
@@ -91,13 +94,21 @@ export default function DashboardHome() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          Workflow-Übersicht
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Alle Interviewgäste und Interviews im Überblick – vom Erstkontakt bis zum Beitrag.
-        </p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            Workflow-Übersicht
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            {role === "admin"
+              ? "Alle Interviewgäste und Interviews – vom Erstkontakt bis zum Beitrag."
+              : "Ihre Interviews im Überblick."}
+          </p>
+        </div>
+        <Button onClick={() => navigate("/module/erfassung")}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          {role === "admin" ? "Erfassung öffnen" : "Neues Interview anstoßen"}
+        </Button>
       </div>
 
       <div className="mb-10 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
