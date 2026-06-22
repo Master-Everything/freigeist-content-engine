@@ -65,6 +65,8 @@ const App = () => (
               <Route path="/module/erfassung" element={<Module1Erfassung />} />
               <Route path="/module/erfassung/danke" element={<ErfassungDanke />} />
               <Route path="/module/interview/neu" element={<InterviewForm />} />
+              <Route path="/module/vorab-scan/eingereicht" element={<VorabScanEingereicht />} />
+              <Route path="/speaker/modul/:num" element={<SpeakerModulePlaceholder />} />
 
               {/* Admin-only Module */}
               <Route
