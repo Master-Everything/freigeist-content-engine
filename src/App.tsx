@@ -7,6 +7,9 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import DashboardHome from "./pages/DashboardHome";
+import SpeakerDashboard from "./pages/SpeakerDashboard";
+import MyPosts from "./pages/MyPosts";
+import ViewPost from "./pages/ViewPost";
 import InterviewPostsList from "./pages/Index";
 import NewPost from "./pages/NewPost";
 import EditPost from "./pages/EditPost";
@@ -41,20 +44,113 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<DashboardHome />} />
+              {/* Admin-Startseite */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <DashboardHome />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Speaker-Startseite */}
+              <Route path="/speaker" element={<SpeakerDashboard />} />
+              <Route path="/module/interview-beitraege/mine" element={<MyPosts />} />
+              <Route path="/module/interview-beitraege/view/:id" element={<ViewPost />} />
+
+              {/* Gemeinsam: Speaker + Admin */}
               <Route path="/module/erfassung" element={<Module1Erfassung />} />
               <Route path="/module/erfassung/danke" element={<ErfassungDanke />} />
-              <Route path="/module/vorab-scan" element={<Module2VorabScan />} />
-              <Route path="/module/profil" element={<Module3Profil />} />
-              <Route path="/module/leitfaden" element={<Module4Leitfaden />} />
-              <Route path="/module/vorgespraech" element={<Module5Vorgespraech />} />
-              <Route path="/module/aufzeichnung" element={<Module6Aufzeichnung />} />
-              <Route path="/module/interview-beitraege" element={<InterviewPostsList />} />
-              <Route path="/module/interview-beitraege/new" element={<NewPost />} />
-              <Route path="/module/interview-beitraege/edit/:id" element={<EditPost />} />
-              <Route path="/module/interview-beitraege/preview/:id" element={<PreviewPost />} />
-              <Route path="/module/news" element={<Module8NewsPlattform />} />
-              <Route path="/tech-stack" element={<TechStack />} />
+
+              {/* Admin-only Module */}
+              <Route
+                path="/module/vorab-scan"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Module2VorabScan />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/profil"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Module3Profil />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/leitfaden"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Module4Leitfaden />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/vorgespraech"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Module5Vorgespraech />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/aufzeichnung"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Module6Aufzeichnung />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/interview-beitraege"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <InterviewPostsList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/interview-beitraege/new"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <NewPost />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/interview-beitraege/edit/:id"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <EditPost />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/interview-beitraege/preview/:id"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <PreviewPost />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/news"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Module8NewsPlattform />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tech-stack"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <TechStack />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
