@@ -15,7 +15,53 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { CharCounter } from "@/components/ui/char-counter";
 import { ClipboardList, Loader2, Send, Upload, CheckCircle2 } from "lucide-react";
+import { useWatch } from "react-hook-form";
+
+const FIELD_MAX: Record<string, number> = {
+  first_name: 80,
+  last_name: 80,
+  title_role: 160,
+  industry: 120,
+  phone: 40,
+  email: 255,
+  website: 255,
+  slogan: 300,
+  bio_third_person: 2000,
+  short_vita: 2000,
+  topic_suggestions: 2000,
+  interview_topic: 300,
+  product: 300,
+  product_market_since: 120,
+  previous_interviews: 2000,
+  critical_voices: 2000,
+  hot_topic_1: 300,
+  hot_topic_2: 300,
+  hot_topic_3: 300,
+  social_youtube: 255,
+  social_facebook: 255,
+  social_instagram: 255,
+  social_linkedin: 255,
+  social_twitter: 255,
+  social_telegram: 255,
+  affiliate_registration_url: 255,
+  aff_1_name: 160, aff_1_url: 255, aff_1_freebie: 255, aff_1_ebook: 255,
+  aff_2_name: 160, aff_2_url: 255, aff_2_freebie: 255, aff_2_ebook: 255,
+  aff_3_name: 160, aff_3_url: 255, aff_3_freebie: 255, aff_3_ebook: 255,
+};
+
+function textareaHeightFor(max: number): string {
+  if (max <= 300) return "min-h-[6rem]";
+  if (max <= 800) return "min-h-[10rem]";
+  if (max <= 1500) return "min-h-[16rem]";
+  return "min-h-[20rem]";
+}
+
+function WatchedCounter({ control, name, max }: { control: any; name: string; max: number }) {
+  const value = useWatch({ control, name });
+  return <CharCounter current={typeof value === "string" ? value.length : 0} max={max} />;
+}
 
 interface Props {
   existing: any | null;
@@ -396,16 +442,24 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 />
                 <div>
                   <Label className="text-sm font-medium">3 brandaktuelle Themen</Label>
-                  <div className="mt-2 space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className="w-6 text-sm text-muted-foreground tabular-nums">{i}.</span>
-                        <Input
-                          {...form.register(`hot_topic_${i}` as any)}
-                          placeholder={`Thema ${i}`}
-                        />
-                      </div>
-                    ))}
+                  <div className="mt-2 space-y-3">
+                    {[1, 2, 3].map((i) => {
+                      const name = `hot_topic_${i}`;
+                      const max = FIELD_MAX[name];
+                      return (
+                        <div key={i}>
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 text-sm text-muted-foreground tabular-nums">{i}.</span>
+                            <Input
+                              {...form.register(name as any)}
+                              placeholder={`Thema ${i}`}
+                              maxLength={max}
+                            />
+                          </div>
+                          <WatchedCounter control={form.control} name={name} max={max} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>
@@ -513,22 +567,41 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 <div>
                   <Label className="text-sm font-medium">Top 3 Affiliate-Produkte</Label>
                   <div className="mt-3 space-y-5">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="rounded-lg border bg-muted/20 p-4 space-y-3">
-                        <div className="text-xs font-medium text-muted-foreground tabular-nums">
-                          Produkt {i}
+                    {[1, 2, 3].map((i) => {
+                      const fields = [
+                        { key: `aff_${i}_name`, placeholder: "Produkt" },
+                        { key: `aff_${i}_url`, placeholder: "URL" },
+                        { key: `aff_${i}_freebie`, placeholder: "Freebie URL" },
+                        { key: `aff_${i}_ebook`, placeholder: "E-Book URL" },
+                      ];
+                      return (
+                        <div key={i} className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                          <div className="text-xs font-medium text-muted-foreground tabular-nums">
+                            Produkt {i}
+                          </div>
+                          <div>
+                            <Input
+                              {...form.register(fields[0].key as any)}
+                              placeholder={fields[0].placeholder}
+                              maxLength={FIELD_MAX[fields[0].key]}
+                            />
+                            <WatchedCounter control={form.control} name={fields[0].key} max={FIELD_MAX[fields[0].key]} />
+                          </div>
+                          <div className="grid gap-3 md:grid-cols-3">
+                            {fields.slice(1).map((f) => (
+                              <div key={f.key}>
+                                <Input
+                                  {...form.register(f.key as any)}
+                                  placeholder={f.placeholder}
+                                  maxLength={FIELD_MAX[f.key]}
+                                />
+                                <WatchedCounter control={form.control} name={f.key} max={FIELD_MAX[f.key]} />
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <Input
-                          {...form.register(`aff_${i}_name` as any)}
-                          placeholder="Produkt"
-                        />
-                        <div className="grid gap-3 md:grid-cols-3">
-                          <Input {...form.register(`aff_${i}_url` as any)} placeholder="URL" />
-                          <Input {...form.register(`aff_${i}_freebie` as any)} placeholder="Freebie URL" />
-                          <Input {...form.register(`aff_${i}_ebook` as any)} placeholder="E-Book URL" />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>
@@ -648,6 +721,7 @@ function TextInput({
   placeholder,
   help,
 }: any) {
+  const max = FIELD_MAX[name];
   return (
     <FormField
       control={form.control}
@@ -658,17 +732,25 @@ function TextInput({
             {label} {required && <span className="text-primary">*</span>}
           </FormLabel>
           <FormControl>
-            <Input type={type} placeholder={placeholder} {...field} />
+            <Input type={type} placeholder={placeholder} maxLength={max} {...field} />
           </FormControl>
           {help && <FormDescription>{help}</FormDescription>}
           <FormMessage />
+          {max && type !== "number" && (
+            <CharCounter
+              current={typeof field.value === "string" ? field.value.length : 0}
+              max={max}
+            />
+          )}
         </FormItem>
       )}
     />
   );
 }
 
-function TextAreaInput({ name, label, required, form, rows = 3, help }: any) {
+function TextAreaInput({ name, label, required, form, rows, help }: any) {
+  const max = FIELD_MAX[name];
+  const heightClass = max ? textareaHeightFor(max) : "";
   return (
     <FormField
       control={form.control}
@@ -679,10 +761,16 @@ function TextAreaInput({ name, label, required, form, rows = 3, help }: any) {
             {label} {required && <span className="text-primary">*</span>}
           </FormLabel>
           <FormControl>
-            <Textarea rows={rows} {...field} />
+            <Textarea rows={rows} maxLength={max} className={heightClass} {...field} />
           </FormControl>
           {help && <FormDescription>{help}</FormDescription>}
           <FormMessage />
+          {max && (
+            <CharCounter
+              current={typeof field.value === "string" ? field.value.length : 0}
+              max={max}
+            />
+          )}
         </FormItem>
       )}
     />
