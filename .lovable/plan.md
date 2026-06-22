@@ -1,111 +1,121 @@
-# Plan: Freigeist Content Engine – Workflow-Dashboard
+# Plan: Modul 1 – Erfassung Interviewgast (Basics)
 
 ## Ziel
 
-Ein neues Top-Level-Dashboard mit Sidebar-Navigation, das die 8 Workflow-Module der Freigeist Content Engine abbildet. Modul 7 (Interview-Beiträge) ist bereits gebaut und wird angedockt; die übrigen 7 Module bekommen Platzhalterseiten mit Deinen Modulbeschreibungen.
+Speaker können sich selbst registrieren (oder werden von einem Admin angelegt), füllen ein deutsches Premium-Anmeldeformular aus, und beim Absenden wird automatisch ein erster `posts`-Eintrag mit Status `erfassung` erzeugt – sichtbar im Dashboard und im weiteren Workflow.
 
-## Routen-Struktur
+## Umfang dieser Iteration
+
+- Auth: E-Mail + Passwort + Google (Lovable Cloud managed)
+- Rollen: `admin` / `speaker` über separate `user_roles`-Tabelle (sicher, ohne Eskalations-Risiko)
+- Speaker-Profil: neue Tabelle `speakers` mit allen Formularfeldern
+- Profilbild: öffentlicher Storage-Bucket `speaker-avatars`
+- Formular: deutsches, mehrteiliges Premium-Formular (Sektionen wie spezifiziert)
+- Beim Absenden: Profil speichern **und** ersten `posts`-Eintrag (Status `erfassung`) anlegen, verknüpft mit Speaker
+- Speaker-Dashboard-Sicht: gefilterte Liste eigener Interviews; Admins sehen weiterhin alles
+- Sidebar: Auth-Status, Logout, Login-Route geschützt
+
+## Routen
 
 ```text
-/                              → Dashboard-Übersicht (zentrale Liste Gäste/Interviews)
-/module/erfassung              → Modul 1: Erfassung Interviewgast
-/module/vorab-scan             → Modul 2: Vorab-Scan
-/module/profil                 → Modul 3: Profil & Sprechermappe
-/module/leitfaden              → Modul 4: Interview-Leitfaden
-/module/vorgespraech           → Modul 5: Vorgespräch
-/module/aufzeichnung           → Modul 6: Aufzeichnung / Live
-/module/interview-beitraege    → Modul 7: bestehende Beitragsverwaltung (Liste)
-/module/interview-beitraege/new
-/module/interview-beitraege/edit/:id
-/module/interview-beitraege/preview/:id
-/tech-stack                    → bleibt
+/auth                            → Login + Registrierung (Tabs)
+/module/erfassung                → ersetzt Platzhalter: Anmelde-/Profilformular
+/module/erfassung/danke          → Bestätigungsseite nach Absenden
 ```
 
-Die bisherige Startseite (`Index.tsx`, Beiträge-Liste) wandert nach `/module/interview-beitraege`. Alle internen Navigationsziele (`/new`, `/edit/:id`, `/preview/:id`) werden entsprechend nachgezogen.
+Bestehende Modul-Routen bleiben unverändert. Dashboard und Modul 7 werden für nicht eingeloggte User auf `/auth` umgeleitet.
 
-## App-Shell mit Sidebar
+## Datenbank
 
-Neues Layout-Component `AppLayout.tsx` mit `SidebarProvider`:
+### Enum & Rollen
+- `app_role` Enum: `admin`, `speaker`
+- `user_roles` (user_id, role) + `has_role(_user_id, _role)` Security-Definer-Funktion (gemäß Lovable-Standard, RLS, separate Tabelle)
+- Ersten Admin lege ich nach Deiner Bestätigung manuell per Insert an – bitte E-Mail-Adresse nennen, sobald Du registriert bist.
 
-- Linke `Sidebar` (`collapsible="icon"`) mit allen 8 Modulen als `NavLink`-Items, jedes mit Lucide-Icon und Statusbadge ("Aktiv" für Modul 7, "Geplant" für die anderen).
-- Header oben mit `SidebarTrigger`, Titel "Freigeist Content Engine" und `ThemeToggle`.
-- Hauptbereich rendert `<Outlet />` für die jeweilige Route.
+### Neue Tabelle `speakers`
+Stammdaten 1:1 zum User (FK `auth.users(id)`, unique). Felder gemäß Formular:
 
-Sidebar-Items (Reihenfolge = Workflow):
+- Persönlich: `salutation` (Herr/Frau/Divers), `first_name`, `last_name`, `title_role`, `industry`, `phone`, `email`, `website`
+- Profil: `slogan`, `bio_third_person`, `short_vita`, `avatar_url`
+- Themen: `topic_suggestions`, `interview_topic`, `product`, `product_market_since`, `previous_interviews`, `critical_voices`, `hot_topics` (jsonb array von 3 Strings)
+- Social: `social_links` jsonb (`youtube`, `facebook`, `instagram`, `linkedin`, `twitter`, `telegram`)
+- Newsletter: `has_newsletter` bool, `email_list_size` int
+- Affiliate: `affiliate_available` bool, `affiliate_registration_url`, `top_affiliate_products` jsonb array (3 × `{produkt, url, freebie_url, ebook_url}`)
+- Rechtliches: `agb_accepted_at`, `privacy_accepted_at` (timestamps statt Booleans → Audit-tauglich)
+- Standard: `id`, `user_id`, `created_at`, `updated_at` (mit Trigger)
 
+### Erweiterung `posts`
+- Neue Spalte `speaker_id uuid references public.speakers(id)` (nullable für Bestandsdaten)
+- Status-Wert `erfassung` ist bereits im bestehenden Mapping vorgesehen
 
-| #   | Titel                  | Icon           | Status  |
-| --- | ---------------------- | -------------- | ------- |
-| 1   | Erfassung              | ClipboardList  | Geplant |
-| 2   | Vorab-Scan             | ScanSearch     | Geplant |
-| 3   | Profil & Sprechermappe | UserCheck      | Geplant |
-| 4   | Interview-Leitfaden    | BookOpen       | Geplant |
-| 5   | Vorgespräch            | MessagesSquare | Geplant |
-| 6   | Aufzeichnung / Live    | Video          | Geplant |
-| 7   | Interview-Beiträge     | FileText       | Aktiv   |
-| 8   | News-Plattform         | Newspaper      | Geplant |
+### Storage
+- Bucket `speaker-avatars`, **public**
+- RLS auf `storage.objects`: Speaker dürfen nur in ihren eigenen Pfad `{user_id}/...` schreiben/löschen, alle dürfen lesen
 
+### RLS-Politik
+- `speakers`: Speaker liest/schreibt eigenes Profil; Admin sieht/ändert alles
+- `user_roles`: Read für eingeloggte User (für UI-Gating); Insert/Update nur Admin
+- `posts`: vorhandene "Allow all"-Policies werden **ersetzt** durch: Speaker sieht/ändert nur eigene (über `speaker_id`); Admin alles; Edge Functions via `service_role`
+- `images`: analog – Speaker sieht/ändert nur Bilder zu eigenen Posts; Admin alles
 
-## Dashboard-Startseite (`/`)
+> Hinweis: Die alten freizügigen "Allow all"-Policies an `posts`/`images` werden im Zuge dessen verschärft. Für bestehende Datensätze ohne `speaker_id` greift die Admin-Policy.
 
-Neue `DashboardHome.tsx`:
+## Frontend
 
-- Kurzer Header "Workflow-Übersicht".
-- Workflow-Strip: 8 nummerierte Modul-Kacheln in Reihe (klickbar zur jeweiligen Modulseite), aktives Modul visuell hervorgehoben.
-- Darunter zentrale, filterbare Liste **aller Interviewgäste / Interviews** mit Spalten: Gast, Interview-Titel, aktueller Workflow-Schritt, Status, zuletzt geändert. Vorerst gespeist aus `posts` (jeder Post entspricht einem Interview); der Workflow-Schritt wird aus `status` abgeleitet (`erfassung` → Schritt 1, `draft`/`in_progress` → Schritt 7, `exported` → Schritt 8). Filter: Modul/Schritt + Status + Suche.
-- Diese Liste löst die bisherige Startseiten-Liste konzeptionell auf höherer Ebene ab; die modul-spezifische Liste bleibt zusätzlich unter `/module/interview-beitraege` erhalten.
+### Auth
+- `lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })` für Google
+- E-Mail/Passwort via vorhandenem Supabase Client
+- `AuthProvider`-Hook (`useAuth`) mit `user`, `role`, `loading`
+- Geschützte Routen über Wrapper-Komponente
+- Sidebar bekommt User-Bereich (Avatar/E-Mail + Logout)
 
-## Modul-Platzhalterseiten
+### Formular `/module/erfassung`
+- Eingeloggte Speaker ohne Profil → Formular zum Erstausfüllen
+- Eingeloggte Speaker mit Profil → vorbefülltes Formular + Button "Neues Interview anstoßen" (legt nur neuen `posts`-Eintrag mit Status `erfassung` an, ohne Profilfelder neu zu speichern)
+- Nicht eingeloggte → Hinweis-Karte + Buttons "Registrieren" / "Einloggen"
+- Tech: `react-hook-form` + `zod`, shadcn `Form`/`Input`/`Textarea`/`Select`/`RadioGroup`/`Checkbox`
+- Sektionen exakt wie spezifiziert: Persönliches · Profil & Bio · Interview-Themen · Social Media · Newsletter · Affiliate · Rechtliches
+- Pflichtfelder mit `*`, dezente Hilfetexte unter den Feldern
+- Profilbild-Upload: Reuse `convertToWebP` aus `src/lib/image-utils.ts`, max 500 KB nach Konvertierung, Upload nach `speaker-avatars/{user_id}/avatar.webp`
+- Submit: Profil upsert → erster `posts`-Insert (`speaker_id`, `guest_name = first+last`, `interview_title = interview_topic || topic_suggestions`, `status = 'erfassung'`) → Redirect `/module/erfassung/danke`
 
-Eine wiederverwendbare `ModulePage.tsx`-Komponente, die per Props Titel, Icon, Status-Badge, Modul-Nummer und Beschreibungstext erhält. Inhalt jeder Platzhalterseite:
+### Design (Premium, Freigeist-Stil)
+- Dark Theme bleibt Default; Primary `#2A809B`
+- Karten-basierte Sektionen mit großzügigem Padding, `border` + `bg-card`, klare Trennlinien zwischen Sektionen über Abstand (keine `<hr>` – Memory-Regel)
+- Pflichtfelder visuell hervorgehoben (`text-primary` für `*`)
+- Submit-Button: groß, `bg-primary`, mit Icon, leicht erhöhter Schatten
+- Sticky Fortschritts-/Sektionsnavigation am rechten Rand (Desktop)
 
-- Großer Header mit Modulnummer + Titel + "Coming soon"-Badge.
-- Card mit Deiner originalen Modulbeschreibung als formatierter Text.
-- Hinweisbox: "Funktionalität folgt. Vorlagen und Prompts werden bei der Entwicklung dieses Moduls eingebunden."
+### Dashboard-Anpassung
+- `DashboardHome` filtert die zentrale Liste rollenbasiert: Speaker sieht nur eigene Interviews; Admin alles
+- Neuer Button "Erfassung starten" → `/module/erfassung`
 
-Sieben dünne Wrapper-Komponenten (`Module1Erfassung.tsx` … `Module8NewsPlattform.tsx`) reichen Inhalte an `ModulePage` durch. Modulbeschreibungen werden 1:1 aus Deinem Prompt übernommen.
-
-## Modul 7 – Anbindung
-
-- `Index.tsx` wird umbenannt zu `InterviewPostsList.tsx` und unter `/module/interview-beitraege` gemountet (innerhalb `AppLayout`).
-- Header der bestehenden Seite wird vereinfacht (Sidebar/ThemeToggle liegen jetzt im Layout, lokaler Header entfällt bzw. wird auf Modul-Header reduziert).
-- "Neuer Beitrag"-Button zeigt auf `/module/interview-beitraege/new`.
-- `NewPost`, `EditPost`, `PreviewPost` werden auf neue Pfade umgezogen; alle `navigate(...)`-Aufrufe innerhalb dieser Dateien werden angepasst.
-- `TechStack`-Link wandert in die Sidebar als Footer-Eintrag.
-
-## Was NICHT Teil dieses Plans ist
-
-- Keine Schema-Änderungen. `guests`-Tabelle wird erst bei Modul 1 angelegt.
-- Keine Funktionalität in Modulen 1–6 und 8.
-- Keine Anbindung an die externe News-Plattform.
-- Keine Änderungen an bestehenden Edge Functions oder am Block-Editor.
-
-## Technische Details
-
-- `react-router-dom`: verschachtelte Routen mit `<Route element={<AppLayout />}>` als Parent für alle Modul-Routen; `/tech-stack` und 404 bleiben außerhalb.
-- Sidebar nutzt vorhandene shadcn-Komponenten (`src/components/ui/sidebar.tsx`).
-- Aktive Route via `NavLink` + `isActive`.
-- Statusbadges nutzen vorhandene `Badge`-Varianten / Tailwind Tokens (kein neues CSS nötig).
-- Dark Theme bleibt Default, Primary `#2A809B` unverändert.
-
-## Datei-Änderungen (Übersicht)
+## Dateien
 
 Neu:
-
-- `src/layouts/AppLayout.tsx`
-- `src/components/AppSidebar.tsx`
-- `src/pages/DashboardHome.tsx`
-- `src/pages/modules/ModulePage.tsx`
-- `src/pages/modules/Module1Erfassung.tsx` … `Module8NewsPlattform.tsx` (außer 7)
-- `src/pages/modules/Module7InterviewPosts.tsx` (Wrapper, der bestehende Liste rendert)
+- `src/contexts/AuthContext.tsx` (User + Rolle)
+- `src/components/ProtectedRoute.tsx`
+- `src/pages/Auth.tsx`
+- `src/pages/modules/Module1Erfassung.tsx` (ersetzt Platzhalter)
+- `src/pages/modules/erfassung/SpeakerForm.tsx`
+- `src/pages/modules/erfassung/Danke.tsx`
+- `src/lib/validation/speaker-schema.ts` (zod)
 
 Geändert:
+- `src/App.tsx` – `/auth`-Route, AuthProvider-Wrapping, Schutz für Modul-Routen
+- `src/components/AppSidebar.tsx` – User-Bereich + Logout
+- `src/pages/DashboardHome.tsx` – Rollen-Filter + neuer Einstiegsbutton
+- `supabase/config.toml` – ggf. Auto-Bestätigung wie Standard (nicht aktiv, außer Du wünschst es)
 
-- `src/App.tsx` – Routen-Baum mit Layout-Wrapping und neuen Pfaden
-- `src/pages/Index.tsx` – wird zur Modul-7-Liste, Header reduziert, `navigate`-Pfade angepasst
-- `src/pages/NewPost.tsx`, `EditPost.tsx`, `PreviewPost.tsx` – `navigate`-Pfade an neue URLs angepasst
+## Nicht Teil dieses Schritts
 
-## Offene Punkte für später
+- E-Mail-Versand & individuelle Auth-E-Mail-Templates (Standard-Lovable-Mails reichen vorerst)
+- Admin-UI zum Verwalten von Rollen/Speakern (kommt später)
+- Komplexe Interview-Workflow-Logik (Übergang erfassung → vorab-scan etc.)
+- Validierung über Branchen-/Themen-Vorschläge, KI-Auto-Fill, Sprechermappe (Modul 2/3)
 
-- Mapping `posts.status` ↔ Workflow-Schritt verfeinern, sobald Module 1–6 existieren (vermutlich neues Feld `workflow_step` oder eigene `guests`-Tabelle mit Schritt-Verfolgung).
-- News-Plattform-Anbindung (Modul 8) braucht später Verbindungsdetails zum Ziel-Lovable-Projekt.
+## Offene Punkte (für nach diesem Schritt)
+
+- Deine E-Mail-Adresse für den ersten Admin-Insert
+- Soll die Google-Anmeldung auf bestimmte Domains beschränkt sein? (Default: nein)
+- Brauchen wir später eine öffentliche Bewerbungs-URL ohne Login (z. B. `/anmeldung`)? Aktuell setze ich Login voraus – einfacher und sicherer.

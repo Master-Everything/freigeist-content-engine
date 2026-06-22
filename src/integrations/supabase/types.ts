@@ -68,6 +68,7 @@ export type Database = {
           newsletter_text: string | null
           post_slug: string | null
           prettylink_shortcodes: string | null
+          speaker_id: string | null
           status: string
           telegram_text: string | null
           updated_at: string
@@ -86,6 +87,7 @@ export type Database = {
           newsletter_text?: string | null
           post_slug?: string | null
           prettylink_shortcodes?: string | null
+          speaker_id?: string | null
           status?: string
           telegram_text?: string | null
           updated_at?: string
@@ -104,11 +106,143 @@ export type Database = {
           newsletter_text?: string | null
           post_slug?: string | null
           prettylink_shortcodes?: string | null
+          speaker_id?: string | null
           status?: string
           telegram_text?: string | null
           updated_at?: string
           video_transcript?: string | null
           youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_speaker_id_fkey"
+            columns: ["speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speakers: {
+        Row: {
+          affiliate_available: boolean | null
+          affiliate_registration_url: string | null
+          agb_accepted_at: string | null
+          avatar_url: string | null
+          bio_third_person: string | null
+          created_at: string
+          critical_voices: string | null
+          email: string
+          email_list_size: number | null
+          first_name: string
+          has_newsletter: boolean | null
+          hot_topics: Json | null
+          id: string
+          industry: string | null
+          interview_topic: string | null
+          last_name: string
+          phone: string | null
+          previous_interviews: string | null
+          privacy_accepted_at: string | null
+          product: string | null
+          product_market_since: string | null
+          salutation: string | null
+          short_vita: string | null
+          slogan: string | null
+          social_links: Json | null
+          title_role: string | null
+          top_affiliate_products: Json | null
+          topic_suggestions: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          affiliate_available?: boolean | null
+          affiliate_registration_url?: string | null
+          agb_accepted_at?: string | null
+          avatar_url?: string | null
+          bio_third_person?: string | null
+          created_at?: string
+          critical_voices?: string | null
+          email: string
+          email_list_size?: number | null
+          first_name: string
+          has_newsletter?: boolean | null
+          hot_topics?: Json | null
+          id?: string
+          industry?: string | null
+          interview_topic?: string | null
+          last_name: string
+          phone?: string | null
+          previous_interviews?: string | null
+          privacy_accepted_at?: string | null
+          product?: string | null
+          product_market_since?: string | null
+          salutation?: string | null
+          short_vita?: string | null
+          slogan?: string | null
+          social_links?: Json | null
+          title_role?: string | null
+          top_affiliate_products?: Json | null
+          topic_suggestions?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          affiliate_available?: boolean | null
+          affiliate_registration_url?: string | null
+          agb_accepted_at?: string | null
+          avatar_url?: string | null
+          bio_third_person?: string | null
+          created_at?: string
+          critical_voices?: string | null
+          email?: string
+          email_list_size?: number | null
+          first_name?: string
+          has_newsletter?: boolean | null
+          hot_topics?: Json | null
+          id?: string
+          industry?: string | null
+          interview_topic?: string | null
+          last_name?: string
+          phone?: string | null
+          previous_interviews?: string | null
+          privacy_accepted_at?: string | null
+          product?: string | null
+          product_market_since?: string | null
+          salutation?: string | null
+          short_vita?: string | null
+          slogan?: string | null
+          social_links?: Json | null
+          title_role?: string | null
+          top_affiliate_products?: Json | null
+          topic_suggestions?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -117,10 +251,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "speaker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -247,6 +387,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "speaker"],
+    },
   },
 } as const

@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   ScanSearch,
@@ -10,6 +10,8 @@ import {
   Newspaper,
   LayoutDashboard,
   Wrench,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,6 +27,39 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+
+function UserMenu({ collapsed }: { collapsed: boolean }) {
+  const { user, role, signOut } = useAuth();
+  const navigate = useNavigate();
+  if (!user) return null;
+  return (
+    <>
+      <SidebarMenuItem>
+        <div className={cn("flex items-center gap-2 px-2 py-1.5 text-xs", collapsed && "justify-center")}>
+          <UserIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-medium">{user.email}</div>
+              {role && <div className="text-[10px] text-muted-foreground capitalize">{role}</div>}
+            </div>
+          )}
+        </div>
+      </SidebarMenuItem>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          onClick={async () => {
+            await signOut();
+            navigate("/auth");
+          }}
+        >
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span>Abmelden</span>}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </>
+  );
+}
 
 type Item = {
   num?: number;
@@ -118,6 +153,7 @@ export function AppSidebar() {
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <UserMenu collapsed={collapsed} />
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
