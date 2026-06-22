@@ -25,6 +25,8 @@ import Module6Aufzeichnung from "./pages/modules/Module6Aufzeichnung";
 import Module8NewsPlattform from "./pages/modules/Module8NewsPlattform";
 import ErfassungDanke from "./pages/modules/erfassung/Danke";
 import InterviewForm from "./pages/modules/interview/InterviewForm";
+import VorabScanEingereicht from "./pages/modules/vorab-scan/Eingereicht";
+import SpeakerModulePlaceholder from "./pages/SpeakerModulePlaceholder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +65,8 @@ const App = () => (
               <Route path="/module/erfassung" element={<Module1Erfassung />} />
               <Route path="/module/erfassung/danke" element={<ErfassungDanke />} />
               <Route path="/module/interview/neu" element={<InterviewForm />} />
+              <Route path="/module/vorab-scan/eingereicht" element={<VorabScanEingereicht />} />
+              <Route path="/speaker/modul/:num" element={<SpeakerModulePlaceholder />} />
 
               {/* Admin-only Module */}
               <Route

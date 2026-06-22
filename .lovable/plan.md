@@ -1,30 +1,81 @@
 ## Ziel
 
-Das Interview-Formular (`/module/interview/neu`) bekommt dasselbe UX-Pattern wie das Profil-Formular: Textarea-Höhen richten sich nach der Zeichen-Obergrenze und unter jedem Feld erscheint ein Live-Zeichenzähler.
+Speaker-Sidebar wird 1:1 wie die Admin-Sidebar aufgebaut — gleiche Optik, gleiche acht Workflow-Module, gleiche Badges. Speaker-spezifische Inhalte werden als Sub-Items unter den passenden Modulen einsortiert. Module ohne Speaker-Aktion bleiben sichtbar (Status "Geplant"), sind aber nicht klickbar bzw. zeigen eine schlichte Platzhalter-Seite.
 
-## Anpassungen in `src/pages/modules/interview/InterviewForm.tsx`
+## Neue Sidebar-Struktur (Speaker)
 
-1. **Zod-Schema einführen** (neue Datei `src/lib/validation/interview-schema.ts`) mit `maxLength`-Grenzen:
-   - `interview_title` 200
-   - `interview_topic` 500
-   - `product` 500
-   - `product_market_since` 120
-   - `previous_interviews` 2000
-   - `critical_voices` 2000
+```
+Übersicht
+  • Dashboard                                  → /speaker
 
-2. **`FIELD_MAX`-Map** und `textareaHeightFor(max)`-Helper analog zum SpeakerForm (≤300 → 6rem, ≤800 → 10rem, ≤1500 → 16rem, sonst 20rem) in die Datei übernehmen.
+Workflow-Module
+  1. Erfassung                       [Aktiv]
+       • Profil                                → /module/erfassung
+       • Neues Interview                       → /module/interview/neu
+       • Meine Interviews                      → /module/interview-beitraege/mine
+  2. Vorab-Scan                      [Geplant]
+       • Eingereichte Interviews (gescannt)    → /module/vorab-scan/eingereicht
+  3. Profil & Sprechermappe          [Geplant]
+  4. Interview-Leitfaden             [Geplant]
+  5. Vorgespräch                     [Geplant]
+  6. Aufzeichnung / Live             [Geplant]
+  7. Interview-Beiträge              [Geplant]
+  8. News-Plattform                  [Geplant]
+```
 
-3. **Komponenten-Refactor**: Statt der nackten `<Input>` / `<Textarea>` werden die Wiederverwendungs-Komponenten aus dem SpeakerForm-Pattern eingesetzt:
-   - `TextInput` für `interview_title`, `product_market_since`
-   - `TextAreaInput` für `interview_topic`, `product`, `previous_interviews`, `critical_voices`
-   - `maxLength` wird auf das Input-Element gesetzt, Höhe via `textareaHeightFor()`, `CharCounter` aus `@/components/ui/char-counter` rendert die Anzeige `aktuell / max` (rot, wenn überschritten).
+- Komponenten, Icons, Farben, Badges, Typografie identisch zur Admin-Sidebar (`AppSidebar.tsx`, `adminModules`).
+- Module 3–8 sind reine Header-Einträge ohne Sub-Items — wie Admin, aber nicht navigierbar (Status "Geplant" greift auch optisch).
+- Aktive Route wird hervorgehoben; Modul-Gruppe mit aktiver Route bleibt aufgeklappt.
 
-4. **react-hook-form + zodResolver** wird wie im SpeakerForm verwendet, damit `useWatch` den Counter ohne Re-Render des ganzen Formulars füttert. Submit-Handler bleibt funktional identisch (Affiliate-Auswahl, Speaker-Lookup, Insert in `posts`).
+## Routen-Mapping
 
-5. **Affiliate-Card** bleibt visuell unverändert (Checkbox-Liste). Affiliate-Indizes werden weiterhin als separater State außerhalb von `useForm` gehalten.
+Bestehend, keine Änderungen:
+- `/speaker`, `/module/erfassung`, `/module/interview/neu`, `/module/interview-beitraege/mine`
 
-## Out of Scope
+Neu:
+- `/module/vorab-scan/eingereicht` → schlichte Platzhalter-Seite "Sobald deine eingereichten Interviews gescannt wurden, erscheinen sie hier." (Stil wie `ModulePage`).
 
-- Keine Änderung an Layout, Card-Struktur oder Farben.
-- Keine Änderung an Feldern, Pflichtfeldern, Submit-Logik oder Routing.
-- Keine Änderung am Profil-Formular oder anderen Modulen.
+Admin-Routen (`/module/vorab-scan`, `/module/profil`, `/module/leitfaden`, …) bleiben unverändert und Admin-only.
+
+## Verhalten Module 3–8 für Speaker
+
+Klick führt zu einer gemeinsamen Speaker-Platzhalter-Ansicht ("Dieses Modul ist für dich noch in Vorbereitung."), die per `ModulePage`-Pattern aufgebaut wird. Konkrete Umsetzung: ein gemeinsamer Route-Eintrag `/speaker/modul/:num` mit einem kleinen Lookup auf Titel/Icon/Beschreibung. Die Sidebar-Links für Module 3–8 zeigen auf diese Route. Dadurch landen Speaker nicht versehentlich auf Admin-only-Pfaden.
+
+## Änderungen im Detail
+
+### 1. `src/components/AppSidebar.tsx`
+- Gemeinsame Modul-Definition `workflowModules` extrahieren (bisheriges `adminModules`).
+- Speaker-spezifische Erweiterung: pro Modul optional `items: { title, url }[]`. Für Speaker:
+  - Modul 1 bekommt drei Sub-Items (Profil, Neues Interview, Meine Interviews).
+  - Modul 2 bekommt ein Sub-Item (Eingereichte Interviews).
+  - Modul 3–8 ohne Sub-Items.
+- Speaker-Branch komplett ersetzen: gleicher Aufbau wie Admin-Branch, aber:
+  - Header-Links zeigen für Speaker bei Modul 3–8 auf `/speaker/modul/<num>`.
+  - Module mit Sub-Items werden via `Collapsible` aufgeklappt (Default: offen, wenn aktive Route enthalten).
+
+### 2. `src/App.tsx`
+- Neue Routen (kein `requiredRole="admin"`):
+  - `/module/vorab-scan/eingereicht` → `SpeakerVorabScanEingereicht`
+  - `/speaker/modul/:num` → `SpeakerModulePlaceholder`
+
+### 3. Neue Datei `src/pages/modules/vorab-scan/Eingereicht.tsx`
+- Nutzt `ModulePage`-Look, Icon `ScanSearch`, Hinweistext.
+
+### 4. Neue Datei `src/pages/SpeakerModulePlaceholder.tsx`
+- Liest `:num` aus URL, mappt auf Titel/Icon aus der gemeinsamen Modul-Definition, zeigt freundlichen "in Vorbereitung"-Text.
+
+### 5. `src/pages/SpeakerDashboard.tsx`
+- Unverändert. Karten bleiben, sie sind die Schnellzugriffe parallel zur neuen Sidebar.
+
+## Designentscheidungen (für dich entschieden)
+
+- **Modul-Header klappbar** mit `defaultOpen` für die Gruppe der aktuellen Route — gleiches Verhalten für Admin und Speaker.
+- **Module 3–8 nicht ausgegraut**, sondern wie bei Admin mit Badge "Geplant" — visuell identisch.
+- **Admin-Sidebar bleibt unverändert** (keine Sub-Items dort). Nur Speaker bekommt die Sub-Item-Erweiterung, weil Admin diese Pfade nicht braucht.
+
+## Nicht im Scope
+
+- Keine neuen Backend-/RLS-Änderungen.
+- Keine Änderung an Inhalt/Logik bestehender Speaker-Seiten (Profil, Interview-Formular, Meine Beiträge).
+- Keine Implementierung der eigentlichen Vorab-Scan-Funktionalität — nur Platzhalter.
+- Keine Anpassung der Admin-Navigation.
