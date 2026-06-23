@@ -1,57 +1,92 @@
-## Cloud-Wissensbasis seeden (Modul 2 Vorbereitung)
+## Modul 2 — Vorab-Scan Interviewgast
 
-Ich habe die Drive-Verbindung geprüft — alle GEM-Quellen liegen im Ordner **Freigeist-GEM** und sind erreichbar. Plan in einem Rutsch.
+Ziel: Ein Klick auf „Scan starten" prüft das Speaker-Profil gegen die Wissensbasis (BannedWords + Phase-B-Compliance-Regeln + FG-Kurator-Prompt), liefert eine **Ampel-Bewertung** (grün / gelb / rot) und konkrete Optimierungshinweise.
 
-### Schritt 1 — Drive-Dateien parsen
+---
 
-Diese 8 Dateien werden gezogen und mit `document--parse_document` in Text gewandelt:
+### 1. Datenbank — neue Tabelle `speaker_scans`
 
-| Quelle | Ziel-Tabelle |
-|---|---|
-| `01_FGKurator-GEM-Masterprompt.pdf` | `knowledge_prompts` (key: `fg_kurator`) + `knowledge_compliance_rules` (Phase-B-Fragen) |
-| `02_FG-Speaker-Auditor-GEM-Masterprompt.pdf` | `knowledge_prompts` (key: `fg_speaker_auditor`) |
-| `BERT-soularchitekt-Master.pdf` | `knowledge_prompts` (key: `bert_soularchitekt`) |
-| `Liste der BannedWords-BERT.docx` | `knowledge_banned_words` |
-| `FG-Speakermail.docx` | `knowledge_email_templates` (key: `speakermail`) |
-| `FG InterviewKompass.docx` | `knowledge_moderation_tips` (source: `InterviewKompass`) |
-| `FG-Lösungen bei Verstößen.docx` | `knowledge_moderation_tips` (source: `Loesungen-Verstoesse`) |
-| `FG-Werberichtlinien, Affiliate-Links, Health Claims.docx` | ergänzt `legal_basis`-Texte in `compliance_rules` |
+Speichert jeden Scan-Lauf historisch (damit man Verbesserungen über die Zeit sieht).
 
-`Compliance-Checker-Masterprompt.docx` und `FG-Rechtliche Grundlagen für Video-Prüfungen.docx` werden mitgelesen als Kontext, aber nicht eigenständig geseedet — die fließen in die Master-Prompts bzw. legal_basis ein.
+Felder (fachlich):
+- `speaker_id` → FK auf `speakers`
+- `triggered_by` → FK auf `auth.users` (wer den Scan ausgelöst hat)
+- `status` → `pending` / `running` / `done` / `error`
+- `verdict` → `green` / `yellow` / `red` (Ampel)
+- `score` → 0–100 (für interne Sortierung)
+- `summary` → kurze Gesamteinschätzung (Markdown, 2–4 Sätze)
+- `findings` → JSONB Array: jeder Fund = `{ kind: "banned_word"|"compliance"|"hint", severity, field, excerpt, rule_code?, message, suggestion }`
+- `model_used`, `prompt_key_used`, `prompt_version_used`, `tokens_in`, `tokens_out`, `duration_ms`
+- `error_text`
 
-### Schritt 2 — Seed-Migration
+RLS:
+- Speaker sieht nur eigene Scans (`speaker_id` gehört zu eigenem Profil).
+- Admin sieht alles.
+- Insert: Speaker für eigenes Profil, Admin für jedes.
 
-Eine SQL-Migration mit allen `INSERT`s, idempotent via `ON CONFLICT (code/term/key) DO UPDATE`. Inhalte 1:1 aus den Quellen, deutsche Originale.
+### 2. Edge Function `vorab-scan`
 
-Ungefähre Mengen (Schätzung auf Basis der GEM-Struktur):
-- `knowledge_compliance_rules`: ~26 Einträge (A1–A5, C1–C3, E1–E2, G1–G9, F1–F7)
-- `knowledge_prompts`: 3 Einträge
-- `knowledge_banned_words`: ~50–150 (kommt auf die Liste an)
-- `knowledge_email_templates`: 1 Eintrag
-- `knowledge_moderation_tips`: ~15–30 Einträge
+- Auth: JWT prüfen, User-ID ziehen.
+- Input: `{ speaker_id }`.
+- Berechtigung: User muss Owner des Speakers ODER Admin sein.
+- Ablauf:
+  1. `speaker_scans` Zeile mit `status=running` anlegen.
+  2. Speaker-Daten laden (alle Textfelder + Hot-Topics + Affiliate-JSON).
+  3. **Deterministischer Pre-Check** (kein LLM): BannedWords-Treffer per Wortgrenzen-Regex über alle relevanten Textfelder → Findings.
+  4. **LLM-Scan** via Lovable AI Gateway (`google/gemini-2.5-flash`):
+     - System-Prompt: `knowledge_prompts` Key `fg_kurator` (aktive Version).
+     - User-Inhalt: strukturiertes JSON aus Speaker-Profil + Liste der aktiven Phase-B-Regeln (Code, Frage, Risiko-Antwort, Severity).
+     - Antwort als JSON erzwingen (Structured Output / `response_format`):
+       ```
+       { verdict: "green"|"yellow"|"red", score: 0-100, summary: "...",
+         findings: [{ rule_code, severity, field, excerpt, message, suggestion }] }
+       ```
+  5. Findings mergen (Banned + LLM), `verdict` final festlegen:
+     - `red` wenn ≥1 Finding mit Severity `critical` ODER LLM `red`
+     - `yellow` wenn ≥1 `high`/`warn` ODER LLM `yellow`
+     - sonst `green`
+  6. Zeile updaten auf `status=done`.
+- Fehler: Zeile auf `status=error` setzen, **200 OK** mit `{ error }` zurückgeben (gemäß Projekt-Konvention).
+- Rate-Limit / Cost-Guard: max 1 laufender Scan pro Speaker; 429- und 402-Antworten vom Gateway sauber in Toast-Meldung übersetzen.
 
-### Schritt 3 — Read-only Admin-View
+### 3. UI
 
-Neue Route `/admin/wissensbasis` (nur für Rolle `admin` sichtbar — `ProtectedRoute` + `has_role`-Check):
-- 5 Tabs (eine pro Tabelle)
-- Pro Tab eine simple shadcn-`Table` mit Suche/Filter
-- Keine Edit-/Delete-Buttons — reines Durchscrollen für deine Qualitätskontrolle
-- Sidebar-Link in `AppSidebar.tsx` nur bei Admin-Rolle
+**a) Speaker-Sicht — auf `/module/vorab-scan/eingereicht`**
+- Button „Profil jetzt prüfen lassen" (nur wenn Speaker-Profil existiert).
+- Liste der bisherigen Scans (neueste oben): Ampel-Badge, Datum, Score, „Details ansehen".
+- Detail-Panel (Sheet/Drawer):
+  - Header: große Ampel + Summary
+  - Sektion „Kritische Punkte" (rot), „Hinweise" (gelb), „Optimierungstipps" (grün/Info)
+  - Pro Finding: Feldname, betroffene Textstelle (`excerpt`), Empfehlung, ggf. Regel-Code (klickbar → Detail aus `knowledge_compliance_rules`).
+- Hinweis-Banner wenn `red`: „Bitte Profil überarbeiten und erneut scannen." mit Link zu Modul 1.
 
-### Schritt 4 — Sanity-Check im Sidebar-Footer
+**b) Admin-Sicht — `/module/vorab-scan`**
+- Tabelle aller Scans über alle Speaker: Name, Datum, Ampel, Score, Anzahl Findings, Aktion „Details".
+- Filter: Verdict, Zeitraum, Suche nach Speaker-Name.
+- Button „Manuellen Re-Scan auslösen" pro Speaker.
 
-Für Admin-Rolle: kleiner Hinweis „Wissensbasis: X Regeln · Y Wörter · Z Prompts" — live aus DB.
+**c) Komponenten** (neu, klein gehalten):
+- `AmpelBadge` (`green|yellow|red` → semantic colors aus `index.css`, kein hardcoded white/black)
+- `ScanFindingsList`
+- `ScanDetailSheet`
+- `useSpeakerScans` Hook (React Query)
+- `useStartVorabScan` Mutation Hook
 
-### Was bewusst NICHT in diesem Schritt drin ist
-- Modul 2 selbst (UI + Edge Function `vorab-scan`) — kommt direkt danach in eigener Runde
-- Edit-/CRUD-Masken für die Wissensbasis (später bei Bedarf)
+### 4. Sidebar-Counter (optional, klein)
+Admin-Sidebar-Footer um „X offene rote Scans" erweitern — nur wenn > 0.
+
+### 5. Was bewusst NICHT in dieser Runde
+- E-Mail-Versand an Speaker bei rotem Ergebnis (kommt in eigener Runde, nutzt `knowledge_email_templates`).
+- Automatischer Re-Scan-Trigger bei Profil-Update.
+- Diff-Vergleich zwischen zwei Scans.
+- Streaming-UI (kommt einfaches Polling/Loading-State).
 
 ### Reihenfolge der Umsetzung
-1. Drive-Dateien parsen (Edge-/Sandbox-seitig, kein User-Eingriff)
-2. Daten auf das DB-Schema mappen, SQL generieren
-3. Migration einreichen (du bestätigst sie)
-4. Admin-View + Sidebar-Footer-Hinweis bauen
-5. Du gehst die Daten durch und meldest Korrekturwünsche — danach starten wir Modul 2
+1. Migration `speaker_scans` + RLS + GRANTs (du bestätigst).
+2. Edge Function `vorab-scan` deployen.
+3. UI Speaker-Sicht (Button + Liste + Detail-Sheet).
+4. UI Admin-Sicht (Tabelle + Filter).
+5. End-to-End-Test mit deinem eigenen Speaker-Profil.
 
 ### Offene Frage
-Soll der Admin-View auch **Spalten zum Markieren** (`active` toggle, kleines Edit-Icon) bekommen — oder strikt read-only? Empfehlung: **strikt read-only**, Edits jetzt direkt per Migration / später dediziertes CRUD. Spart Zeit und vermeidet versehentliches Verändern der Wissensbasis.
+**LLM-Modell:** Empfehlung `google/gemini-2.5-flash` (kostenlos bis 13. Okt 2025, schnell, JSON-fähig). Alternative wäre `gemini-2.5-pro` für höhere Genauigkeit — langsamer und ab Okt 2025 teurer. Soll ich Flash nehmen und Pro nur als Fallback/Toggle bereithalten?
