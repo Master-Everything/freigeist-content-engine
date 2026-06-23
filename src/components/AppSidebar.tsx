@@ -12,7 +12,9 @@ import {
   Wrench,
   LogOut,
   User as UserIcon,
+  Database,
 } from "lucide-react";
+import { useKnowledgeCounts } from "@/hooks/useKnowledgeCounts";
 import {
   Sidebar,
   SidebarContent,
