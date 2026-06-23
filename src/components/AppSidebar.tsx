@@ -127,6 +127,7 @@ export function AppSidebar() {
   const isAdmin = role === "admin";
   const homeUrl = isAdmin ? "/" : "/speaker";
   const modules = isAdmin ? adminModules : speakerModules;
+  const knowledgeCounts = isAdmin ? useKnowledgeCounts() : null;
 
   const isSubActive = (url: string) => pathname === url;
   const isModuleActive = (m: Module) => {
