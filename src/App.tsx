@@ -151,6 +151,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/admin/wissensbasis"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Wissensbasis />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/tech-stack"
                 element={
                   <ProtectedRoute requiredRole="admin">
