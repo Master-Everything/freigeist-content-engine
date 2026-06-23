@@ -214,14 +214,32 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           {isAdmin && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === "/tech-stack"}>
-                <NavLink to="/tech-stack" className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4" />
-                  {!collapsed && <span>Tech Stack</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/admin/wissensbasis"}>
+                  <NavLink to="/admin/wissensbasis" className="flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    {!collapsed && <span>Wissensbasis</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {!collapsed && knowledgeCounts && (
+                <SidebarMenuItem>
+                  <div className="px-3 py-1 text-[10px] leading-tight text-muted-foreground">
+                    {knowledgeCounts.rules} Regeln · {knowledgeCounts.banned} Wörter ·{" "}
+                    {knowledgeCounts.prompts} Prompts
+                  </div>
+                </SidebarMenuItem>
+              )}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/tech-stack"}>
+                  <NavLink to="/tech-stack" className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4" />
+                    {!collapsed && <span>Tech Stack</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
           )}
           <UserMenu collapsed={collapsed} />
         </SidebarMenu>
