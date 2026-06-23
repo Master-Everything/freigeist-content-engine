@@ -1,80 +1,94 @@
-## GEM-Mapping — Arbeitsvorlage für die Modul-Umsetzung
+## Cloud-Wissensbasis + Seed FGKurator Phase B
 
-Drive-Ordner: https://drive.google.com/drive/folders/1FqFI6mmNJqSlPSUhOFoRhnon-tv1phdW
+### Schritt 1 — Migration: 5 neue Tabellen
 
-### Drei GEMs (Master-Prompts)
-- **01_FGKurator** — Datenerhebung (Phase A) + branchenspezifischer Compliance-Check (Phase B: Gesundheit G1–G9, Finanzen F1–F7, generisch A1–A5/C1–C3/E1–E2). Output: Sprecher-Datenblatt + Analyse-Protokoll. Variablen `[X]=Branche`, `[Y]=Funktion` steuern Phase B.
-- **02_FG-Speaker-Auditor** — Input: Datenblatt + Analyse-Protokoll + Wunschdauer (30/60/120 Min). Live-Recherche (Reputation, Marktumfeld). Output: Interview-Skript in 4 gleich großen Zeitblöcken (A Kompetenz-Transfer / B Status Quo / C Gamechanger / D Lösung) mit Compliance-Injektion (Rollen-Offenlegung, MStV, Trennungsgebot, kritische Rückfragen).
-- **BERT-soularchitekt** — Compliance-/Sprach-Check (Banned Words, emotionale Codes, Heilversprechen, Renditeversprechen).
+Alle Tabellen in `public`, mit RLS, GRANTs, `created_at`/`updated_at` + Update-Trigger.
 
-### Wissensbasis-Dokumente
-- `FG-InterviewKompass.docx` — Moderationsleitfaden, Risiko-Reaktionen, „Rechtsschutz vor Reichweite"
-- `FG-Loesungen-bei-Verstoessen.docx` — Eingriffslogik bei Live-Verstößen
-- `FG-Rechtliche-Grundlagen.docx`, `FG-Werberichtlinien.docx` — HWG, UWG, MStV, BaFin, Affiliate, Health Claims
-- `BannedWords-BERT.docx` — Wortliste + emotionale Manipulationsmuster
-- `Ablaufprotokoll-Speaker-Onboarding.docx` — End-to-End-Workflow
-- `Videobearbeitung-Verstoesse.docx` — Post-Production-Korrekturen
-- `Speakermail.docx`, `Mail-Speaker-Onboarding.docx` — E-Mail-Templates
-- Speaker-WIKI-Beispiele (Kevin Meyer, Jörg Schäfer) — Profilformat
-- `Freigeist-BOT-Texte/*` — produktspezifische Beispiel-Datensätze
+**`knowledge_compliance_rules`** — Prüf-Fragen
+- `code` (text, unique) — z.B. `G1`, `F3`, `A1`
+- `industry` (text) — `generic` | `health` | `finance` | …
+- `question_text` (text)
+- `risk_response_text` (text) — Standard-Reaktion bei Risiko
+- `legal_basis` (text) — z.B. `HWG §3`, `UWG §5`
+- `severity` (text) — `info` | `warn` | `block`
+- `active` (bool, default true)
+- `version` (int, default 1)
 
-### Mapping pro Modul
+**`knowledge_banned_words`**
+- `term` (text, unique)
+- `category` (text) — `banned` | `emotional_code` | `health_claim` | `roi_promise`
+- `replacement_suggestion` (text, nullable)
+- `legal_basis` (text, nullable)
+- `severity` (text)
+- `active` (bool)
 
-**Modul 1 — Erfassung**  *(Quelle: FGKurator Phase A + Speakermail + Speaker-WIKI)*
-- Felder: Name/Firma, Funktion (enum), Branche (enum), Webauftritt, Kernthema, Produkt/Angebot, Monetarisierung, Sprecher-Kompetenz/Referenzen, Reputation
-- `function_type` & `industry` als enums → steuern Modul 2
-- Begrüßungstext „Willkommen in der Arena der Freigeister …" als optionaler Onboarding-Hero
-- `speakers`-Schema ergänzen: `function_type`, `industry`, `monetization_model`, `reputation_links`
+**`knowledge_prompts`** — Master-Prompts
+- `key` (text, unique) — `fg_kurator` | `fg_speaker_auditor` | `bert_soularchitekt`
+- `title` (text)
+- `system_prompt` (text)
+- `model` (text, default `google/gemini-2.5-flash`)
+- `version` (int)
+- `active` (bool)
 
-**Modul 2 — Vorab-Scan**  *(Quelle: FGKurator Phase B + BannedWords + Werberichtlinien)*
-- Frageset als JSON in `knowledge_compliance_rules`: generisch A1–A5/C1–C3/E1–E2, Gesundheit G1–G9, Finanzen F1–F7. Pro Frage: `text`, `risk_response_text`, `legal_basis`
-- Routing nach `industry`/`function` serverseitig
-- LLM-Call (Lovable AI Gateway) gegen Profil + Interview: BannedWords-Hit + Heilversprechen-/Rendite-Klassifikation → Analyse-Protokoll
-- UI: Liste eingereichter Interviews mit Ampel grün/gelb/rot + Detailansicht je Block
+**`knowledge_email_templates`**
+- `key` (text, unique) — `speakermail` | `onboarding`
+- `subject` (text)
+- `body_markdown` (text)
+- `variables` (jsonb) — Platzhalter-Doku
+- `active` (bool)
 
-**Modul 3 — Profil & Sprechermappe**  *(Quelle: Datenblatt-Output + Speaker-WIKI)*
-- Konsolidiertes Profil aus M1-Daten + M2-Findings
-- Sprechermappen-Export PDF/HTML, Zoho-Signatur (Platzhalter), Freigabe-Gate für Module 4–8
+**`knowledge_moderation_tips`**
+- `topic` (text) — z.B. `risiko_heilversprechen`
+- `industry` (text, nullable)
+- `trigger_text` (text) — wann anwenden
+- `tip_text` (text) — was tun
+- `source` (text) — `InterviewKompass` | `Loesungen-Verstoesse`
+- `active` (bool)
 
-**Modul 4 — Interview-Leitfaden**  *(Quelle: FG-Speaker-Auditor Master-Prompt — Kernstück)*
-- Fix 4-Block-Struktur: A Kompetenz / B Status Quo / C Gamechanger / D Lösung
-- Zeit-Logik 30/60/120 Min → 7,5 / 15 / 30 Min pro Block + Detailgrad-Anpassung
-- Edge Function `generate-interview-script`: System-Prompt = Speaker-Auditor, Kontext = Profil (M3) + Findings (M2) + InterviewKompass-Snippet
-- Compliance-Injektion: Rollen-Offenlegung, MStV-Hinweise, Trennungsgebot, kritische Rückfragen
+### Schritt 2 — RLS-Policies
 
-**Modul 5 — Vorgespräch**  *(Quelle: InterviewKompass + Lösungen-bei-Verstoessen)*
-- Moderator-Checkliste + Wenn-Dann-Cheat-Sheet
-- Transkription speist M4 als Erkenntnis-Update zurück
+Lese-Zugriff für eingeloggte Speaker (sie brauchen die Regeln im Frontend für Modul 2/4/7):
+```
+GRANT SELECT ON public.knowledge_* TO authenticated;
+GRANT ALL    ON public.knowledge_* TO service_role;
 
-**Modul 6 — Aufzeichnung / Live**  *(Quelle: Speaker-Auditor Regieanweisungen + Einblendungen-Logo)*
-- Sendeplan mit Block-Timer, Compliance-Reminder, Pflicht-Einblendungen, Notfall-Kontrollfragen
+-- Lesen: jede:r authentifizierte Nutzer:in (nur active=true)
+CREATE POLICY "auth read active" ... USING (active = true);
 
-**Modul 7 — Interview-Beiträge**  *(Quelle: BERT + BannedWords + Videobearbeitung-Verstoesse + Werberichtlinien)*
-- Nach-Aufnahme-Scan: Transkript gegen BannedWords, emotionale Codes, Health Claims, Renditeversprechen
-- Findings mit Zeitstempel → Vorschläge: nachvertonen / rausschneiden / Einblendung / Disclaimer-Karte
-- Block-Editor bekommt Compliance-Tab mit Live-Score
-
-**Modul 8 — News-Plattform**
-- Standardisiertes Übergabeformat mit Compliance-Markern als strukturierte Felder
-- Aus GEMs inhaltlich nichts Neues (GEMs enden vor M8)
-
-### Querschnitt: Wissensbasis in Cloud
-Versionierte Tabellen, Admin-Schreibrecht, eingeschränkter Speaker-Lesezugriff via `has_role`:
-
-```text
-knowledge_compliance_rules   ← FGKurator Phase B + Werberichtlinien + Rechtsgrundlagen
-knowledge_banned_words       ← BannedWords + emotionale Codes (BERT)
-knowledge_prompts            ← Master-Prompts FGKurator / Speaker-Auditor / BERT
-knowledge_email_templates    ← Speakermail, Onboarding-Mail
-knowledge_moderation_tips    ← InterviewKompass + Lösungen-bei-Verstoessen
+-- Schreiben: nur admin
+CREATE POLICY "admin write" ... USING (has_role(auth.uid(), 'admin'))
+                                WITH CHECK (has_role(auth.uid(), 'admin'));
 ```
 
-### Empfohlene Umsetzungs-Reihenfolge
-1. Cloud-Wissensbasis als Fundament
-2. Modul 2 (größte 1:1-Übernahme, M1 steht weitgehend)
-3. Modul 4 (baut auf M2/M3 auf)
-4. Modul 3 → 5 → 6 → 7 → 8
+### Schritt 3 — Seed FGKurator Phase B
 
----
+Initial-Inserts in `knowledge_compliance_rules`:
+- **Generisch (10):** A1–A5, C1–C3, E1–E2
+- **Gesundheit (9):** G1–G9 (HWG-relevant — Heilversprechen, Indikationsbezug, Vorher/Nachher, etc.)
+- **Finanzen (7):** F1–F7 (BaFin, UWG — Renditeversprechen, Garantien, Vergleichswerbung)
 
-Dieser Plan ist die Arbeitsvorlage. Sag mir, mit welchem Schritt wir starten — Vorschlag: **Cloud-Wissensbasis (`knowledge_*` Tabellen) + Seed mit den FGKurator-Phase-B-Fragen und der BannedWords-Liste**. Sobald du in Build-Mode wechselst, lege ich die Vorlage zusätzlich als Projekt-Memory ab, damit sie in jeder Session greifbar ist.
+Pro Eintrag: Fragetext + `risk_response_text` + `legal_basis`, übernommen 1:1 aus dem FGKurator-GEM.
+
+Zusätzlich Seed in `knowledge_prompts`: die drei Master-Prompts (FGKurator, Speaker-Auditor, BERT) im Volltext aus den GEM-Dateien.
+
+Optional sofort mit-geseedet (falls gewünscht — siehe Frage unten):
+- `knowledge_banned_words` aus `BannedWords-BERT.docx`
+- `knowledge_email_templates` aus Speakermail + Onboarding-Mail
+- `knowledge_moderation_tips` aus InterviewKompass + Lösungen-bei-Verstößen
+
+### Schritt 4 — Admin-Hinweis im UI (klein)
+
+Noch kein vollständiges Admin-CRUD. Stattdessen:
+- Kurzer Hinweis im Sidebar-Footer für Admin-Rolle: „Wissensbasis: X Regeln · Y Wörter · Z Prompts" — als Sanity-Check, dass die Daten da sind.
+
+Echtes Admin-UI zum Pflegen der Tabellen kommt später, wenn wir Modul 2 bauen — sonst pflegen wir leere Masken.
+
+### Was bewusst NICHT in diesem Schritt drin ist
+- Modul 2 UI / Ampel-Logik
+- Edge Functions (kommen mit Modul 2 + 4)
+- Frontend-Hooks zum Abfragen der Tabellen (kommen on-demand mit jedem Modul)
+
+### Offene Frage vor Umsetzung
+Sollen wir **alle 5 Tabellen sofort komplett seeden** (Phase-B-Fragen + Master-Prompts + BannedWords + Mails + Moderation-Tips) — oder erstmal nur die zwei kritischen (`compliance_rules` + `prompts`) und den Rest dann beim Bau von Modul 2/7?
+
+Empfehlung: **alles auf einmal seeden** — wir haben die GEM-Daten frisch geparst, ein zweites Mal aufwendig nachladen wäre Doppelarbeit.
