@@ -1,0 +1,1 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.knowledge_compliance_rules, public.knowledge_banned_words, public.knowledge_prompts, public.knowledge_email_templates, public.knowledge_moderation_tips TO sandbox_exec;

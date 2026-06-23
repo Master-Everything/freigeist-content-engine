@@ -27,6 +27,7 @@ import ErfassungDanke from "./pages/modules/erfassung/Danke";
 import InterviewForm from "./pages/modules/interview/InterviewForm";
 import VorabScanEingereicht from "./pages/modules/vorab-scan/Eingereicht";
 import SpeakerModulePlaceholder from "./pages/SpeakerModulePlaceholder";
+import Wissensbasis from "./pages/admin/Wissensbasis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -146,6 +147,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <Module8NewsPlattform />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/wissensbasis"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Wissensbasis />
                   </ProtectedRoute>
                 }
               />
