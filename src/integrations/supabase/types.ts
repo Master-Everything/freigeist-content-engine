@@ -55,6 +55,189 @@ export type Database = {
           },
         ]
       }
+      knowledge_banned_words: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          id: string
+          legal_basis: string | null
+          replacement_suggestion: string | null
+          severity: string
+          term: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          legal_basis?: string | null
+          replacement_suggestion?: string | null
+          severity?: string
+          term: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          legal_basis?: string | null
+          replacement_suggestion?: string | null
+          severity?: string
+          term?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      knowledge_compliance_rules: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          industry: string
+          legal_basis: string | null
+          question_text: string
+          risk_response_text: string | null
+          severity: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          industry?: string
+          legal_basis?: string | null
+          question_text: string
+          risk_response_text?: string | null
+          severity?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          industry?: string
+          legal_basis?: string | null
+          question_text?: string
+          risk_response_text?: string | null
+          severity?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      knowledge_email_templates: {
+        Row: {
+          active: boolean
+          body_markdown: string
+          created_at: string
+          id: string
+          key: string
+          subject: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          active?: boolean
+          body_markdown: string
+          created_at?: string
+          id?: string
+          key: string
+          subject: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          active?: boolean
+          body_markdown?: string
+          created_at?: string
+          id?: string
+          key?: string
+          subject?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
+      }
+      knowledge_moderation_tips: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          industry: string | null
+          source: string | null
+          tip_text: string
+          topic: string
+          trigger_text: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          industry?: string | null
+          source?: string | null
+          tip_text: string
+          topic: string
+          trigger_text: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          industry?: string | null
+          source?: string | null
+          tip_text?: string
+          topic?: string
+          trigger_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      knowledge_prompts: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          key: string
+          model: string
+          system_prompt: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          key: string
+          model?: string
+          system_prompt: string
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          key?: string
+          model?: string
+          system_prompt?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           blocks: Json | null
