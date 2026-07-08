@@ -1,154 +1,96 @@
-## Interview-Beitrag an News-Plattform senden
+Doch – im ursprünglichen Plan war die Hub-Seite als „Voraussetzung" gelistet, aber nicht ausformuliert. Hier ist jetzt der vollständige Copy-Paste-Bauplan fürs **Hub-Projekt** (separates Lovable-Projekt), damit der Push aus der Content-Engine ankommt.
 
-Ziel: Ein Redakteur klickt im Editor auf „An News-Plattform senden" — der Beitrag landet als **Draft** im Freigeist Content-Hub, inklusive aller Bilder (im Hub-Storage) und identischem HTML-Rendering wie beim WordPress-Export.
+## Was im Hub-Projekt entsteht
 
----
+1. **Migration** – Spalten auf `posts` für die Rück-Referenz und Storage-Bucket `interview-images` (public).
+2. **Kategorie „Interview"** – Seed-Insert, falls noch nicht vorhanden (Slug: `interview`).
+3. **Edge Function `ingest-interview**` – nimmt Push entgegen, prüft Shared Secret, transferiert Bilder in den Hub-Storage, legt Draft-Post an oder aktualisiert ihn.
+4. **Secret `INGEST_SHARED_SECRET**` – identischer Wert wie `HUB_INGEST_SECRET` hier in der Engine.
 
-### 1. Architektur (Variante b — Shared Secret)
+## Ablauf beim Empfang
 
 ```text
-Content-Engine (hier)                       Content-Hub (Ziel)
-─────────────────────                       ──────────────────
-[Editor] → Button                            
-  ↓                                          
-Edge Function `push-to-hub`                  Edge Function `ingest-interview`
-  • JWT-Check (Redakteur eingeloggt)   →     • Prüft Header X-Ingest-Secret
-  • Rendert HTML (generateHTML)              • Lädt Bilder in Hub-Storage
-  • Sendet POST mit Payload                  • Insert/Update in posts (Draft)
-                                             • Antwortet mit hub_post_id + slug
-  ← speichert hub_post_id, hub_slug ←
+Engine → POST /ingest-interview
+         Header: X-Ingest-Secret
+         Body:  { hub_post_id?, title, slug, category_slug:"interview",
+                  content_html, excerpt, speaker:{...}, image_urls:[{url,role}] }
+   │
+   ▼
+Hub prüft Secret (401 bei mismatch)
+   │
+   ▼
+Für jede image_url: fetch → in Bucket `interview-images` speichern
+   → signierte/öffentliche Hub-URL zurück
+   → im content_html alle alten URLs durch neue ersetzen
+   │
+   ▼
+INSERT (neu) oder UPDATE (per hub_post_id) in posts
+   status = 'draft', category = 'interview'
+   │
+   ▼
+Response 200 { hub_post_id, hub_slug, hub_edit_url }
 ```
 
-**Vorteile:**
+## Technische Details
 
-- Kein Hub-Service-Role-Key hier gespeichert
-- Hub-Schema-Änderungen bleiben intern im Hub-Projekt
-- Shared-Secret rotierbar ohne Migration
+### Migration im Hub
 
----
+```sql
+-- Storage-Bucket
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('interview-images', 'interview-images', true)
+ON CONFLICT DO NOTHING;
 
-### 2. Änderungen im Content-Hub (anderes Lovable-Projekt)
+-- Public-Read-Policy für den Bucket
+CREATE POLICY "Public read interview-images"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'interview-images');
 
-Muss dort vor Aktivierung eingerichtet werden:
+-- Service-Role darf schreiben (implizit via service_role key)
+```
 
-- **Secret `INGEST_SHARED_SECRET**` (identisch mit dem hier gespeicherten)
-- **Storage-Bucket `interview-images**` (public, für Bild-Uploads)
-- **Kategorie `interviews**` (falls nicht vorhanden) — Slug: `interviews`, Name: „Interview"
-- **Edge Function `ingest-interview**` (verify_jwt = false, prüft eigenes Secret):
-  - Nimmt Payload entgegen: `{ external_id, title, subtitle, content_html, image_urls: [{url, filename, role}], video_url, category_slug, meta }`
-  - Lädt jede `image_url` per fetch → speichert in `interview-images` Bucket → mappt neue URLs
-  - Ersetzt alle alten Bild-URLs im `content_html` durch neue Hub-URLs
-  - Findet Post via `external_id` (unser `posts.id`) → Insert wenn neu, sonst Update
-  - Antwortet: `{ hub_post_id, hub_slug }`
+Falls im Hub-Schema noch keine Spalte für die Herkunft existiert, ergänzen wir optional:
 
-Diese Änderungen setzt du im Hub-Projekt in einer separaten Runde um. Ich liefere dir die genaue Edge-Function für den Hub am Ende dieser Runde als Copy-Paste-Snippet.
+```sql
+ALTER TABLE public.posts
+  ADD COLUMN IF NOT EXISTS source_engine_post_id uuid,
+  ADD COLUMN IF NOT EXISTS source_engine_pushed_at timestamptz;
+```
 
----
+(Nur wenn dein Hub eine `posts`-Tabelle hat – Struktur passen wir an dein Hub-Schema an, sobald du mir sagst wie die dortige Tabelle heißt/aussieht.)
 
-### 3. Änderungen hier im Content-Engine-Projekt
+### Edge Function `ingest-interview/index.ts`
 
-**a) Secrets**
+Kernpunkte:
 
-- `HUB_INGEST_URL` — voller Edge-Function-URL des Hubs
-- `HUB_INGEST_SECRET` — Shared-Secret (identisch mit Hub)
+- `verify_jwt = false` (Auth ausschließlich per Shared Secret)
+- Zod-Validation des Bodys
+- `createClient` mit `SUPABASE_SERVICE_ROLE_KEY` für Storage + DB
+- Bilder-Loop: `fetch(url) → arrayBuffer → storage.upload(path, blob, {upsert:true})` → `getPublicUrl` → String-Replace im `content_html`
+- Dateipfad-Schema: `posts/<slug>/<originalname-or-hash>.<ext>` (idempotent bei Re-Push)
+- Insert-oder-Update:
+  - Wenn `hub_post_id` im Body → `update ... where id = hub_post_id`
+  - Sonst → `insert ... returning id, slug`
+- Antwort immer 200 mit `{ hub_post_id, hub_slug, hub_edit_url }` oder `{ error }` (Konvention aus Core-Memory)
 
-**b) Migration `posts**` — neue nullable Spalten:
+### Secret im Hub
 
-- `hub_post_id` (uuid)
-- `hub_slug` (text)
-- `hub_pushed_at` (timestamptz)
-- `hub_last_error` (text)
+`INGEST_SHARED_SECRET` = derselbe Zufallswert, den du gleich hier als `HUB_INGEST_SECRET` hinterlegst.
 
-**c) Edge Function `push-to-hub**` (verify_jwt = true):
+## Offene Frage vor dem Code-Schreiben
 
-- Input: `{ post_id }`
-- Lädt Post + Speaker aus DB
-- Rendert HTML mit **derselben** `generateHTML()`-Logik wie WordPress-Export (Speaker-Box + CTA-Buttons + Sektionen identisch)
-- Sammelt alle Bild-URLs aus `blocks` (guest_image_url, top/mid/end_image_url) mit Rolle
-- Payload:
-  ```
-  {
-    external_id: post.id,
-    title: post.interview_title,
-    subtitle: post.guest_name,
-    content_html: <generateHTML output>,
-    image_urls: [{url, filename, role: "guest"|"top"|"mid"|"end"}],
-    video_url: post.youtube_url,
-    category_slug: "interviews",
-    meta: { guest_name, product, ... }
-  }
-  ```
-- POST an `HUB_INGEST_URL` mit Header `X-Ingest-Secret: <secret>`
-- Antwort speichern in `posts.hub_post_id/hub_slug/hub_pushed_at`
-- Bei Fehler: 200 OK mit `{ error }` (Projekt-Konvention), `hub_last_error` befüllen
+Damit die Function exakt zu deinem Hub passt, brauche ich einmal kurz:
 
-**d) UI — Button im Editor**
+1. **Wie heißt im Hub die Tabelle für Beiträge?** (`posts`, `articles`, `news`, …?) – und existiert dort schon eine Kategorien-Logik (Enum? Eigene Tabelle? Slug-Feld?).
+2. **Soll der Ingest im Hub bereits einen bestimmten Autor/User setzen** (z. B. Service-Account) oder Autor leer lassen bis der Redakteur ihn im Hub setzt?
 
-- `EditPost.tsx` (und `PreviewPost.tsx`): Neuer Button „An News-Plattform senden"
-- Bestätigungs-Dialog: „Beitrag wird als Entwurf im Hub angelegt/aktualisiert."
-- Nach Erfolg: Toast mit Link zum Hub-Draft (`hub_slug`)
-- Bei bereits gepushten Beiträgen: Button-Label wechselt zu „An News-Plattform aktualisieren"
-- Status-Anzeige: „Zuletzt gesendet: &nbsp;"
-
-**e) Modul 8 Übersicht** (`Module8NewsPlattform.tsx`)
-
-- Read-only Tabelle: alle Posts mit `hub_post_id IS NOT NULL`
-- Spalten: Titel, Gast, Gepusht am, Link zum Hub-Draft
-- Button „Neu pushen" pro Zeile
-
-**f) React Query Hook** `usePushToHub` — Mutation + Invalidation
-
----
-
-### 4. HTML-Rendering — einheitlich mit Modul 7
-
-Die `generateHTML()`-Funktion (`src/lib/export-html.ts`) wird **unverändert** genutzt:
-
-- Speaker-Box (Guest Profile) identisch
-- CTA-Buttons (Guest Website, Affiliate) identisch
-- Alle Sektionen, Bilder, Videos identisch
-
-Damit ist garantiert: Der WordPress-Import in Modul 7 und der Hub-Push in Modul 8 erzeugen visuell **exakt denselben Beitrag**.
-
-Umsetzungs-Detail: Die Edge Function importiert `generateHTML()` nicht direkt (Client-Code), sondern eine **portierte Kopie** wird im Function-Ordner abgelegt (`_shared/render-post.ts`). Änderungen am Rendering müssen an beiden Stellen erfolgen — akzeptable Verdopplung, da Deno keinen sauberen Zugriff auf `src/` hat.
-
----
-
-### 5. Bild-Transfer — Ablauf
-
-1. Content-Engine sendet Bild-URLs (WordPress oder Supabase-Storage) im Payload
-2. Hub-Ingest-Function `fetch()`t jedes Bild → lädt in `interview-images` Bucket
-3. Hub ersetzt alle Vorkommen der alten URLs im `content_html` durch neue Hub-URLs
-4. Bei Re-Push: gleicher `external_id` → Bilder werden neu geladen und ersetzt (idempotent)
-
-Dadurch sind alle Bilder im Hub-Storage verfügbar und nutzbar für andere Posts/Social-Media/Seiten.
-
----
-
-### 6. Umsetzungs-Reihenfolge
-
-1. Migration `posts` (hub_* Spalten)
-2. Secrets `HUB_INGEST_URL` + `HUB_INGEST_SECRET` einrichten
-3. Edge Function `push-to-hub` + shared `render-post.ts`
-4. UI-Button in `EditPost.tsx` + `usePushToHub` Hook
-5. Modul-8-Übersicht ausbauen
-6. Hub-Snippet liefern (Edge Function + Bucket + Kategorie)
-7. End-to-End-Test
-
----
-
-### 7. Was bewusst NICHT in dieser Runde
-
-- Kategorien-Sync (Kategorie ist fix `interviews`)
-- Rückkanal Hub → Engine (Publikations-Status)
-- Löschen im Hub aus der Engine heraus
-- Automatischer Push bei Status-Wechsel
-- Speaker-Profil-Transfer als separate Entität (Speaker-Daten leben im HTML mit)
-
----
-
-### Offene Frage
-
-**Kategorie im Hub:** Ich nehme Slug `interviews` an. Falls der Hub schon eine Kategorie mit anderem Slug hat (z. B. `interview` singular), sag Bescheid — wird sonst beim ersten Push mit „Kategorie nicht gefunden" fehlschlagen.  
+Sobald das klar ist, liefert der nächste Plan die fertigen Files (Migration + Function + Secret-Setup) zum Approven und dann im Hub-Projekt einfügen.  
   
-Im Freigeist-Hub gibt es den Kategorie Slug "Interview"
+ANTWORTEN:  
+  
+Zu 1.   
+- Tabelle für Beiträge: posts  
+- Tabele für Kategorien: categories  
+  
+Zu 2.  
+- Auto: erstmal leer lassen
