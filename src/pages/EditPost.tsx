@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Download, Save, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Save, Loader2, Trash2, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -19,6 +19,11 @@ import { PostPreview } from "@/components/PostPreview";
 import { SourceDataEditor } from "@/components/SourceDataEditor";
 import { InlineImageUpload } from "@/components/InlineImageUpload";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePushToHub } from "@/hooks/usePushToHub";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const defaultBlocks: PostBlocks = {
   excerpt: "",
