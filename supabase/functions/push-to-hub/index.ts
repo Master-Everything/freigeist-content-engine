@@ -14,21 +14,41 @@ function jsonError(message: string, extra?: Record<string, unknown>) {
   });
 }
 
-function collectImages(blocks: PostBlocks): Array<{ url: string; role: string; filename: string }> {
-  const items: Array<{ url: string; role: string; filename: string }> = [];
-  const push = (url: string | undefined, role: string) => {
+function collectImages(blocks: PostBlocks): Array<{ url: string; role: "featured" | "inline" }> {
+  const items: Array<{ url: string; role: "featured" | "inline" }> = [];
+  const seen = new Set<string>();
+  const push = (url: string | undefined, role: "featured" | "inline") => {
     if (!url) return;
     if (!/^https?:\/\//i.test(url)) return;
-    const clean = url.split("?")[0];
-    const parts = clean.split("/");
-    const last = parts[parts.length - 1] || `${role}.jpg`;
-    items.push({ url, role, filename: last });
+    if (seen.has(url)) return;
+    seen.add(url);
+    items.push({ url, role });
   };
-  push(blocks.guest_image_url, "guest");
-  push(blocks.top_image_url, "top");
-  push(blocks.mid_image_url, "mid");
-  push(blocks.end_image_url, "end");
+  // Featured: erstes verfügbares Bild in Reihenfolge top → guest → mid → end
+  const featured = blocks.top_image_url || blocks.guest_image_url || blocks.mid_image_url || blocks.end_image_url;
+  push(featured, "featured");
+  push(blocks.guest_image_url, "inline");
+  push(blocks.top_image_url, "inline");
+  push(blocks.mid_image_url, "inline");
+  push(blocks.end_image_url, "inline");
   return items;
+}
+
+function slugify(input: string): string {
+  return (input || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
+    .slice(0, 200) || "interview";
+}
+
+function estimateReadingTime(html: string): number {
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const words = text ? text.split(" ").length : 0;
+  return Math.max(1, Math.round(words / 200));
 }
 
 Deno.serve(async (req) => {
