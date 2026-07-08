@@ -1,49 +1,51 @@
 # Hub-Setup: Ingest-Interview
 
-Diese Files gehören ins **Hub-Projekt** (nicht in die Content-Engine). Kopiere sie 1:1 rüber.
+Diese Files gehören ins **Hub-Projekt** ([FREIGEIST Content-Hub](/projects/3b7054d6-c0c3-4272-9ffa-f782221a6fba)). Kopiere sie 1:1 rüber. Ich kann dort nur lesen – schreiben musst du (oder ein Agent in dem Projekt) selbst.
+
+## Angepasst an das echte Hub-Schema
+
+- Kategorien-Zuordnung läuft über `posts.category_slug` (TEXT → `categories.slug`)
+- Content landet in `posts.content`
+- Hero-Bild landet in `posts.image_url`
+- „Excerpt" wird auf `posts.subtitle` gemappt
+- Bilder-Bucket ist der bestehende **`post-images`** (public) – wir legen keinen neuen an
+- Kategorie „Interview" wird mit `color` + `icon` geseedet (NOT NULL im Hub)
 
 ## Reihenfolge
 
-1. **Migration ausführen** – `migration.sql` im Hub via Lovable Cloud Migration einspielen.
-   Fügt Spalten `source_engine_post_id`, `source_engine_pushed_at` auf `posts` hinzu
-   und stellt sicher, dass Kategorie „Interview" existiert.
-2. **Storage-Bucket anlegen** – im Hub den Bucket `interview-images` als **public** erstellen
-   (über das Cloud-UI oder den Storage-Tool-Call). Danach `storage-policy.sql` einspielen.
-3. **Edge Function anlegen** – Ordner `supabase/functions/ingest-interview/` mit `index.ts`
-   im Hub-Projekt anlegen und den Inhalt aus `ingest-interview.ts` einfügen.
-4. **Secret setzen** – im Hub das Secret `INGEST_SHARED_SECRET` mit einem selbst gewählten
-   Zufallswert speichern (z. B. `openssl rand -hex 32`).
-5. **Function-URL kopieren** – die Deploy-URL der Function notieren.
-6. **Zurück in der Content-Engine** – dort werden dann zwei Secrets gesetzt:
-   - `HUB_INGEST_URL` = die URL aus Schritt 5
+1. **Migration** – `migration.sql` im Hub via Cloud-Migration einspielen.
+2. **Edge Function** – im Hub Ordner `supabase/functions/ingest-interview/` anlegen und Inhalt aus `ingest-interview.ts` einfügen. Zusätzlich in `supabase/config.toml` des Hubs den Eintrag aus `config.toml.snippet` ergänzen (setzt `verify_jwt = false`).
+3. **Secret setzen** – im Hub `INGEST_SHARED_SECRET` mit selbst gewähltem Zufallswert speichern (z. B. `openssl rand -hex 32`).
+4. **Function-URL notieren** – `https://<hub-project-ref>.functions.supabase.co/ingest-interview`.
+5. **Zurück in der Engine** – hier setzen wir dann:
+   - `HUB_INGEST_URL` = URL aus Schritt 4
    - `HUB_INGEST_SECRET` = derselbe Wert wie `INGEST_SHARED_SECRET` im Hub
 
 ## Payload-Vertrag
 
-Die Engine schickt per POST an die Function:
-
 ```
+POST /ingest-interview
 Header: X-Ingest-Secret: <shared secret>
 Content-Type: application/json
 
 {
-  "hub_post_id": "uuid | null",       // null = neuer Post, sonst Update
-  "engine_post_id": "uuid",           // Herkunfts-ID aus der Engine
+  "hub_post_id": "uuid | null",
+  "engine_post_id": "uuid",
   "title": "string",
   "slug": "string",
-  "excerpt": "string | null",
-  "category_slug": "interview",
-  "content_html": "string",           // fertiges HTML inkl. CTA + Speaker-Box
-  "image_urls": [                     // alle im HTML referenzierten Bilder
+  "subtitle": "string | null",
+  "content_html": "string",
+  "reading_time": 8,
+  "image_urls": [
     { "url": "https://…", "role": "featured | inline" }
   ]
 }
 ```
 
-Antwort (immer 200, auch bei Fehler – Error-Konvention):
+Antwort (immer 200):
 
 ```
-{ "hub_post_id": "uuid", "hub_slug": "string", "hub_edit_url": "string" }
+{ "hub_post_id": "uuid", "hub_slug": "string", "images_transferred": 4 }
 // oder
 { "error": "message" }
 ```

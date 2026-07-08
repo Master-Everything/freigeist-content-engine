@@ -1,11 +1,11 @@
 // supabase/functions/ingest-interview/index.ts  (im HUB-Projekt)
 //
-// Empfängt Interview-Push aus der Content-Engine, transferiert Bilder in
-// den Hub-Storage-Bucket `interview-images` und legt einen Draft-Post an
-// (oder aktualisiert einen bestehenden per hub_post_id).
+// Empfängt Interview-Push aus der Content-Engine, transferiert alle Bilder
+// in den Hub-Bucket `post-images` und legt einen Draft-Post in public.posts
+// an (oder aktualisiert einen bestehenden per hub_post_id).
 //
 // Auth: ausschließlich per Shared Secret im Header X-Ingest-Secret.
-// Rückgabe: immer HTTP 200 mit JSON – Fehler stehen im `error`-Key.
+// Rückgabe: immer HTTP 200 mit JSON (Fehler stehen im `error`-Key).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -16,9 +16,9 @@ const BodySchema = z.object({
   engine_post_id: z.string().uuid(),
   title: z.string().min(1).max(500),
   slug: z.string().min(1).max(300),
-  excerpt: z.string().nullable().optional(),
-  category_slug: z.literal("interview"),
+  subtitle: z.string().nullable().optional(),
   content_html: z.string(),
+  reading_time: z.number().int().positive().nullable().optional(),
   image_urls: z
     .array(
       z.object({
@@ -29,7 +29,8 @@ const BodySchema = z.object({
     .default([]),
 });
 
-const BUCKET = "interview-images";
+const BUCKET = "post-images";
+const CATEGORY_SLUG = "interview";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -48,7 +49,7 @@ function extFromUrl(url: string, contentType: string | null): string {
   return "bin";
 }
 
-async function sha1(input: string): Promise<string> {
+async function shortHash(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest("SHA-1", buf);
   return Array.from(new Uint8Array(hash))
@@ -63,10 +64,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ---- Shared-Secret prüfen -------------------------------------------
+    // ---- Shared Secret prüfen -------------------------------------------
     const provided = req.headers.get("X-Ingest-Secret");
     const expected = Deno.env.get("INGEST_SHARED_SECRET");
-    if (!expected) return json({ error: "Server misconfigured: secret missing" });
+    if (!expected) return json({ error: "Server misconfigured: INGEST_SHARED_SECRET missing" });
     if (!provided || provided !== expected) {
       return json({ error: "Unauthorized" });
     }
@@ -79,24 +80,25 @@ Deno.serve(async (req) => {
     }
     const body = parsed.data;
 
-    // ---- Supabase-Client (Service-Role) --------------------------------
+    // ---- Service-Role Client -------------------------------------------
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // ---- Kategorie „Interview" lookup ----------------------------------
+    // ---- Kategorie „Interview" prüfen ----------------------------------
     const { data: cat, error: catErr } = await supabase
       .from("categories")
-      .select("id")
-      .eq("slug", "interview")
+      .select("slug")
+      .eq("slug", CATEGORY_SLUG)
       .maybeSingle();
     if (catErr) return json({ error: `Category lookup failed: ${catErr.message}` });
-    if (!cat) return json({ error: "Category 'interview' not found in hub" });
+    if (!cat) return json({ error: `Category '${CATEGORY_SLUG}' not found in hub` });
 
     // ---- Bilder in den Hub-Storage transferieren -----------------------
     let contentHtml = body.content_html;
-    const uploadedUrls: Array<{ original: string; hub: string; role: string }> = [];
+    let featuredImageUrl: string | null = null;
+    let transferred = 0;
 
     for (const img of body.image_urls) {
       try {
@@ -104,9 +106,9 @@ Deno.serve(async (req) => {
         if (!res.ok) continue;
         const contentType = res.headers.get("content-type");
         const bytes = new Uint8Array(await res.arrayBuffer());
-        const hash = await sha1(img.url);
+        const hash = await shortHash(img.url);
         const ext = extFromUrl(img.url, contentType);
-        const path = `posts/${body.slug}/${hash}.${ext}`;
+        const path = `ingest/${body.slug}/${hash}.${ext}`;
 
         const { error: upErr } = await supabase.storage
           .from(BUCKET)
@@ -122,26 +124,24 @@ Deno.serve(async (req) => {
         const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
         const hubUrl = pub.publicUrl;
 
-        // alle Vorkommen der Original-URL im HTML ersetzen
         contentHtml = contentHtml.split(img.url).join(hubUrl);
-        uploadedUrls.push({ original: img.url, hub: hubUrl, role: img.role });
+        if (img.role === "featured" && !featuredImageUrl) featuredImageUrl = hubUrl;
+        transferred += 1;
       } catch (e) {
         console.error("image transfer error", img.url, e);
       }
     }
 
-    // ---- Featured-Image bestimmen --------------------------------------
-    const featured = uploadedUrls.find((u) => u.role === "featured")?.hub ?? null;
-
     // ---- Insert oder Update --------------------------------------------
     const payload: Record<string, unknown> = {
       title: body.title,
       slug: body.slug,
-      excerpt: body.excerpt ?? null,
+      subtitle: body.subtitle ?? null,
       content: contentHtml,
-      category_id: cat.id,
+      category_slug: CATEGORY_SLUG,
       status: "draft",
-      featured_image_url: featured,
+      image_url: featuredImageUrl,
+      reading_time: body.reading_time ?? null,
       source_engine_post_id: body.engine_post_id,
       source_engine_pushed_at: new Date().toISOString(),
     };
@@ -170,12 +170,10 @@ Deno.serve(async (req) => {
       hubSlug = data.slug;
     }
 
-    const origin = req.headers.get("origin") ?? "";
     return json({
       hub_post_id: hubPostId,
       hub_slug: hubSlug,
-      hub_edit_url: origin ? `${origin}/admin/posts/${hubPostId}` : null,
-      images_transferred: uploadedUrls.length,
+      images_transferred: transferred,
     });
   } catch (e) {
     console.error("ingest-interview fatal", e);
