@@ -1,5 +1,5 @@
 -- Hub-Migration: Ingest-Support für Interviews aus der Content-Engine
--- Im HUB-Projekt ausführen (nicht in der Engine!)
+-- Im HUB-Projekt (FREIGEIST Content-Hub) ausführen.
 
 -- 1) Rück-Referenz auf die Herkunft in der Engine
 ALTER TABLE public.posts
@@ -9,8 +9,14 @@ ALTER TABLE public.posts
 CREATE INDEX IF NOT EXISTS posts_source_engine_post_id_idx
   ON public.posts (source_engine_post_id);
 
--- 2) Kategorie „Interview" sicherstellen (Slug: interview)
---    Passe Spaltennamen bei Bedarf an dein Hub-categories-Schema an.
-INSERT INTO public.categories (name, slug)
-VALUES ('Interview', 'interview')
+-- 2) Kategorie „Interview" sicherstellen
+--    categories hat NOT NULL auf name, slug, color, icon.
+INSERT INTO public.categories (name, slug, color, icon, description)
+VALUES (
+  'Interview',
+  'interview',
+  '#2A809B',
+  'MessageSquare',
+  'Interviews mit Speakern und Experten'
+)
 ON CONFLICT (slug) DO NOTHING;
