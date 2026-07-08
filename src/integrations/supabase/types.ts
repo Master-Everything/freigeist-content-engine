@@ -247,6 +247,10 @@ export type Database = {
           guest_name: string
           guest_short_bio: string | null
           guest_website_url: string | null
+          hub_last_error: string | null
+          hub_post_id: string | null
+          hub_pushed_at: string | null
+          hub_slug: string | null
           id: string
           interview_title: string
           interview_topic: string | null
@@ -272,6 +276,10 @@ export type Database = {
           guest_name: string
           guest_short_bio?: string | null
           guest_website_url?: string | null
+          hub_last_error?: string | null
+          hub_post_id?: string | null
+          hub_pushed_at?: string | null
+          hub_slug?: string | null
           id?: string
           interview_title: string
           interview_topic?: string | null
@@ -297,6 +305,10 @@ export type Database = {
           guest_name?: string
           guest_short_bio?: string | null
           guest_website_url?: string | null
+          hub_last_error?: string | null
+          hub_post_id?: string | null
+          hub_pushed_at?: string | null
+          hub_slug?: string | null
           id?: string
           interview_title?: string
           interview_topic?: string | null

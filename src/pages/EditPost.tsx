@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Download, Save, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Save, Loader2, Trash2, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -19,6 +19,11 @@ import { PostPreview } from "@/components/PostPreview";
 import { SourceDataEditor } from "@/components/SourceDataEditor";
 import { InlineImageUpload } from "@/components/InlineImageUpload";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePushToHub } from "@/hooks/usePushToHub";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const defaultBlocks: PostBlocks = {
   excerpt: "",
@@ -356,6 +361,7 @@ export default function EditPost() {
             <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
               <Download className="h-4 w-4" /> HTML
             </Button>
+            <PushToHubButton postId={id} post={post} />
             <Button size="sm" onClick={handleSave} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Speichern
@@ -448,5 +454,45 @@ function OptionalBlockToggle({ label, enabled, onToggle, children }: { label: st
       </CardHeader>
       {enabled && <CardContent>{children}</CardContent>}
     </Card>
+  );
+}
+
+function PushToHubButton({ postId, post }: { postId?: string; post: Post | null }) {
+  const pushToHub = usePushToHub();
+  if (!postId) return null;
+  const alreadyPushed = !!post?.hub_post_id;
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2" disabled={pushToHub.isPending}>
+          {pushToHub.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {alreadyPushed ? "News-Plattform aktualisieren" : "An News-Plattform senden"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>An News-Plattform senden?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Der Beitrag wird als <strong>Entwurf</strong> im Freigeist Content-Hub in der Kategorie <em>Interview</em> {alreadyPushed ? "aktualisiert" : "angelegt"}. Alle Bilder werden in den Hub-Storage übertragen.
+            {post?.hub_pushed_at && (
+              <span className="block mt-2 text-xs">
+                Zuletzt gesendet: {new Date(post.hub_pushed_at).toLocaleString("de-DE")}
+              </span>
+            )}
+            {post?.hub_last_error && (
+              <span className="block mt-2 text-xs text-destructive">
+                Letzter Fehler: {post.hub_last_error}
+              </span>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+          <AlertDialogAction onClick={() => pushToHub.mutate(postId)}>
+            {alreadyPushed ? "Aktualisieren" : "Senden"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

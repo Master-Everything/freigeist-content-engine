@@ -1,0 +1,133 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { generateHTML, PostBlocks } from "./render-post.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+function jsonError(message: string, extra?: Record<string, unknown>) {
+  // 200 OK with error key (Projekt-Konvention)
+  return new Response(JSON.stringify({ error: message, ...extra }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function collectImages(blocks: PostBlocks): Array<{ url: string; role: string; filename: string }> {
+  const items: Array<{ url: string; role: string; filename: string }> = [];
+  const push = (url: string | undefined, role: string) => {
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) return;
+    const clean = url.split("?")[0];
+    const parts = clean.split("/");
+    const last = parts[parts.length - 1] || `${role}.jpg`;
+    items.push({ url, role, filename: last });
+  };
+  push(blocks.guest_image_url, "guest");
+  push(blocks.top_image_url, "top");
+  push(blocks.mid_image_url, "mid");
+  push(blocks.end_image_url, "end");
+  return items;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const HUB_INGEST_URL = Deno.env.get("HUB_INGEST_URL");
+    const HUB_INGEST_SECRET = Deno.env.get("HUB_INGEST_SECRET");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!HUB_INGEST_URL || !HUB_INGEST_SECRET) {
+      return jsonError("HUB_INGEST_URL oder HUB_INGEST_SECRET nicht konfiguriert.");
+    }
+    if (!SUPABASE_URL || !SERVICE_ROLE) {
+      return jsonError("Supabase-Env nicht verfügbar.");
+    }
+
+    const authHeader = req.headers.get("Authorization") || "";
+    const jwt = authHeader.replace(/^Bearer\s+/i, "");
+    if (!jwt) return jsonError("Nicht eingeloggt.");
+
+    const supaAuth = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
+    });
+    const { data: userData, error: userErr } = await supaAuth.auth.getUser(jwt);
+    if (userErr || !userData?.user) return jsonError("Ungültiges Login.");
+
+    const body = await req.json().catch(() => ({}));
+    const post_id = body?.post_id as string | undefined;
+    if (!post_id) return jsonError("post_id fehlt.");
+
+    const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    const { data: post, error: postErr } = await supa
+      .from("posts")
+      .select("*")
+      .eq("id", post_id)
+      .single();
+    if (postErr || !post) return jsonError("Beitrag nicht gefunden.");
+
+    const blocks = (post.blocks ?? {}) as PostBlocks;
+    const content_html = generateHTML(blocks, post.guest_name, post.interview_title);
+    const image_urls = collectImages(blocks);
+
+    const payload = {
+      external_id: post.id,
+      title: post.interview_title,
+      subtitle: post.guest_name,
+      content_html,
+      image_urls,
+      video_url: post.youtube_url,
+      category_slug: "interviews",
+      meta: {
+        guest_name: post.guest_name,
+        guest_website: post.guest_website_url,
+        product: (post as any).product ?? null,
+        interview_topic: (post as any).interview_topic ?? null,
+      },
+    };
+
+    const hubRes = await fetch(HUB_INGEST_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ingest-Secret": HUB_INGEST_SECRET,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const hubText = await hubRes.text();
+    let hubJson: any = {};
+    try { hubJson = JSON.parse(hubText); } catch { /* ignore */ }
+
+    if (!hubRes.ok || hubJson?.error) {
+      const msg = hubJson?.error || `Hub antwortete mit ${hubRes.status}: ${hubText.slice(0, 300)}`;
+      await supa.from("posts").update({ hub_last_error: msg }).eq("id", post_id);
+      return jsonError(msg);
+    }
+
+    await supa
+      .from("posts")
+      .update({
+        hub_post_id: hubJson.hub_post_id ?? null,
+        hub_slug: hubJson.hub_slug ?? null,
+        hub_pushed_at: new Date().toISOString(),
+        hub_last_error: null,
+      })
+      .eq("id", post_id);
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        hub_post_id: hubJson.hub_post_id ?? null,
+        hub_slug: hubJson.hub_slug ?? null,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (e) {
+    return jsonError((e as Error).message ?? "Unbekannter Fehler");
+  }
+});

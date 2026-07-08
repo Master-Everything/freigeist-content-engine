@@ -63,6 +63,10 @@ export interface Post {
   previous_interviews?: string | null;
   critical_voices?: string | null;
   selected_affiliate_indices?: number[] | null;
+  hub_post_id?: string | null;
+  hub_slug?: string | null;
+  hub_pushed_at?: string | null;
+  hub_last_error?: string | null;
   created_at: string;
   updated_at: string;
 }
