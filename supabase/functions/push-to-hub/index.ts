@@ -95,19 +95,14 @@ Deno.serve(async (req) => {
     const image_urls = collectImages(blocks);
 
     const payload = {
-      external_id: post.id,
+      hub_post_id: (post as any).hub_post_id ?? null,
+      engine_post_id: post.id,
       title: post.interview_title,
-      subtitle: post.guest_name,
+      slug: (post as any).hub_slug || slugify(post.interview_title),
+      subtitle: post.guest_name ?? null,
       content_html,
+      reading_time: estimateReadingTime(content_html),
       image_urls,
-      video_url: post.youtube_url,
-      category_slug: "interviews",
-      meta: {
-        guest_name: post.guest_name,
-        guest_website: post.guest_website_url,
-        product: (post as any).product ?? null,
-        interview_topic: (post as any).interview_topic ?? null,
-      },
     };
 
     const hubRes = await fetch(HUB_INGEST_URL, {
