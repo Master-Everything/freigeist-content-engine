@@ -1,92 +1,154 @@
-## Modul 2 — Vorab-Scan Interviewgast
+## Interview-Beitrag an News-Plattform senden
 
-Ziel: Ein Klick auf „Scan starten" prüft das Speaker-Profil gegen die Wissensbasis (BannedWords + Phase-B-Compliance-Regeln + FG-Kurator-Prompt), liefert eine **Ampel-Bewertung** (grün / gelb / rot) und konkrete Optimierungshinweise.
+Ziel: Ein Redakteur klickt im Editor auf „An News-Plattform senden" — der Beitrag landet als **Draft** im Freigeist Content-Hub, inklusive aller Bilder (im Hub-Storage) und identischem HTML-Rendering wie beim WordPress-Export.
 
 ---
 
-### 1. Datenbank — neue Tabelle `speaker_scans`
+### 1. Architektur (Variante b — Shared Secret)
 
-Speichert jeden Scan-Lauf historisch (damit man Verbesserungen über die Zeit sieht).
+```text
+Content-Engine (hier)                       Content-Hub (Ziel)
+─────────────────────                       ──────────────────
+[Editor] → Button                            
+  ↓                                          
+Edge Function `push-to-hub`                  Edge Function `ingest-interview`
+  • JWT-Check (Redakteur eingeloggt)   →     • Prüft Header X-Ingest-Secret
+  • Rendert HTML (generateHTML)              • Lädt Bilder in Hub-Storage
+  • Sendet POST mit Payload                  • Insert/Update in posts (Draft)
+                                             • Antwortet mit hub_post_id + slug
+  ← speichert hub_post_id, hub_slug ←
+```
 
-Felder (fachlich):
-- `speaker_id` → FK auf `speakers`
-- `triggered_by` → FK auf `auth.users` (wer den Scan ausgelöst hat)
-- `status` → `pending` / `running` / `done` / `error`
-- `verdict` → `green` / `yellow` / `red` (Ampel)
-- `score` → 0–100 (für interne Sortierung)
-- `summary` → kurze Gesamteinschätzung (Markdown, 2–4 Sätze)
-- `findings` → JSONB Array: jeder Fund = `{ kind: "banned_word"|"compliance"|"hint", severity, field, excerpt, rule_code?, message, suggestion }`
-- `model_used`, `prompt_key_used`, `prompt_version_used`, `tokens_in`, `tokens_out`, `duration_ms`
-- `error_text`
+**Vorteile:**
 
-RLS:
-- Speaker sieht nur eigene Scans (`speaker_id` gehört zu eigenem Profil).
-- Admin sieht alles.
-- Insert: Speaker für eigenes Profil, Admin für jedes.
+- Kein Hub-Service-Role-Key hier gespeichert
+- Hub-Schema-Änderungen bleiben intern im Hub-Projekt
+- Shared-Secret rotierbar ohne Migration
 
-### 2. Edge Function `vorab-scan`
+---
 
-- Auth: JWT prüfen, User-ID ziehen.
-- Input: `{ speaker_id }`.
-- Berechtigung: User muss Owner des Speakers ODER Admin sein.
-- Ablauf:
-  1. `speaker_scans` Zeile mit `status=running` anlegen.
-  2. Speaker-Daten laden (alle Textfelder + Hot-Topics + Affiliate-JSON).
-  3. **Deterministischer Pre-Check** (kein LLM): BannedWords-Treffer per Wortgrenzen-Regex über alle relevanten Textfelder → Findings.
-  4. **LLM-Scan** via Lovable AI Gateway (`google/gemini-2.5-flash`):
-     - System-Prompt: `knowledge_prompts` Key `fg_kurator` (aktive Version).
-     - User-Inhalt: strukturiertes JSON aus Speaker-Profil + Liste der aktiven Phase-B-Regeln (Code, Frage, Risiko-Antwort, Severity).
-     - Antwort als JSON erzwingen (Structured Output / `response_format`):
-       ```
-       { verdict: "green"|"yellow"|"red", score: 0-100, summary: "...",
-         findings: [{ rule_code, severity, field, excerpt, message, suggestion }] }
-       ```
-  5. Findings mergen (Banned + LLM), `verdict` final festlegen:
-     - `red` wenn ≥1 Finding mit Severity `critical` ODER LLM `red`
-     - `yellow` wenn ≥1 `high`/`warn` ODER LLM `yellow`
-     - sonst `green`
-  6. Zeile updaten auf `status=done`.
-- Fehler: Zeile auf `status=error` setzen, **200 OK** mit `{ error }` zurückgeben (gemäß Projekt-Konvention).
-- Rate-Limit / Cost-Guard: max 1 laufender Scan pro Speaker; 429- und 402-Antworten vom Gateway sauber in Toast-Meldung übersetzen.
+### 2. Änderungen im Content-Hub (anderes Lovable-Projekt)
 
-### 3. UI
+Muss dort vor Aktivierung eingerichtet werden:
 
-**a) Speaker-Sicht — auf `/module/vorab-scan/eingereicht`**
-- Button „Profil jetzt prüfen lassen" (nur wenn Speaker-Profil existiert).
-- Liste der bisherigen Scans (neueste oben): Ampel-Badge, Datum, Score, „Details ansehen".
-- Detail-Panel (Sheet/Drawer):
-  - Header: große Ampel + Summary
-  - Sektion „Kritische Punkte" (rot), „Hinweise" (gelb), „Optimierungstipps" (grün/Info)
-  - Pro Finding: Feldname, betroffene Textstelle (`excerpt`), Empfehlung, ggf. Regel-Code (klickbar → Detail aus `knowledge_compliance_rules`).
-- Hinweis-Banner wenn `red`: „Bitte Profil überarbeiten und erneut scannen." mit Link zu Modul 1.
+- **Secret `INGEST_SHARED_SECRET**` (identisch mit dem hier gespeicherten)
+- **Storage-Bucket `interview-images**` (public, für Bild-Uploads)
+- **Kategorie `interviews**` (falls nicht vorhanden) — Slug: `interviews`, Name: „Interview"
+- **Edge Function `ingest-interview**` (verify_jwt = false, prüft eigenes Secret):
+  - Nimmt Payload entgegen: `{ external_id, title, subtitle, content_html, image_urls: [{url, filename, role}], video_url, category_slug, meta }`
+  - Lädt jede `image_url` per fetch → speichert in `interview-images` Bucket → mappt neue URLs
+  - Ersetzt alle alten Bild-URLs im `content_html` durch neue Hub-URLs
+  - Findet Post via `external_id` (unser `posts.id`) → Insert wenn neu, sonst Update
+  - Antwortet: `{ hub_post_id, hub_slug }`
 
-**b) Admin-Sicht — `/module/vorab-scan`**
-- Tabelle aller Scans über alle Speaker: Name, Datum, Ampel, Score, Anzahl Findings, Aktion „Details".
-- Filter: Verdict, Zeitraum, Suche nach Speaker-Name.
-- Button „Manuellen Re-Scan auslösen" pro Speaker.
+Diese Änderungen setzt du im Hub-Projekt in einer separaten Runde um. Ich liefere dir die genaue Edge-Function für den Hub am Ende dieser Runde als Copy-Paste-Snippet.
 
-**c) Komponenten** (neu, klein gehalten):
-- `AmpelBadge` (`green|yellow|red` → semantic colors aus `index.css`, kein hardcoded white/black)
-- `ScanFindingsList`
-- `ScanDetailSheet`
-- `useSpeakerScans` Hook (React Query)
-- `useStartVorabScan` Mutation Hook
+---
 
-### 4. Sidebar-Counter (optional, klein)
-Admin-Sidebar-Footer um „X offene rote Scans" erweitern — nur wenn > 0.
+### 3. Änderungen hier im Content-Engine-Projekt
 
-### 5. Was bewusst NICHT in dieser Runde
-- E-Mail-Versand an Speaker bei rotem Ergebnis (kommt in eigener Runde, nutzt `knowledge_email_templates`).
-- Automatischer Re-Scan-Trigger bei Profil-Update.
-- Diff-Vergleich zwischen zwei Scans.
-- Streaming-UI (kommt einfaches Polling/Loading-State).
+**a) Secrets**
 
-### Reihenfolge der Umsetzung
-1. Migration `speaker_scans` + RLS + GRANTs (du bestätigst).
-2. Edge Function `vorab-scan` deployen.
-3. UI Speaker-Sicht (Button + Liste + Detail-Sheet).
-4. UI Admin-Sicht (Tabelle + Filter).
-5. End-to-End-Test mit deinem eigenen Speaker-Profil.
+- `HUB_INGEST_URL` — voller Edge-Function-URL des Hubs
+- `HUB_INGEST_SECRET` — Shared-Secret (identisch mit Hub)
+
+**b) Migration `posts**` — neue nullable Spalten:
+
+- `hub_post_id` (uuid)
+- `hub_slug` (text)
+- `hub_pushed_at` (timestamptz)
+- `hub_last_error` (text)
+
+**c) Edge Function `push-to-hub**` (verify_jwt = true):
+
+- Input: `{ post_id }`
+- Lädt Post + Speaker aus DB
+- Rendert HTML mit **derselben** `generateHTML()`-Logik wie WordPress-Export (Speaker-Box + CTA-Buttons + Sektionen identisch)
+- Sammelt alle Bild-URLs aus `blocks` (guest_image_url, top/mid/end_image_url) mit Rolle
+- Payload:
+  ```
+  {
+    external_id: post.id,
+    title: post.interview_title,
+    subtitle: post.guest_name,
+    content_html: <generateHTML output>,
+    image_urls: [{url, filename, role: "guest"|"top"|"mid"|"end"}],
+    video_url: post.youtube_url,
+    category_slug: "interviews",
+    meta: { guest_name, product, ... }
+  }
+  ```
+- POST an `HUB_INGEST_URL` mit Header `X-Ingest-Secret: <secret>`
+- Antwort speichern in `posts.hub_post_id/hub_slug/hub_pushed_at`
+- Bei Fehler: 200 OK mit `{ error }` (Projekt-Konvention), `hub_last_error` befüllen
+
+**d) UI — Button im Editor**
+
+- `EditPost.tsx` (und `PreviewPost.tsx`): Neuer Button „An News-Plattform senden"
+- Bestätigungs-Dialog: „Beitrag wird als Entwurf im Hub angelegt/aktualisiert."
+- Nach Erfolg: Toast mit Link zum Hub-Draft (`hub_slug`)
+- Bei bereits gepushten Beiträgen: Button-Label wechselt zu „An News-Plattform aktualisieren"
+- Status-Anzeige: „Zuletzt gesendet: &nbsp;"
+
+**e) Modul 8 Übersicht** (`Module8NewsPlattform.tsx`)
+
+- Read-only Tabelle: alle Posts mit `hub_post_id IS NOT NULL`
+- Spalten: Titel, Gast, Gepusht am, Link zum Hub-Draft
+- Button „Neu pushen" pro Zeile
+
+**f) React Query Hook** `usePushToHub` — Mutation + Invalidation
+
+---
+
+### 4. HTML-Rendering — einheitlich mit Modul 7
+
+Die `generateHTML()`-Funktion (`src/lib/export-html.ts`) wird **unverändert** genutzt:
+
+- Speaker-Box (Guest Profile) identisch
+- CTA-Buttons (Guest Website, Affiliate) identisch
+- Alle Sektionen, Bilder, Videos identisch
+
+Damit ist garantiert: Der WordPress-Import in Modul 7 und der Hub-Push in Modul 8 erzeugen visuell **exakt denselben Beitrag**.
+
+Umsetzungs-Detail: Die Edge Function importiert `generateHTML()` nicht direkt (Client-Code), sondern eine **portierte Kopie** wird im Function-Ordner abgelegt (`_shared/render-post.ts`). Änderungen am Rendering müssen an beiden Stellen erfolgen — akzeptable Verdopplung, da Deno keinen sauberen Zugriff auf `src/` hat.
+
+---
+
+### 5. Bild-Transfer — Ablauf
+
+1. Content-Engine sendet Bild-URLs (WordPress oder Supabase-Storage) im Payload
+2. Hub-Ingest-Function `fetch()`t jedes Bild → lädt in `interview-images` Bucket
+3. Hub ersetzt alle Vorkommen der alten URLs im `content_html` durch neue Hub-URLs
+4. Bei Re-Push: gleicher `external_id` → Bilder werden neu geladen und ersetzt (idempotent)
+
+Dadurch sind alle Bilder im Hub-Storage verfügbar und nutzbar für andere Posts/Social-Media/Seiten.
+
+---
+
+### 6. Umsetzungs-Reihenfolge
+
+1. Migration `posts` (hub_* Spalten)
+2. Secrets `HUB_INGEST_URL` + `HUB_INGEST_SECRET` einrichten
+3. Edge Function `push-to-hub` + shared `render-post.ts`
+4. UI-Button in `EditPost.tsx` + `usePushToHub` Hook
+5. Modul-8-Übersicht ausbauen
+6. Hub-Snippet liefern (Edge Function + Bucket + Kategorie)
+7. End-to-End-Test
+
+---
+
+### 7. Was bewusst NICHT in dieser Runde
+
+- Kategorien-Sync (Kategorie ist fix `interviews`)
+- Rückkanal Hub → Engine (Publikations-Status)
+- Löschen im Hub aus der Engine heraus
+- Automatischer Push bei Status-Wechsel
+- Speaker-Profil-Transfer als separate Entität (Speaker-Daten leben im HTML mit)
+
+---
 
 ### Offene Frage
-**LLM-Modell:** Empfehlung `google/gemini-2.5-flash` (kostenlos bis 13. Okt 2025, schnell, JSON-fähig). Alternative wäre `gemini-2.5-pro` für höhere Genauigkeit — langsamer und ab Okt 2025 teurer. Soll ich Flash nehmen und Pro nur als Fallback/Toggle bereithalten?
+
+**Kategorie im Hub:** Ich nehme Slug `interviews` an. Falls der Hub schon eine Kategorie mit anderem Slug hat (z. B. `interview` singular), sag Bescheid — wird sonst beim ersten Push mit „Kategorie nicht gefunden" fehlschlagen.  
+  
+Im Freigeist-Hub gibt es den Kategorie Slug "Interview"
