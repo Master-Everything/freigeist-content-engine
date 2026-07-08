@@ -361,6 +361,7 @@ export default function EditPost() {
             <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
               <Download className="h-4 w-4" /> HTML
             </Button>
+            <PushToHubButton postId={id} post={post} />
             <Button size="sm" onClick={handleSave} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Speichern
