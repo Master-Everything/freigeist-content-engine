@@ -456,3 +456,43 @@ function OptionalBlockToggle({ label, enabled, onToggle, children }: { label: st
     </Card>
   );
 }
+
+function PushToHubButton({ postId, post }: { postId?: string; post: Post | null }) {
+  const pushToHub = usePushToHub();
+  if (!postId) return null;
+  const alreadyPushed = !!post?.hub_post_id;
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2" disabled={pushToHub.isPending}>
+          {pushToHub.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {alreadyPushed ? "News-Plattform aktualisieren" : "An News-Plattform senden"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>An News-Plattform senden?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Der Beitrag wird als <strong>Entwurf</strong> im Freigeist Content-Hub in der Kategorie <em>Interview</em> {alreadyPushed ? "aktualisiert" : "angelegt"}. Alle Bilder werden in den Hub-Storage übertragen.
+            {post?.hub_pushed_at && (
+              <span className="block mt-2 text-xs">
+                Zuletzt gesendet: {new Date(post.hub_pushed_at).toLocaleString("de-DE")}
+              </span>
+            )}
+            {post?.hub_last_error && (
+              <span className="block mt-2 text-xs text-destructive">
+                Letzter Fehler: {post.hub_last_error}
+              </span>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+          <AlertDialogAction onClick={() => pushToHub.mutate(postId)}>
+            {alreadyPushed ? "Aktualisieren" : "Senden"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
