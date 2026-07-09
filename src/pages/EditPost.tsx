@@ -218,7 +218,10 @@ export default function EditPost() {
         </BlockCard>
 
         {/* 5. Top Image */}
-        <BlockCard title="Oberes Bild (nach Gast-Profil)">
+        <BlockCard title="Bild oben (im Artikel, nach Speaker-Box)">
+          <p className="text-[11px] text-muted-foreground mb-2">
+            Diese Bilder erscheinen zusätzlich im Artikelfluss — nicht in der Speaker-Box.
+          </p>
           <div className="space-y-3">
             <InlineImageUpload
               value={blocks.top_image_url || ""}
@@ -238,6 +241,7 @@ export default function EditPost() {
             </div>
           </div>
         </BlockCard>
+
 
         {/* 6. Section 1 */}
         <SectionCard n={1} blocks={blocks} updateBlock={updateBlock} />
