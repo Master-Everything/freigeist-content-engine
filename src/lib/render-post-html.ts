@@ -79,7 +79,7 @@ export function renderPostHtml(
   postTitle: string,
   opts: RenderOptions = {},
 ): string {
-  const b = blocks || {};
+  const b: PostBlocks = blocks || ({} as PostBlocks);
   const parts: string[] = [];
 
   if (opts.includeTitle && postTitle) {
