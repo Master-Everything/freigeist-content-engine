@@ -253,7 +253,7 @@ export default function EditPost() {
         <SectionCard n={3} blocks={blocks} updateBlock={updateBlock} />
 
         {/* 9. Mid Image (after Section 3) */}
-        <BlockCard title="Mittleres Bild (nach Sektion 3)">
+        <BlockCard title="Bild Mitte (nach Sektion 3)">
           <div className="space-y-3">
             <InlineImageUpload
               value={blocks.mid_image_url || ""}
