@@ -7,8 +7,8 @@ import { toast } from "@/hooks/use-toast";
 import { convertToWebP } from "@/lib/image-utils";
 
 interface Props {
-  /** user_id of the speaker owner (posts.user_id) */
-  userId: string | null | undefined;
+  /** id of the speaker profile (posts.speaker_id) */
+  speakerId: string | null | undefined;
   /** Current guest_image_url used in the post (public URL) */
   value: string;
   /** Called with the new public URL after upload */
@@ -23,34 +23,34 @@ function toPublicUrl(pathOrUrl: string | null | undefined): string {
   return supabase.storage.from(BUCKET).getPublicUrl(pathOrUrl).data.publicUrl;
 }
 
-export function SpeakerAvatarField({ userId, value, onChange }: Props) {
+export function SpeakerAvatarField({ speakerId, value, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
-  const [speakerId, setSpeakerId] = useState<string | null>(null);
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  // Load speaker profile for this user and sync guest_image_url from it
+  // Load speaker profile by id and sync guest_image_url from it
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!userId) return;
+      if (!speakerId) return;
       const { data } = await supabase
         .from("speakers")
-        .select("id, avatar_url")
-        .eq("user_id", userId)
+        .select("id, user_id, avatar_url")
+        .eq("id", speakerId)
         .maybeSingle();
       if (cancelled || !data) return;
-      setSpeakerId(data.id);
+      setOwnerUserId(data.user_id);
       setAvatarPath(data.avatar_url);
       const publicUrl = toPublicUrl(data.avatar_url);
       if (publicUrl && publicUrl !== value) onChange(publicUrl);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [speakerId]);
 
   async function handleFile(file: File) {
-    if (!userId) {
+    if (!speakerId) {
       toast({ title: "Fehler", description: "Kein Speaker verknüpft.", variant: "destructive" });
       return;
     }
@@ -58,20 +58,18 @@ export function SpeakerAvatarField({ userId, value, onChange }: Props) {
     try {
       const webp = await convertToWebP(file);
       if (webp.size > 500_000) throw new Error("Avatar zu groß (max ~500 KB)");
-      const path = `${userId}/avatar-${Date.now()}.webp`;
+      const folder = ownerUserId || speakerId;
+      const path = `${folder}/avatar-${Date.now()}.webp`;
       const { error: upErr } = await supabase.storage
         .from(BUCKET)
         .upload(path, webp, { upsert: true, contentType: "image/webp" });
       if (upErr) throw upErr;
 
-      // Update central speaker record
-      if (speakerId) {
-        const { error: updErr } = await supabase
-          .from("speakers")
-          .update({ avatar_url: path })
-          .eq("id", speakerId);
-        if (updErr) throw updErr;
-      }
+      const { error: updErr } = await supabase
+        .from("speakers")
+        .update({ avatar_url: path })
+        .eq("id", speakerId);
+      if (updErr) throw updErr;
 
       setAvatarPath(path);
       const publicUrl = toPublicUrl(path);
@@ -101,7 +99,7 @@ export function SpeakerAvatarField({ userId, value, onChange }: Props) {
           type="button"
           variant="outline"
           size="sm"
-          disabled={uploading || !userId}
+          disabled={uploading || !speakerId}
           onClick={() => fileRef.current?.click()}
           className="gap-2"
         >
@@ -119,9 +117,15 @@ export function SpeakerAvatarField({ userId, value, onChange }: Props) {
           }}
         />
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        Wird zentral im Speaker-Profil (Modul 1) gepflegt — Änderungen wirken auch dort.
-      </p>
+      {!speakerId ? (
+        <p className="text-[11px] text-destructive">
+          Kein Speaker mit diesem Post verknüpft — bitte in Modul 1 zuordnen.
+        </p>
+      ) : (
+        <p className="text-[11px] text-muted-foreground">
+          Wird zentral im Speaker-Profil (Modul 1) gepflegt — Änderungen wirken auch dort.
+        </p>
+      )}
     </div>
   );
 }
