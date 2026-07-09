@@ -1,96 +1,57 @@
-Doch – im ursprünglichen Plan war die Hub-Seite als „Voraussetzung" gelistet, aber nicht ausformuliert. Hier ist jetzt der vollständige Copy-Paste-Bauplan fürs **Hub-Projekt** (separates Lovable-Projekt), damit der Push aus der Content-Engine ankommt.
+## Ziel
 
-## Was im Hub-Projekt entsteht
+Ein einziges, geteiltes Post-Layout: Was du hier in der Engine-Vorschau siehst, ist exakt das, was der Hub anzeigt. Der Hub bleibt unangetastet — wir übernehmen seine Design-Sprache in die Engine.
 
-1. **Migration** – Spalten auf `posts` für die Rück-Referenz und Storage-Bucket `interview-images` (public).
-2. **Kategorie „Interview"** – Seed-Insert, falls noch nicht vorhanden (Slug: `interview`).
-3. **Edge Function `ingest-interview**` – nimmt Push entgegen, prüft Shared Secret, transferiert Bilder in den Hub-Storage, legt Draft-Post an oder aktualisiert ihn.
-4. **Secret `INGEST_SHARED_SECRET**` – identischer Wert wie `HUB_INGEST_SECRET` hier in der Engine.
+## Grundprinzip
 
-## Ablauf beim Empfang
+Hub-CSS (aus `src/index.css` des Hub-Projekts) verwendet semantische Klassen: `.article-body`, `aside.speaker-profile`, `figure.speaker-photo/.speaker-bio`, `a.freigeist-cta`, `.freigeist-accordion / .freigeist-accordion-item`, `.video-embed`, `.article-body figure`. Wir emittieren im Engine-Renderer **exakt dieses Markup ohne Inline-Styles** und importieren die passenden Regeln in `src/index.css`. Damit rendern Engine-Vorschau und Hub aus derselben Quelle identisch.
 
-```text
-Engine → POST /ingest-interview
-         Header: X-Ingest-Secret
-         Body:  { hub_post_id?, title, slug, category_slug:"interview",
-                  content_html, excerpt, speaker:{...}, image_urls:[{url,role}] }
-   │
-   ▼
-Hub prüft Secret (401 bei mismatch)
-   │
-   ▼
-Für jede image_url: fetch → in Bucket `interview-images` speichern
-   → signierte/öffentliche Hub-URL zurück
-   → im content_html alle alten URLs durch neue ersetzen
-   │
-   ▼
-INSERT (neu) oder UPDATE (per hub_post_id) in posts
-   status = 'draft', category = 'interview'
-   │
-   ▼
-Response 200 { hub_post_id, hub_slug, hub_edit_url }
-```
+## Änderungen
 
-## Technische Details
+### 1. Engine-Renderer `supabase/functions/push-to-hub/render-post.ts` → Hub-natives Markup
 
-### Migration im Hub
+Der Renderer erzeugt statt Inline-Styles semantisches Markup mit Hub-Klassen:
 
-```sql
--- Storage-Bucket
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('interview-images', 'interview-images', true)
-ON CONFLICT DO NOTHING;
+- **Kein `<h1>` und kein `<style>`-Block mehr im Body** — Title/Subtitle rendert der Hub aus `posts.title` / `posts.subtitle`.
+- **Speaker-Box** → `<aside class="speaker-profile"><figure class="speaker-photo"><img src alt/></figure><div class="speaker-bio"><h3>Name</h3><p>Bio</p></div></aside>`
+- **CTA-Button** → `<p style="text-align:center"><a class="freigeist-cta" href target=_blank rel=noopener>✨ Label ✨</a></p>` (identisch zum Hub `addCtaButton`)
+- **Affiliate-Hinweis** → als eigener zentrierter `<p>` mit kursivem Kleintext direkt unter dem CTA
+- **Zusammenfassung** → `<div class="freigeist-accordion"><details class="freigeist-accordion-item"><summary>Lead</summary><div class="freigeist-accordion-body">…</div></details></div>`
+- **Bilder** → `<figure><img/></figure>` (mit optionalem umschließenden `<a>`) statt inline gestylter `<div>`s
+- **Videos** → `<div class="video-embed"><iframe/></div>`
+- **Section-Titel** → schlichtes `<h2>` (Hub-CSS setzt border-top, Space Grotesk, Größe automatisch)
+- **Markdown-Konverter** → nur noch `<h3>/<h4>/<p>/<ul>/<li>` ohne Inline-Styles, damit `.article-body` greift
 
--- Public-Read-Policy für den Bucket
-CREATE POLICY "Public read interview-images"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'interview-images');
+### 2. Engine `src/index.css` → Hub-Style-Regeln importieren
 
--- Service-Role darf schreiben (implizit via service_role key)
-```
+Ein neuer Block mit den 1:1 aus dem Hub übernommenen Regeln für `.article-body` und die enthaltenen Klassen (Speaker-Box, CTA, Accordion, Video, Figure). Dabei nutzen wir die **bereits vorhandenen Engine-Tokens** (`--foreground`, `--muted`, `--border`, `--primary` usw.) — Dark-Mode funktioniert damit automatisch mit unserem eigenen Theme. Der Freigeist-Türkis-Gradient des CTA-Buttons bleibt als Fixwert (Marken-Farbe: `#2A809B → #3BB8A8`), da er auf beiden Seiten identisch sein soll.
 
-Falls im Hub-Schema noch keine Spalte für die Herkunft existiert, ergänzen wir optional:
+Fonts (Space Grotesk + Inter) werden via `@fontsource` als Package installiert und in `src/main.tsx` importiert (kein CSS `@import`, kein `index.html`-Eingriff — laut Memory).
 
-```sql
-ALTER TABLE public.posts
-  ADD COLUMN IF NOT EXISTS source_engine_post_id uuid,
-  ADD COLUMN IF NOT EXISTS source_engine_pushed_at timestamptz;
-```
+### 3. Engine `PostPreview.tsx` (und indirekt `ViewPost.tsx`) → gemeinsame Render-Basis
 
-(Nur wenn dein Hub eine `posts`-Tabelle hat – Struktur passen wir an dein Hub-Schema an, sobald du mir sagst wie die dortige Tabelle heißt/aussieht.)
+- Der bisherige Preview-Renderer wird abgelöst durch **denselben HTML-Generator**, der auch zum Hub gepusht wird. Dazu ziehe ich die Renderer-Logik in ein geteiltes Modul `src/lib/render-post-html.ts` und benutze es sowohl in der Engine-Vorschau als auch im Edge-Function-Push (dort als Deno-Kopie mit identischem Output — bleibt in Sync über einen kurzen Kommentar-Header + gleichnamige Test-Fixtures).
+- `PostPreview.tsx` rendert das erzeugte HTML in einem `<article className="article-body">…</article>`-Wrapper via `dangerouslySetInnerHTML` — genau derselbe Wrapper, den der Hub um seine Post-Bodies legt.
+- Das aus `blocks.excerpt` erzeugte Element bekommt die Hub-typische Erst-Absatz-Größe automatisch über `.article-body p:first-of-type`.
 
-### Edge Function `ingest-interview/index.ts`
+### 4. WordPress-Export entfernen
 
-Kernpunkte:
+- `src/lib/export-html.ts`, `src/lib/markdown.ts` (falls nur dort verwendet), das Modul-7-„WP hochladen"-UI und die Edge Functions `wp-upload` + `wp-upload-ftp` werden entfernt.
+- Sidebar-Verweise und `App.tsx`-Route zum WP-Modul werden bereinigt.
+- Ich lasse die Speaker-Rolle des Moduls 7 (falls sichtbar) auf „Deaktiviert" bzw. entferne den Menüpunkt.
 
-- `verify_jwt = false` (Auth ausschließlich per Shared Secret)
-- Zod-Validation des Bodys
-- `createClient` mit `SUPABASE_SERVICE_ROLE_KEY` für Storage + DB
-- Bilder-Loop: `fetch(url) → arrayBuffer → storage.upload(path, blob, {upsert:true})` → `getPublicUrl` → String-Replace im `content_html`
-- Dateipfad-Schema: `posts/<slug>/<originalname-or-hash>.<ext>` (idempotent bei Re-Push)
-- Insert-oder-Update:
-  - Wenn `hub_post_id` im Body → `update ... where id = hub_post_id`
-  - Sonst → `insert ... returning id, slug`
-- Antwort immer 200 mit `{ hub_post_id, hub_slug, hub_edit_url }` oder `{ error }` (Konvention aus Core-Memory)
+### 5. Hub bleibt unangetastet
 
-### Secret im Hub
+Kein Deploy, kein Edit in `docs/hub-setup/*`, keine Änderung im [FREIGEIST Content-Hub](/projects/3b7054d6-c0c3-4272-9ffa-f782221a6fba). Das existierende `ingest-interview` im Hub akzeptiert unser neues HTML unverändert und der Hub stylt es über sein `.article-body`-CSS.
 
-`INGEST_SHARED_SECRET` = derselbe Zufallswert, den du gleich hier als `HUB_INGEST_SECRET` hinterlegst.
+## Was ausdrücklich NICHT Teil dieser Runde ist
 
-## Offene Frage vor dem Code-Schreiben
+- Bild-Transfer-Problem (kommt als eigener Task, nachdem das Layout sitzt).
+- Änderungen im Hub-Projekt.
+- Neue Design-Tokens/Farben — wir bleiben bei unseren bestehenden.
 
-Damit die Function exakt zu deinem Hub passt, brauche ich einmal kurz:
+## Ergebnis
 
-1. **Wie heißt im Hub die Tabelle für Beiträge?** (`posts`, `articles`, `news`, …?) – und existiert dort schon eine Kategorien-Logik (Enum? Eigene Tabelle? Slug-Feld?).
-2. **Soll der Ingest im Hub bereits einen bestimmten Autor/User setzen** (z. B. Service-Account) oder Autor leer lassen bis der Redakteur ihn im Hub setzt?
-
-Sobald das klar ist, liefert der nächste Plan die fertigen Files (Migration + Function + Secret-Setup) zum Approven und dann im Hub-Projekt einfügen.  
-  
-ANTWORTEN:  
-  
-Zu 1.   
-- Tabelle für Beiträge: posts  
-- Tabele für Kategorien: categories  
-  
-Zu 2.  
-- Auto: erstmal leer lassen
+- Post-Vorschau in der Engine sieht pixelgleich aus wie ein Hub-Draft (Light + Dark).
+- „An News-Plattform senden" schickt exakt dieses HTML → im Hub identische Darstellung inklusive Gradient-Hover-Animation am CTA und semantisch korrekter Speaker-Box.
+- Weniger Code: WP-Export ist raus, ein Renderer für alles.
