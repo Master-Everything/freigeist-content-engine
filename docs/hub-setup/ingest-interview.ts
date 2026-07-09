@@ -17,6 +17,7 @@ const BodySchema = z.object({
   title: z.string().min(1).max(500),
   slug: z.string().min(1).max(300),
   subtitle: z.string().nullable().optional(),
+  video_url: z.string().url().nullable().optional(),
   content_html: z.string(),
   reading_time: z.number().int().positive().nullable().optional(),
   image_urls: z
@@ -28,6 +29,7 @@ const BodySchema = z.object({
     )
     .default([]),
 });
+
 
 const BUCKET = "post-images";
 const CATEGORY_SLUG = "interview";
@@ -97,7 +99,6 @@ Deno.serve(async (req) => {
 
     // ---- Bilder in den Hub-Storage transferieren -----------------------
     let contentHtml = body.content_html;
-    let featuredImageUrl: string | null = null;
     let transferred = 0;
 
     for (const img of body.image_urls) {
@@ -125,7 +126,6 @@ Deno.serve(async (req) => {
         const hubUrl = pub.publicUrl;
 
         contentHtml = contentHtml.split(img.url).join(hubUrl);
-        if (img.role === "featured" && !featuredImageUrl) featuredImageUrl = hubUrl;
         transferred += 1;
       } catch (e) {
         console.error("image transfer error", img.url, e);
@@ -133,6 +133,8 @@ Deno.serve(async (req) => {
     }
 
     // ---- Insert oder Update --------------------------------------------
+    // Kein Featured-Image: image_url bleibt null. Featured Video wird als
+    // video_url an den Hub übergeben und dort unter dem Subtitle gerendert.
     const payload: Record<string, unknown> = {
       title: body.title,
       slug: body.slug,
@@ -140,11 +142,13 @@ Deno.serve(async (req) => {
       content: contentHtml,
       category_slug: CATEGORY_SLUG,
       status: "draft",
-      image_url: featuredImageUrl,
+      image_url: null,
+      video_url: body.video_url ?? null,
       reading_time: body.reading_time ?? null,
       source_engine_post_id: body.engine_post_id,
       source_engine_pushed_at: new Date().toISOString(),
     };
+
 
     let hubPostId: string;
     let hubSlug: string;

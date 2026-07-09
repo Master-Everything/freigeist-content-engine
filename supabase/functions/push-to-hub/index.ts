@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { generateHTML, PostBlocks } from "./render-post.ts";
+import { renderPostHtml, PostBlocks } from "./render-post.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,24 +16,23 @@ function jsonError(message: string, extra?: Record<string, unknown>) {
 }
 
 function collectImages(blocks: PostBlocks): Array<{ url: string; role: "featured" | "inline" }> {
+  // Kein Featured-Image mehr — alle Bilder als "inline" transferieren.
   const items: Array<{ url: string; role: "featured" | "inline" }> = [];
   const seen = new Set<string>();
-  const push = (url: string | undefined, role: "featured" | "inline") => {
+  const push = (url: string | undefined) => {
     if (!url) return;
     if (!/^https?:\/\//i.test(url)) return;
     if (seen.has(url)) return;
     seen.add(url);
-    items.push({ url, role });
+    items.push({ url, role: "inline" });
   };
-  // Featured: erstes verfügbares Bild in Reihenfolge top → guest → mid → end
-  const featured = blocks.top_image_url || blocks.guest_image_url || blocks.mid_image_url || blocks.end_image_url;
-  push(featured, "featured");
-  push(blocks.guest_image_url, "inline");
-  push(blocks.top_image_url, "inline");
-  push(blocks.mid_image_url, "inline");
-  push(blocks.end_image_url, "inline");
+  push(blocks.guest_image_url);
+  push(blocks.top_image_url);
+  push(blocks.mid_image_url);
+  push(blocks.end_image_url);
   return items;
 }
+
 
 function slugify(input: string): string {
   return (input || "")
@@ -91,7 +91,9 @@ Deno.serve(async (req) => {
     if (postErr || !post) return jsonError("Beitrag nicht gefunden.");
 
     const blocks = (post.blocks ?? {}) as PostBlocks;
-    const content_html = generateHTML(blocks, post.guest_name, post.interview_title);
+    const content_html = renderPostHtml(blocks, post.guest_name, post.interview_title, {
+      omitMainVideo: true,
+    });
     const image_urls = collectImages(blocks);
 
     const payload = {
@@ -99,11 +101,13 @@ Deno.serve(async (req) => {
       engine_post_id: post.id,
       title: post.interview_title,
       slug: (post as any).hub_slug || slugify(post.interview_title),
-      subtitle: post.guest_name ?? null,
+      subtitle: blocks.excerpt ?? null,
+      video_url: blocks.main_video_url ?? null,
       content_html,
       reading_time: estimateReadingTime(content_html),
       image_urls,
     };
+
 
     const hubRes = await fetch(HUB_INGEST_URL, {
       method: "POST",
