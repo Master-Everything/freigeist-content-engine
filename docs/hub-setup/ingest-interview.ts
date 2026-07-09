@@ -17,6 +17,7 @@ const BodySchema = z.object({
   title: z.string().min(1).max(500),
   slug: z.string().min(1).max(300),
   subtitle: z.string().nullable().optional(),
+  video_url: z.string().url().nullable().optional(),
   content_html: z.string(),
   reading_time: z.number().int().positive().nullable().optional(),
   image_urls: z
@@ -28,6 +29,7 @@ const BodySchema = z.object({
     )
     .default([]),
 });
+
 
 const BUCKET = "post-images";
 const CATEGORY_SLUG = "interview";
