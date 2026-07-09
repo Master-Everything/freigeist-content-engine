@@ -37,12 +37,21 @@ function figure(url: string, alt?: string, link?: string): string {
   return `<figure>${wrapped}${caption}</figure>`;
 }
 
+const SPARKLE_RE = /[\u2728\u2B50]|\uD83C\uDF1F/;
+function withSparkles(label: string): string {
+  const trimmed = (label || "").trim();
+  if (!trimmed) return trimmed;
+  if (SPARKLE_RE.test(trimmed)) return trimmed;
+  return `\u2728 ${trimmed} \u2728`;
+}
+
 function ctaButton(href: string, label: string, note?: string): string {
-  const link = `<a class="freigeist-cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
+  const link = `<a class="freigeist-cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(withSparkles(label))}</a>`;
   const paragraph = `<p>${link}</p>`;
   if (!note) return paragraph;
   return `${paragraph}<p class="cta-note"><em>${esc(note)}</em></p>`;
 }
+
 
 function markdownToHtml(md: string): string {
   if (!md) return "";
