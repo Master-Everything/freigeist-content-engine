@@ -3,9 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Post, PostBlocks } from "@/types/post";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Loader2 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { generateHTML } from "@/lib/export-html";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { PostPreview } from "@/components/PostPreview";
 
 export default function PreviewPost() {
@@ -28,13 +26,6 @@ export default function PreviewPost() {
     setLoading(false);
   }
 
-  function handleExport() {
-    if (!post?.blocks) return;
-    const html = generateHTML(post.blocks, post.guest_name, post.interview_title);
-    navigator.clipboard.writeText(html);
-    toast({ title: "HTML kopiert!", description: "Der HTML-Code wurde in die Zwischenablage kopiert." });
-  }
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -51,9 +42,6 @@ export default function PreviewPost() {
         <div className="mx-auto max-w-3xl flex items-center justify-between px-6 py-3">
           <Button variant="ghost" onClick={() => navigate(`/module/interview-beitraege/edit/${id}`)} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Zurück zum Editor
-          </Button>
-          <Button variant="outline" onClick={handleExport} className="gap-2">
-            <Download className="h-4 w-4" /> HTML Export
           </Button>
         </div>
       </div>

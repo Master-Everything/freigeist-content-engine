@@ -67,8 +67,7 @@ const SECTIONS: Section[] = [
   {
     title: "Utilities",
     items: [
-      { name: "src/lib/markdown.ts", desc: "Markdown to HTML conversion" },
-      { name: "src/lib/export-html.ts", desc: "Renders posts to final HTML export" },
+      { name: "src/lib/render-post-html.ts", desc: "Unified Hub-native HTML renderer (Preview + Push)" },
       { name: "src/lib/image-utils.ts", desc: "Client-side WebP conversion and resize" },
     ],
   },
