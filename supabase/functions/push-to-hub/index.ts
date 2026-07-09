@@ -16,24 +16,23 @@ function jsonError(message: string, extra?: Record<string, unknown>) {
 }
 
 function collectImages(blocks: PostBlocks): Array<{ url: string; role: "featured" | "inline" }> {
+  // Kein Featured-Image mehr — alle Bilder als "inline" transferieren.
   const items: Array<{ url: string; role: "featured" | "inline" }> = [];
   const seen = new Set<string>();
-  const push = (url: string | undefined, role: "featured" | "inline") => {
+  const push = (url: string | undefined) => {
     if (!url) return;
     if (!/^https?:\/\//i.test(url)) return;
     if (seen.has(url)) return;
     seen.add(url);
-    items.push({ url, role });
+    items.push({ url, role: "inline" });
   };
-  // Featured: erstes verfügbares Bild in Reihenfolge top → guest → mid → end
-  const featured = blocks.top_image_url || blocks.guest_image_url || blocks.mid_image_url || blocks.end_image_url;
-  push(featured, "featured");
-  push(blocks.guest_image_url, "inline");
-  push(blocks.top_image_url, "inline");
-  push(blocks.mid_image_url, "inline");
-  push(blocks.end_image_url, "inline");
+  push(blocks.guest_image_url);
+  push(blocks.top_image_url);
+  push(blocks.mid_image_url);
+  push(blocks.end_image_url);
   return items;
 }
+
 
 function slugify(input: string): string {
   return (input || "")
