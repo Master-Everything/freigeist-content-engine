@@ -218,7 +218,10 @@ export default function EditPost() {
         </BlockCard>
 
         {/* 5. Top Image */}
-        <BlockCard title="Oberes Bild (nach Gast-Profil)">
+        <BlockCard title="Bild oben (im Artikel, nach Speaker-Box)">
+          <p className="text-[11px] text-muted-foreground mb-2">
+            Diese Bilder erscheinen zusätzlich im Artikelfluss — nicht in der Speaker-Box.
+          </p>
           <div className="space-y-3">
             <InlineImageUpload
               value={blocks.top_image_url || ""}
@@ -239,6 +242,7 @@ export default function EditPost() {
           </div>
         </BlockCard>
 
+
         {/* 6. Section 1 */}
         <SectionCard n={1} blocks={blocks} updateBlock={updateBlock} />
 
@@ -249,7 +253,7 @@ export default function EditPost() {
         <SectionCard n={3} blocks={blocks} updateBlock={updateBlock} />
 
         {/* 9. Mid Image (after Section 3) */}
-        <BlockCard title="Mittleres Bild (nach Sektion 3)">
+        <BlockCard title="Bild Mitte (nach Sektion 3)">
           <div className="space-y-3">
             <InlineImageUpload
               value={blocks.mid_image_url || ""}
@@ -280,7 +284,7 @@ export default function EditPost() {
         <SectionCard n={6} blocks={blocks} updateBlock={updateBlock} />
 
         {/* 13. End Image */}
-        <BlockCard title="Bild am Textende">
+        <BlockCard title="Bild unten (vor Ressourcen)">
           <div className="space-y-3">
             <InlineImageUpload
               value={blocks.end_image_url || ""}
