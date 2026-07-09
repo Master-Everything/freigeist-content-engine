@@ -17,6 +17,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PostPreview } from "@/components/PostPreview";
 import { SourceDataEditor } from "@/components/SourceDataEditor";
 import { InlineImageUpload } from "@/components/InlineImageUpload";
+import { SpeakerAvatarField } from "@/components/SpeakerAvatarField";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePushToHub } from "@/hooks/usePushToHub";
 import {
@@ -192,14 +193,10 @@ export default function EditPost() {
         {/* 4. Guest Profile */}
         <BlockCard title="Gast-Profil" required>
           <div className="space-y-3">
-            <InlineImageUpload
+            <SpeakerAvatarField
+              userId={(post as any)?.user_id}
               value={blocks.guest_image_url || ""}
               onChange={(url) => updateBlock("guest_image_url", url)}
-              guestName={guestName}
-              postId={postId}
-              slot="guest_profile"
-              filenameIndex={0}
-              label="Profilbild-URL"
             />
             <div>
               <Label className="text-xs text-muted-foreground">Kurzbiografie</Label>

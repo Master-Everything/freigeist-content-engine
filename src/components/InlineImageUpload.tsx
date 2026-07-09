@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { convertToWebP, sanitizeName, blobToBase64 } from "@/lib/image-utils";
-import { getUploadMethod } from "@/components/ScreenshotSettings";
+import { convertToWebP, sanitizeName } from "@/lib/image-utils";
 
 interface InlineImageUploadProps {
   value: string;
@@ -17,6 +16,8 @@ interface InlineImageUploadProps {
   filenameIndex: number;
   label?: string;
 }
+
+const BUCKET = "post-images";
 
 export function InlineImageUpload({
   value,
@@ -31,35 +32,40 @@ export function InlineImageUpload({
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const handleUpload = useCallback(async (file: File) => {
-    if (!guestName.trim()) {
-      toast({ title: "Fehler", description: "Gastname fehlt.", variant: "destructive" });
+    if (!postId) {
+      toast({ title: "Fehler", description: "Post-ID fehlt.", variant: "destructive" });
       return;
     }
     setUploading(true);
     try {
       const webpBlob = await convertToWebP(file);
-      const base64 = await blobToBase64(webpBlob);
-      const filename = `${sanitizeName(guestName)}-Screen-${filenameIndex}.webp`;
-      const method = getUploadMethod();
-      const fnName = method === "ftp" ? "wp-upload-ftp" : "wp-upload";
-      const { data, error } = await supabase.functions.invoke(fnName, {
-        body: { imageBase64: base64, filename },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Upload failed");
+      const nameStub = guestName ? sanitizeName(guestName) : "image";
+      const filename = `${nameStub}-${slot}-${filenameIndex}-${Date.now()}.webp`;
+      const path = `posts/${postId}/${filename}`;
 
-      // Save to images table
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, webpBlob, {
+          upsert: true,
+          contentType: "image/webp",
+        });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      const publicUrl = pub.publicUrl;
+
+      // record in images table (best-effort)
       await supabase.from("images").insert({
         post_id: postId,
         slot,
         filename,
         original_name: file.name,
         file_size: webpBlob.size,
-        wp_url: data.url,
+        wp_url: publicUrl,
       } as any);
 
-      onChange(data.url);
-      toast({ title: "Hochgeladen", description: `${filename} → WordPress` });
+      onChange(publicUrl);
+      toast({ title: "Hochgeladen", description: filename });
     } catch (e: any) {
       toast({ title: "Upload fehlgeschlagen", description: e.message, variant: "destructive" });
     } finally {
@@ -74,7 +80,7 @@ export function InlineImageUpload({
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="https://example.com/bild.webp"
+          placeholder="https://…"
           className="flex-1"
         />
         <Button

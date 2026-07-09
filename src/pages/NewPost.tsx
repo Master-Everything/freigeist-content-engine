@@ -11,8 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Loader2, Download, Upload, FileText, ImageIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { convertToWebP, sanitizeName, blobToBase64 } from "@/lib/image-utils";
-import { getUploadMethod } from "@/components/ScreenshotSettings";
+import { convertToWebP, sanitizeName } from "@/lib/image-utils";
 
 export default function NewPost() {
   const navigate = useNavigate();
@@ -85,17 +84,15 @@ export default function NewPost() {
     try {
       const webpBlob = await convertToWebP(file);
       setProfilePreview(URL.createObjectURL(webpBlob));
-      const base64 = await blobToBase64(webpBlob);
-      const filename = `${sanitizeName(form.guest_name)}-Profil.webp`;
-      const method = getUploadMethod();
-      const fnName = method === "ftp" ? "wp-upload-ftp" : "wp-upload";
-      const { data, error } = await supabase.functions.invoke(fnName, {
-        body: { imageBase64: base64, filename },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Upload failed");
-      setGuestImageUrl(data.url);
-      toast({ title: "Hochgeladen", description: `${filename} → WordPress` });
+      const filename = `${sanitizeName(form.guest_name)}-Profil-${Date.now()}.webp`;
+      const path = `temp/${filename}`;
+      const { error: upErr } = await supabase.storage
+        .from("post-images")
+        .upload(path, webpBlob, { upsert: true, contentType: "image/webp" });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("post-images").getPublicUrl(path);
+      setGuestImageUrl(pub.publicUrl);
+      toast({ title: "Hochgeladen", description: filename });
     } catch (e: any) {
       toast({ title: "Upload fehlgeschlagen", description: e.message, variant: "destructive" });
     } finally {
