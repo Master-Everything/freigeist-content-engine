@@ -82,6 +82,8 @@ export interface RenderOptions {
   includeTitle?: boolean;
   /** When true, skip the main video embed (Hub renders it as Featured Video separately). */
   omitMainVideo?: boolean;
+  /** When true, skip the excerpt lead paragraph (Hub renders it as subtitle separately). */
+  omitExcerpt?: boolean;
 }
 
 export function renderPostHtml(
