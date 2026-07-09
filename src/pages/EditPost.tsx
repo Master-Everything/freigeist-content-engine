@@ -284,7 +284,7 @@ export default function EditPost() {
         <SectionCard n={6} blocks={blocks} updateBlock={updateBlock} />
 
         {/* 13. End Image */}
-        <BlockCard title="Bild am Textende">
+        <BlockCard title="Bild unten (vor Ressourcen)">
           <div className="space-y-3">
             <InlineImageUpload
               value={blocks.end_image_url || ""}
