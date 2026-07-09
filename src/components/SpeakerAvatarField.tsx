@@ -88,7 +88,7 @@ export function SpeakerAvatarField({ userId, value, onChange }: Props) {
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">Profilbild (aus Speaker-Profil)</Label>
+      <Label className="text-xs text-muted-foreground">Speaker-Foto (Speaker-Box, aus Modul 1)</Label>
       <div className="flex items-center gap-3">
         <div className="h-16 w-16 shrink-0 rounded-full border bg-muted overflow-hidden flex items-center justify-center">
           {displayUrl ? (
