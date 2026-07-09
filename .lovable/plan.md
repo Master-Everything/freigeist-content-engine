@@ -1,29 +1,24 @@
-## Ziel
-Speaker-Foto in der Speaker-Box kommt ausschließlich aus Modul 1 (SpeakerAvatarField). Die Bild-Slots **Oben / Mitte / Unten** bleiben erhalten — sowohl im Editor als auch im Renderer und Push.
+## Problem
 
-## Was zu tun ist
+Das Feld „Speaker-Foto (Speaker-Box, aus Modul 1)" existiert im Block-Editor (Modul 7) bereits und schreibt beim Upload zentral in `speakers.avatar_url` zurück (Single Source of Truth). Für Redakteure/Admins schlägt der Upload aktuell aber still fehl, wenn sie den Post eines fremden Speakers bearbeiten.
 
-### 1. Fix „Bild landet unter der Speaker-Box statt drin"
-Ursache: Aktueller Post hat `guest_image_url` noch mit alter WordPress-URL. Beim Upload via „Oberes Bild"-Slot wird korrekterweise `top_image_url` befüllt → erscheint als eigenes `<figure>` nach der Speaker-Box (so gewollt).
+**Ursache:** Die Storage-RLS-Policies auf `speaker-avatars` erlauben `INSERT/UPDATE/DELETE` nur, wenn der Ordnername (`{user_id}/…`) mit `auth.uid()` übereinstimmt. Ein Admin lädt aber in den Ordner des Speakers hoch und wird von RLS blockiert. Der DB-Update auf `speakers` selbst funktioniert (dort ist `has_role(..., 'admin')` in der Policy enthalten) — nur die Datei-Ablage nicht.
 
-**Lösung:** Kein Code-Fix nötig — du lädst das Speaker-Foto einmal über das Feld **„Profilbild (aus Speaker-Profil)"** im Editor hoch (oder in Modul 1). Damit landet es in der Speaker-Box.
+## Lösung
 
-### 2. Klarere UI im Editor (`src/pages/EditPost.tsx`)
-- `SpeakerAvatarField`-Label von „Profilbild (aus Speaker-Profil)" → **„Speaker-Foto (Speaker-Box, aus Modul 1)"** damit unmissverständlich ist, welches Feld die Box füllt.
-- Labels der Slots präzisieren:
-  - „Oberes Bild (nach Gast-Profil)" → **„Bild oben (im Artikel, nach Speaker-Box)"**
-  - „Mittleres Bild" → **„Bild Mitte (nach Sektion 3)"**
-  - „Unteres Bild" → **„Bild unten (vor Ressourcen)"**
-- Kurzer Hinweis-Text über dem oberen Slot: „Diese Bilder erscheinen zusätzlich im Artikelfluss — nicht in der Speaker-Box."
+Storage-Policies auf `speaker-avatars` um Admin-Zugriff erweitern — analog zur bestehenden `speakers`-Tabellen-Policy.
 
-### 3. Renderer / Push
-- **Keine Änderungen.** Top/Mid/End werden weiterhin als eigene `<figure>`-Elemente nach Speaker-Box / Sektion 3 / vor Ressourcen gerendert (aktueller Stand ist korrekt und Hub-konform).
-- `collectImages()` in `push-to-hub/index.ts` bleibt unverändert (schickt alle vier Bild-URLs an den Hub).
+### Migration
+Drei zusätzliche Policies auf `storage.objects` für Bucket `speaker-avatars`:
 
-### 4. Alt-Daten
-Ich fasse die DB **nicht** automatisch an. Der aktuelle Post-Datensatz behält seine alte `guest_image_url` bis du einmal in Modul 1 (oder über das Editor-Feld) ein neues Speaker-Foto hochlädst — dann wird er via `SpeakerAvatarField` beim nächsten Öffnen synchronisiert.
+- `Admins upload any speaker avatar` (INSERT) — `has_role(auth.uid(), 'admin')`
+- `Admins update any speaker avatar` (UPDATE) — `has_role(auth.uid(), 'admin')`
+- `Admins delete any speaker avatar` (DELETE) — `has_role(auth.uid(), 'admin')`
 
-## Nicht Teil des Plans
-- Löschen/Entfernen der top/mid/end-Bild-Slots.
-- DB-Schema-Änderungen.
-- Hub-seitige Anpassungen.
+Die bestehenden User-Policies bleiben unverändert; Speaker können weiterhin ihr eigenes Bild pflegen.
+
+### Kein UI-Change nötig
+`SpeakerAvatarField` in `src/pages/EditPost.tsx` ist bereits eingebunden und lädt in den Ordner des Post-Owners (`post.user_id`) hoch. Nach der Policy-Erweiterung funktioniert der bestehende Upload-Button für Admins direkt.
+
+### Verifikation
+Als Admin einen fremden Post öffnen → neues Bild wählen → Toast „Avatar aktualisiert" → Preview + Modul 1 zeigen das neue Bild.
