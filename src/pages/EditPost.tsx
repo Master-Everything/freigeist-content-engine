@@ -11,9 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Download, Save, Loader2, Trash2, Send } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Trash2, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { generateHTML } from "@/lib/export-html";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PostPreview } from "@/components/PostPreview";
 import { SourceDataEditor } from "@/components/SourceDataEditor";
@@ -106,13 +105,6 @@ export default function EditPost() {
     setSaving(false);
   }
 
-  function handleExport() {
-    if (!post) return;
-    const html = generateHTML(blocks, post.guest_name, post.interview_title);
-    navigator.clipboard.writeText(html);
-    toast({ title: "HTML kopiert!", description: "Der HTML-Code wurde in die Zwischenablage kopiert." });
-    supabase.from("posts").update({ status: "exported" }).eq("id", id);
-  }
 
   async function handleDelete() {
     if (!id || !confirm("Beitrag wirklich löschen?")) return;
@@ -357,9 +349,6 @@ export default function EditPost() {
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={handleDelete} className="gap-2 text-destructive hover:text-destructive">
               <Trash2 className="h-4 w-4" /> Löschen
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
-              <Download className="h-4 w-4" /> HTML
             </Button>
             <PushToHubButton postId={id} post={post} />
             <Button size="sm" onClick={handleSave} disabled={saving} className="gap-2">

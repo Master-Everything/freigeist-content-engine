@@ -146,3 +146,314 @@
     font-family: 'Space Grotesk', sans-serif;
   }
 }
+
+/* ============================================================
+ * Article body — mirrors the Content-Hub `.article-body` rules
+ * so the Engine preview and the pushed HTML render identically.
+ * ============================================================ */
+.article-body {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  color: hsl(var(--foreground));
+}
+
+.article-body p {
+  font-size: 18px;
+  line-height: 1.75;
+  color: hsl(var(--foreground) / 0.9);
+  margin-bottom: 1.5rem;
+}
+
+.article-body p.lead,
+.article-body p:first-of-type {
+  font-size: 20px;
+}
+
+.article-body h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 1rem;
+  margin: 3rem 0 1rem;
+}
+
+.article-body h2:first-of-type {
+  border-top: none;
+}
+
+.article-body h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.75rem;
+  color: hsl(var(--foreground));
+}
+
+.article-body h4 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.5rem;
+  color: hsl(var(--foreground));
+}
+
+.article-body a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+.article-body a:hover {
+  color: hsl(var(--accent-foreground));
+}
+
+.article-body strong {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.article-body ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-bottom: 1.5rem;
+}
+
+.article-body ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin-bottom: 1.5rem;
+}
+
+.article-body li {
+  font-size: 18px;
+  line-height: 1.75;
+  color: hsl(var(--foreground) / 0.9);
+  margin-bottom: 0.25rem;
+}
+
+/* Figures */
+.article-body figure {
+  margin: 2rem 0 3rem 0;
+}
+
+.article-body figure img,
+.article-body img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  margin: 0 auto;
+  border-radius: 0.5rem;
+}
+
+.article-body figure figcaption {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+  margin-top: 0.5rem;
+  text-align: left;
+}
+
+.article-body figure figcaption:empty {
+  display: none;
+}
+
+/* Video embed (responsive 16:9) */
+.article-body .video-embed {
+  position: relative;
+  padding-bottom: 56.25%;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  margin: 2rem 0;
+  border-radius: 0.5rem;
+}
+
+.article-body .video-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Speaker profile */
+.article-body aside.speaker-profile {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  margin: 2.5rem 0;
+  padding: 1.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--muted) / 0.3);
+}
+
+@media (max-width: 640px) {
+  .article-body aside.speaker-profile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.article-body aside.speaker-profile > figure.speaker-photo {
+  margin: 0;
+}
+
+.article-body aside.speaker-profile > figure.speaker-photo img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  margin: 0;
+}
+
+.article-body aside.speaker-profile .speaker-bio {
+  text-align: left;
+  hyphens: none;
+}
+
+.article-body aside.speaker-profile .speaker-bio h1,
+.article-body aside.speaker-profile .speaker-bio h2,
+.article-body aside.speaker-profile .speaker-bio h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  border: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+}
+
+.article-body aside.speaker-profile .speaker-bio p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.article-body aside.speaker-profile .speaker-bio p:last-child {
+  margin-bottom: 0;
+}
+
+/* Freigeist accordion (summary box) */
+.article-body .freigeist-accordion {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.article-body details.freigeist-accordion-item {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background: hsl(var(--card));
+  overflow: hidden;
+}
+
+.article-body details.freigeist-accordion-item > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1rem 1.25rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: hsl(var(--foreground));
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.article-body details.freigeist-accordion-item > summary::-webkit-details-marker {
+  display: none;
+}
+
+.article-body details.freigeist-accordion-item > summary::before {
+  content: "+";
+  font-size: 1.2rem;
+  line-height: 1;
+  color: hsl(var(--primary));
+  font-weight: 400;
+  transition: transform 0.2s ease;
+}
+
+.article-body details.freigeist-accordion-item[open] > summary::before {
+  content: "−";
+}
+
+.article-body details.freigeist-accordion-item > .freigeist-accordion-body {
+  padding: 0.25rem 1.25rem 1rem 1.25rem;
+  text-align: left;
+  hyphens: none;
+}
+
+.article-body details.freigeist-accordion-item > .freigeist-accordion-body > p {
+  font-size: 1rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.article-body details.freigeist-accordion-item > .freigeist-accordion-body > p:last-child {
+  margin-bottom: 0;
+}
+
+/* Prettylink note */
+.article-body .freigeist-prettylink {
+  margin: 2rem 0;
+  padding: 1rem 1.25rem;
+  background: hsl(var(--muted) / 0.4);
+  border-radius: 0.5rem;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+/* CTA note (small line under CTA button) */
+.article-body p.cta-note {
+  text-align: center;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: -1rem;
+}
+
+/* ============ Freigeist CTA Button (mirrors Hub) ============ */
+a.freigeist-cta,
+.article-body a.freigeist-cta {
+  display: inline-block;
+  background: linear-gradient(90deg, #2A809B 0%, #3BB8A8 100%);
+  color: #ffffff !important;
+  text-decoration: none !important;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.2;
+  padding: 1.006rem 2.3rem;
+  border-radius: 0.575rem;
+  box-shadow: 0 5px 14px rgba(42, 128, 155, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+a.freigeist-cta:hover,
+.article-body a.freigeist-cta:hover {
+  background: linear-gradient(90deg, #3BB8A8 0%, #2A809B 100%);
+  transform: scale(1.05);
+  box-shadow: 0 7px 23px rgba(42, 128, 155, 0.4);
+  color: #ffffff !important;
+}
+
+.article-body p:has(> a.freigeist-cta:only-child) {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+/* Clearfix */
+.article-body::after {
+  content: "";
+  display: table;
+  clear: both;
+}

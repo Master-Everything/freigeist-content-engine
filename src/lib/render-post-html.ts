@@ -1,33 +1,11 @@
-// Unified Post Renderer (Deno copy).
-// KEEP IN SYNC with `src/lib/render-post-html.ts` — visual output must match
-// the Engine preview 1:1 (Hub-native semantic markup).
+// Unified Post Renderer — emits Hub-native semantic markup that is styled
+// identically in the Engine preview (via .article-body classes in src/index.css)
+// AND in the Content-Hub (which owns the same .article-body ruleset).
+//
+// KEEP IN SYNC with `supabase/functions/push-to-hub/render-post.ts`
+// (identical output — do not diverge).
 
-export interface PostBlocks {
-  excerpt?: string;
-  main_video_url?: string;
-  summary_box_title?: string;
-  summary_lead?: string;
-  summary_paragraphs?: string[];
-  summary_points?: string[];
-  guest_short_bio?: string;
-  guest_image_url?: string;
-  guest_website_cta?: string;
-  section_1_title?: string; section_1_body?: string;
-  section_2_title?: string; section_2_body?: string;
-  section_3_title?: string; section_3_body?: string;
-  section_4_title?: string; section_4_body?: string;
-  section_5_title?: string; section_5_body?: string;
-  section_6_title?: string; section_6_body?: string;
-  additional_video_embed?: string;
-  pretty_link_shortcode?: string;
-  resource_links?: string;
-  resource_notes?: string;
-  cta_affiliate_url?: string;
-  cta_affiliate_label?: string;
-  top_image_url?: string; top_image_link?: string; top_image_alt?: string;
-  mid_image_url?: string; mid_image_link?: string; mid_image_alt?: string;
-  end_image_url?: string; end_image_link?: string; end_image_alt?: string;
-}
+import type { PostBlocks } from "@/types/post";
 
 function esc(str: string): string {
   return String(str ?? "")
@@ -66,7 +44,7 @@ function ctaButton(href: string, label: string, note?: string): string {
   return `${paragraph}<p class="cta-note"><em>${esc(note)}</em></p>`;
 }
 
-export function markdownToHtml(md: string): string {
+function markdownToHtml(md: string): string {
   if (!md) return "";
   md = md.replace(/\\n/g, "\n");
   const out: string[] = [];
@@ -91,6 +69,7 @@ export function markdownToHtml(md: string): string {
 }
 
 export interface RenderOptions {
+  /** When true, emit `<h1>` for the interview title. Default: false (Hub already renders title separately). */
   includeTitle?: boolean;
 }
 
@@ -100,10 +79,12 @@ export function renderPostHtml(
   postTitle: string,
   opts: RenderOptions = {},
 ): string {
-  const b = blocks || {};
+  const b: PostBlocks = blocks || ({} as PostBlocks);
   const parts: string[] = [];
 
-  if (opts.includeTitle && postTitle) parts.push(`<h1>${esc(postTitle)}</h1>`);
+  if (opts.includeTitle && postTitle) {
+    parts.push(`<h1>${esc(postTitle)}</h1>`);
+  }
 
   if (b.excerpt) parts.push(`<p class="lead">${esc(b.excerpt)}</p>`);
 
@@ -112,9 +93,9 @@ export function renderPostHtml(
     if (v) parts.push(v);
   }
 
-  const summaryParagraphs = b.summary_paragraphs?.length
-    ? b.summary_paragraphs
-    : (b.summary_points || []);
+  const summaryParagraphs = (b as any).summary_paragraphs?.length
+    ? (b as any).summary_paragraphs as string[]
+    : ((b as any).summary_points as string[] | undefined) || [];
 
   if (b.summary_box_title || b.summary_lead || summaryParagraphs.length > 0) {
     if (b.summary_box_title) parts.push(`<h2>${esc(b.summary_box_title)}</h2>`);
@@ -144,8 +125,8 @@ export function renderPostHtml(
   }
 
   for (const n of [1, 2, 3, 4, 5, 6] as const) {
-    const title = b[`section_${n}_title` as keyof PostBlocks] as string | undefined;
-    const content = b[`section_${n}_body` as keyof PostBlocks] as string | undefined;
+    const title = (b as any)[`section_${n}_title`] as string | undefined;
+    const content = (b as any)[`section_${n}_body`] as string | undefined;
     if (title || content) {
       if (title) parts.push(`<h2>${esc(title)}</h2>`);
       if (content) parts.push(markdownToHtml(content));
@@ -200,13 +181,4 @@ export function renderPostHtml(
   }
 
   return parts.join("\n");
-}
-
-// Back-compat export for existing callers.
-export function generateHTML(
-  blocks: PostBlocks,
-  guestName: string,
-  postTitle: string,
-): string {
-  return renderPostHtml(blocks, guestName, postTitle, { includeTitle: false });
 }
