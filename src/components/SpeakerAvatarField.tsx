@@ -50,31 +50,34 @@ export function SpeakerAvatarField({ speakerId, value, onChange }: Props) {
   }, [speakerId]);
 
   async function handleFile(file: File) {
-    if (!speakerId) {
-      toast({ title: "Fehler", description: "Kein Speaker verknüpft.", variant: "destructive" });
-      return;
-    }
     setUploading(true);
     try {
       const webp = await convertToWebP(file);
       if (webp.size > 500_000) throw new Error("Avatar zu groß (max ~500 KB)");
-      const folder = ownerUserId || speakerId;
+      const folder = ownerUserId || speakerId || "unlinked-speakers";
       const path = `${folder}/avatar-${Date.now()}.webp`;
       const { error: upErr } = await supabase.storage
         .from(BUCKET)
         .upload(path, webp, { upsert: true, contentType: "image/webp" });
       if (upErr) throw upErr;
 
-      const { error: updErr } = await supabase
-        .from("speakers")
-        .update({ avatar_url: path })
-        .eq("id", speakerId);
-      if (updErr) throw updErr;
+      if (speakerId) {
+        const { error: updErr } = await supabase
+          .from("speakers")
+          .update({ avatar_url: path })
+          .eq("id", speakerId);
+        if (updErr) throw updErr;
+      }
 
       setAvatarPath(path);
       const publicUrl = toPublicUrl(path);
       onChange(publicUrl);
-      toast({ title: "Avatar aktualisiert", description: "Wirkt auch im Speaker-Profil (Modul 1)." });
+      toast({
+        title: "Avatar aktualisiert",
+        description: speakerId
+          ? "Wirkt auch im Speaker-Profil (Modul 1)."
+          : "Für diesen Alt-Beitrag gespeichert. Für zentrale Pflege bitte Speaker in Modul 1 zuordnen.",
+      });
     } catch (e: any) {
       toast({ title: "Upload fehlgeschlagen", description: e.message, variant: "destructive" });
     } finally {
@@ -99,7 +102,7 @@ export function SpeakerAvatarField({ speakerId, value, onChange }: Props) {
           type="button"
           variant="outline"
           size="sm"
-          disabled={uploading || !speakerId}
+          disabled={uploading}
           onClick={() => fileRef.current?.click()}
           className="gap-2"
         >
@@ -119,7 +122,7 @@ export function SpeakerAvatarField({ speakerId, value, onChange }: Props) {
       </div>
       {!speakerId ? (
         <p className="text-[11px] text-destructive">
-          Kein Speaker mit diesem Post verknüpft — bitte in Modul 1 zuordnen.
+          Kein Speaker mit diesem Post verknüpft — Upload ist möglich, zentrale Pflege erst nach Zuordnung in Modul 1.
         </p>
       ) : (
         <p className="text-[11px] text-muted-foreground">
