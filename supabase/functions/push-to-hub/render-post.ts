@@ -102,6 +102,7 @@ export function markdownToHtml(md: string): string {
 export interface RenderOptions {
   includeTitle?: boolean;
   omitMainVideo?: boolean;
+  omitExcerpt?: boolean;
 }
 
 export function renderPostHtml(
@@ -115,7 +116,7 @@ export function renderPostHtml(
 
   if (opts.includeTitle && postTitle) parts.push(`<h1>${esc(postTitle)}</h1>`);
 
-  if (b.excerpt) parts.push(`<p class="lead">${esc(b.excerpt)}</p>`);
+  if (b.excerpt && !opts.omitExcerpt) parts.push(`<p class="lead">${esc(b.excerpt)}</p>`);
 
   if (b.main_video_url && !opts.omitMainVideo) {
     const v = videoEmbed(b.main_video_url);

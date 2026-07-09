@@ -82,6 +82,8 @@ export interface RenderOptions {
   includeTitle?: boolean;
   /** When true, skip the main video embed (Hub renders it as Featured Video separately). */
   omitMainVideo?: boolean;
+  /** When true, skip the excerpt lead paragraph (Hub renders it as subtitle separately). */
+  omitExcerpt?: boolean;
 }
 
 export function renderPostHtml(
@@ -97,7 +99,7 @@ export function renderPostHtml(
     parts.push(`<h1>${esc(postTitle)}</h1>`);
   }
 
-  if (b.excerpt) parts.push(`<p class="lead">${esc(b.excerpt)}</p>`);
+  if (b.excerpt && !opts.omitExcerpt) parts.push(`<p class="lead">${esc(b.excerpt)}</p>`);
 
   if (b.main_video_url && !opts.omitMainVideo) {
     const v = videoEmbed(b.main_video_url);

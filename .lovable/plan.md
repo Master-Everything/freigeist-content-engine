@@ -1,31 +1,20 @@
-## Ziel
+## Problem
+Der Excerpt wird beim Push zweimal sichtbar: einmal als Hub-`subtitle` (unter Titel/Video, korrekt) und einmal als `<p class="lead">…</p>` am Anfang des HTML-Bodys (Zitat-Optik, doppelt).
 
-Drei präzise Anpassungen am Push-Flow Content-Engine → Hub. Der Hub bleibt inhaltlich unverändert; nur die Ingest-Function und der Engine-Renderer werden angefasst.
+## Fix
+Neue Renderer-Option `omitExcerpt` — analog zu `omitMainVideo`. Beim Push aktiv, Engine-Vorschau unverändert (dort gibt's keinen separaten Subtitle-Header, der `lead`-Absatz muss sichtbar bleiben).
 
-## Änderungen
-
-### 1. Kein Featured Image mehr übergeben
-- `supabase/functions/push-to-hub/index.ts`: `collectImages()` markiert nichts mehr als `role: "featured"`. Alle Bilder (Speaker, Top/Mid/End) laufen als `inline`, damit sie im Storage transferiert und im HTML ersetzt werden — aber `image_url` bleibt im Hub leer.
-- `docs/hub-setup/ingest-interview.ts` + Hub-Function `ingest-interview`: `image_url: null` setzen (kein Fallback auf erstes Bild).
-
-### 2. Featured Video übergeben (Hub-Feld `video_url`)
-- Payload erhält neues Feld `video_url: string | null` (aus `blocks.main_video_url`).
-- Zusätzlich: Der Haupt-Video-Embed wird aus dem `content_html` **entfernt**, damit im Hub das Video nur einmal (als Featured Video unter dem Subtitle) erscheint. Der Renderer bekommt eine Option `omitMainVideo`, der Push-Aufruf setzt sie auf `true`. Die Engine-Vorschau bleibt unverändert (Video weiter im Body).
-- `docs/hub-setup/ingest-interview.ts` + Hub-Function: `video_url` im BodySchema akzeptieren und in `payload.video_url` schreiben.
-
-### 3. Subtitle = Excerpt (nie Fallback)
-- Push-Payload: `subtitle: blocks.excerpt ?? null` (statt `post.guest_name`).
-- Ingest-Function: `subtitle: body.subtitle ?? null` (unverändert, kein Fallback).
-
-### 4. CTA-Buttons mit Sternchen (Hub-Konvention)
-- `src/lib/render-post-html.ts` und `supabase/functions/push-to-hub/render-post.ts`: In `ctaButton()` das Label mit `✨ Label ✨` umschließen, falls noch kein Sparkle-Zeichen (`✨ ⭐ 🌟`) enthalten ist. Genau die Hub-Regel aus `RichTextEditor.tsx` und `import-website/index.ts`.
-- Das trifft alle CTAs: „Zur Website von …", „Informationen & Store" (mid + end).
+### Änderungen
+1. `src/lib/render-post-html.ts`
+   - `RenderOptions` um `omitExcerpt?: boolean` erweitern.
+   - `if (b.excerpt)` → `if (b.excerpt && !opts.omitExcerpt)`.
+2. `supabase/functions/push-to-hub/render-post.ts`
+   - Gleiche Änderung (1:1-Sync mit Engine-Renderer).
+3. `supabase/functions/push-to-hub/index.ts`
+   - Aufruf: `renderPostHtml(..., { omitMainVideo: true, omitExcerpt: true })`.
+   - Payload-Feld `subtitle: blocks.excerpt ?? null` bleibt wie es ist.
 
 ## Nicht angefasst
-- Hub-Frontend, Hub-DB-Schema, RLS.
-- Engine-Vorschau-Layout (nur Push-HTML ändert sich beim Haupt-Video).
-- Bild-Slots, Speaker-Box, Renderer-Struktur sonst.
-
-## Deploy-Schritte (nach Approval)
-1. Engine: `push-to-hub/index.ts` + beide `render-post` Dateien anpassen → Edge Function wird automatisch neu deployed.
-2. Hub: `docs/hub-setup/ingest-interview.ts` aktualisieren. Du kopierst den neuen Inhalt in die Hub-Function `ingest-interview` und deployst sie dort einmal.
+- Hub, Ingest-Function, DB-Schema.
+- Engine-Vorschau (`PostPreview` nutzt Default-Options → Excerpt bleibt sichtbar).
+- Sonstige Renderer-Logik (Video, Speaker-Box, CTAs).
