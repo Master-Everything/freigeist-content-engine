@@ -194,7 +194,7 @@ export default function EditPost() {
         <BlockCard title="Gast-Profil" required>
           <div className="space-y-3">
             <SpeakerAvatarField
-              userId={(post as any)?.user_id}
+              speakerId={(post as any)?.speaker_id}
               value={blocks.guest_image_url || ""}
               onChange={(url) => updateBlock("guest_image_url", url)}
             />
