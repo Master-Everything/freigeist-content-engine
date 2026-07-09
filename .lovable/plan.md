@@ -1,57 +1,54 @@
-## Ziel
+## Problem
 
-Ein einziges, geteiltes Post-Layout: Was du hier in der Engine-Vorschau siehst, ist exakt das, was der Hub anzeigt. Der Hub bleibt unangetastet — wir übernehmen seine Design-Sprache in die Engine.
+`InlineImageUpload` lädt Bilder noch über `wp-upload` nach WordPress → 404 → 502 im Frontend. Für das Slot „Gast-Profil" existiert außerdem schon ein Speaker-Avatar (aus Modul 1, Bucket `speaker-avatars`), das aktuell doppelt verwaltet wird.
 
-## Grundprinzip
+## Lösung
 
-Hub-CSS (aus `src/index.css` des Hub-Projekts) verwendet semantische Klassen: `.article-body`, `aside.speaker-profile`, `figure.speaker-photo/.speaker-bio`, `a.freigeist-cta`, `.freigeist-accordion / .freigeist-accordion-item`, `.video-embed`, `.article-body figure`. Wir emittieren im Engine-Renderer **exakt dieses Markup ohne Inline-Styles** und importieren die passenden Regeln in `src/index.css`. Damit rendern Engine-Vorschau und Hub aus derselben Quelle identisch.
+Zwei Dinge in einem Zug:
 
-## Änderungen
+1. **Speaker-Avatar zentralisieren** — ein Bild für den Speaker, aus Modul 1 gepflegt, überall genutzt (Post-Editor, Preview, Push-to-Hub).
+2. **Restliche Post-Bilder** (Top, Mid, End) auf einen eigenen Supabase-Storage-Bucket umstellen, kein WordPress-Umweg mehr.
 
-### 1. Engine-Renderer `supabase/functions/push-to-hub/render-post.ts` → Hub-natives Markup
+### 1. Speaker-Avatar wird die eine Quelle für „Gast-Profil"-Bild
 
-Der Renderer erzeugt statt Inline-Styles semantisches Markup mit Hub-Klassen:
+- `speaker-avatars`-Bucket auf **public** stellen (`supabase--storage_update_bucket`), damit der Hub das Bild per öffentlicher URL abholen kann. Falls die Workspace-Policy public buckets blockt, sage ich Bescheid und wir bleiben auf privatem Bucket mit einer neuen Public-Read-Policy nur für Avatare — Fallback wird im Chat erklärt.
+- **Neue Logik in `EditPost.tsx`**:
+  - Beim Laden des Posts zusätzlich den zugehörigen Speaker holen (`posts.speaker_id` → `speakers.avatar_url`).
+  - `blocks.guest_image_url` wird beim Rendern **immer** aus dem Speaker-Avatar abgeleitet, wenn dort ein Bild vorliegt (Speaker gewinnt).
+  - Der Slot „Gast-Profil / Bild-URL" wird durch eine neue Komponente `SpeakerAvatarField` ersetzt: zeigt aktuelles Avatar an, Button „Neues Bild wählen" öffnet Datei-Dialog → WebP-Konvertierung → Upload nach `speaker-avatars/{userId}/avatar-{ts}.webp` → `speakers.avatar_url` wird per Update aktualisiert → Preview refresht.
+  - Kein separates Editier-Feld mehr für diese URL, damit es keinen Drift geben kann. Hinweistext: „Wird zentral im Speaker-Profil (Modul 1) gepflegt — Änderungen wirken auch dort".
+- **Renderer/Push**: `src/lib/render-post-html.ts` und `supabase/functions/push-to-hub/render-post.ts` konsumieren `blocks.guest_image_url` wie bisher — Änderung ist nur, dass diese URL jetzt aus dem Speaker-Avatar stammt.
+- **Speaker-Formular (Modul 1)** bleibt Editier-Oberfläche und braucht keine Änderung — Uploads landen im gleichen Bucket wie zuvor.
 
-- **Kein `<h1>` und kein `<style>`-Block mehr im Body** — Title/Subtitle rendert der Hub aus `posts.title` / `posts.subtitle`.
-- **Speaker-Box** → `<aside class="speaker-profile"><figure class="speaker-photo"><img src alt/></figure><div class="speaker-bio"><h3>Name</h3><p>Bio</p></div></aside>`
-- **CTA-Button** → `<p style="text-align:center"><a class="freigeist-cta" href target=_blank rel=noopener>✨ Label ✨</a></p>` (identisch zum Hub `addCtaButton`)
-- **Affiliate-Hinweis** → als eigener zentrierter `<p>` mit kursivem Kleintext direkt unter dem CTA
-- **Zusammenfassung** → `<div class="freigeist-accordion"><details class="freigeist-accordion-item"><summary>Lead</summary><div class="freigeist-accordion-body">…</div></details></div>`
-- **Bilder** → `<figure><img/></figure>` (mit optionalem umschließenden `<a>`) statt inline gestylter `<div>`s
-- **Videos** → `<div class="video-embed"><iframe/></div>`
-- **Section-Titel** → schlichtes `<h2>` (Hub-CSS setzt border-top, Space Grotesk, Größe automatisch)
-- **Markdown-Konverter** → nur noch `<h3>/<h4>/<p>/<ul>/<li>` ohne Inline-Styles, damit `.article-body` greift
+### 2. Restliche Slots (Top, Mid, End) auf Supabase-Storage
 
-### 2. Engine `src/index.css` → Hub-Style-Regeln importieren
+- Neuer public Bucket `post-images` (`supabase--storage_create_bucket`).
+- RLS auf `storage.objects`:
+  - `SELECT` für `anon` (öffentliche Lesbarkeit, damit der Hub laden kann).
+  - `INSERT/UPDATE/DELETE` für `authenticated`, beschränkt auf `bucket_id = 'post-images'`.
+- `InlineImageUpload.tsx` umbauen:
+  - `supabase.functions.invoke("wp-upload")` raus, stattdessen `supabase.storage.from("post-images").upload(...)` + `getPublicUrl`.
+  - Pfad: `posts/{postId}/{slot}-{filenameIndex}.webp`.
+  - `images`-Insert bleibt (Spalte `wp_url` behält die neue Public-URL — keine Migration nötig).
+  - `getUploadMethod`-Aufruf entfernen.
+- Wird für Top/Mid/End weiter benutzt, für „Gast-Profil" durch `SpeakerAvatarField` ersetzt.
 
-Ein neuer Block mit den 1:1 aus dem Hub übernommenen Regeln für `.article-body` und die enthaltenen Klassen (Speaker-Box, CTA, Accordion, Video, Figure). Dabei nutzen wir die **bereits vorhandenen Engine-Tokens** (`--foreground`, `--muted`, `--border`, `--primary` usw.) — Dark-Mode funktioniert damit automatisch mit unserem eigenen Theme. Der Freigeist-Türkis-Gradient des CTA-Buttons bleibt als Fixwert (Marken-Farbe: `#2A809B → #3BB8A8`), da er auf beiden Seiten identisch sein soll.
+### 3. Aufräumen
 
-Fonts (Space Grotesk + Inter) werden via `@fontsource` als Package installiert und in `src/main.tsx` importiert (kein CSS `@import`, kein `index.html`-Eingriff — laut Memory).
+- Edge Functions `wp-upload/` und `wp-upload-ftp/` löschen.
+- Zugehörige Blöcke in `supabase/config.toml` entfernen.
+- `ScreenshotSettings.tsx` + `getUploadMethod` entfernen, sofern nur dafür genutzt (Sidebar/Route mit prüfen).
+- Secrets `WP_USERNAME` / `WP_APP_PASSWORD` bleiben stehen — der User kann sie bei Bedarf über Settings löschen.
 
-### 3. Engine `PostPreview.tsx` (und indirekt `ViewPost.tsx`) → gemeinsame Render-Basis
+### 4. Verifizieren
 
-- Der bisherige Preview-Renderer wird abgelöst durch **denselben HTML-Generator**, der auch zum Hub gepusht wird. Dazu ziehe ich die Renderer-Logik in ein geteiltes Modul `src/lib/render-post-html.ts` und benutze es sowohl in der Engine-Vorschau als auch im Edge-Function-Push (dort als Deno-Kopie mit identischem Output — bleibt in Sync über einen kurzen Kommentar-Header + gleichnamige Test-Fixtures).
-- `PostPreview.tsx` rendert das erzeugte HTML in einem `<article className="article-body">…</article>`-Wrapper via `dangerouslySetInnerHTML` — genau derselbe Wrapper, den der Hub um seine Post-Bodies legt.
-- Das aus `blocks.excerpt` erzeugte Element bekommt die Hub-typische Erst-Absatz-Größe automatisch über `.article-body p:first-of-type`.
+- Speaker in Modul 1 hat Avatar → im Post-Editor erscheint es im „Gast-Profil"-Slot automatisch.
+- Neues Avatar aus dem Post-Editor hochgeladen → Modul-1-Profil zeigt dasselbe Bild.
+- Ein Bild in „Oberes Bild" hochladen → landet in `post-images`, Public-URL kommt zurück, Preview zeigt es.
+- `push-to-hub` überträgt beide URLs; Hub-`ingest-interview` spiegelt sie in seinen `post-images`-Bucket.
 
-### 4. WordPress-Export entfernen
+## Nicht Teil dieser Runde
 
-- `src/lib/export-html.ts`, `src/lib/markdown.ts` (falls nur dort verwendet), das Modul-7-„WP hochladen"-UI und die Edge Functions `wp-upload` + `wp-upload-ftp` werden entfernt.
-- Sidebar-Verweise und `App.tsx`-Route zum WP-Modul werden bereinigt.
-- Ich lasse die Speaker-Rolle des Moduls 7 (falls sichtbar) auf „Deaktiviert" bzw. entferne den Menüpunkt.
-
-### 5. Hub bleibt unangetastet
-
-Kein Deploy, kein Edit in `docs/hub-setup/*`, keine Änderung im [FREIGEIST Content-Hub](/projects/3b7054d6-c0c3-4272-9ffa-f782221a6fba). Das existierende `ingest-interview` im Hub akzeptiert unser neues HTML unverändert und der Hub stylt es über sein `.article-body`-CSS.
-
-## Was ausdrücklich NICHT Teil dieser Runde ist
-
-- Bild-Transfer-Problem (kommt als eigener Task, nachdem das Layout sitzt).
-- Änderungen im Hub-Projekt.
-- Neue Design-Tokens/Farben — wir bleiben bei unseren bestehenden.
-
-## Ergebnis
-
-- Post-Vorschau in der Engine sieht pixelgleich aus wie ein Hub-Draft (Light + Dark).
-- „An News-Plattform senden" schickt exakt dieses HTML → im Hub identische Darstellung inklusive Gradient-Hover-Animation am CTA und semantisch korrekter Speaker-Box.
-- Weniger Code: WP-Export ist raus, ein Renderer für alles.
+- Migration alter WP-Bild-URLs in bestehenden Posts.
+- Änderungen am Hub oder am Push-Renderer.
+- Bild-Cropping/Zuschnitt-UI im Post-Editor.
