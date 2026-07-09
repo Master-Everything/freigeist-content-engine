@@ -102,6 +102,7 @@ export function markdownToHtml(md: string): string {
 export interface RenderOptions {
   includeTitle?: boolean;
   omitMainVideo?: boolean;
+  omitExcerpt?: boolean;
 }
 
 export function renderPostHtml(
