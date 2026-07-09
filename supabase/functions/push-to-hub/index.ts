@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
     const blocks = (post.blocks ?? {}) as PostBlocks;
     const content_html = renderPostHtml(blocks, post.guest_name, post.interview_title, {
       omitMainVideo: true,
+      omitExcerpt: true,
     });
     const image_urls = collectImages(blocks);
 
