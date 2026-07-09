@@ -80,6 +80,8 @@ function markdownToHtml(md: string): string {
 export interface RenderOptions {
   /** When true, emit `<h1>` for the interview title. Default: false (Hub already renders title separately). */
   includeTitle?: boolean;
+  /** When true, skip the main video embed (Hub renders it as Featured Video separately). */
+  omitMainVideo?: boolean;
 }
 
 export function renderPostHtml(
@@ -97,10 +99,11 @@ export function renderPostHtml(
 
   if (b.excerpt) parts.push(`<p class="lead">${esc(b.excerpt)}</p>`);
 
-  if (b.main_video_url) {
+  if (b.main_video_url && !opts.omitMainVideo) {
     const v = videoEmbed(b.main_video_url);
     if (v) parts.push(v);
   }
+
 
   const summaryParagraphs = (b as any).summary_paragraphs?.length
     ? (b as any).summary_paragraphs as string[]
