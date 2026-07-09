@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { generateHTML, PostBlocks } from "./render-post.ts";
+import { renderPostHtml, PostBlocks } from "./render-post.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
