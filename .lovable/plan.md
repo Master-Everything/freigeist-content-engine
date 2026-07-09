@@ -1,24 +1,20 @@
 ## Problem
+Der Button „Neues Bild wählen" in der Speaker-Box (Modul 7 / EditPost) ist deaktiviert, weil `SpeakerAvatarField` per `userId={(post as any)?.user_id}` gefüttert wird — die `posts`-Tabelle hat aber gar keine `user_id`-Spalte (nur `speaker_id`). Damit ist `userId` immer `undefined`, und die Komponente disabled den Upload-Button (`disabled={uploading || !userId}`).
 
-Das Feld „Speaker-Foto (Speaker-Box, aus Modul 1)" existiert im Block-Editor (Modul 7) bereits und schreibt beim Upload zentral in `speakers.avatar_url` zurück (Single Source of Truth). Für Redakteure/Admins schlägt der Upload aktuell aber still fehl, wenn sie den Post eines fremden Speakers bearbeiten.
+## Fix
+`SpeakerAvatarField` auf `speaker_id` umstellen statt auf `user_id`.
 
-**Ursache:** Die Storage-RLS-Policies auf `speaker-avatars` erlauben `INSERT/UPDATE/DELETE` nur, wenn der Ordnername (`{user_id}/…`) mit `auth.uid()` übereinstimmt. Ein Admin lädt aber in den Ordner des Speakers hoch und wird von RLS blockiert. Der DB-Update auf `speakers` selbst funktioniert (dort ist `has_role(..., 'admin')` in der Policy enthalten) — nur die Datei-Ablage nicht.
+### Änderungen
 
-## Lösung
+**`src/components/SpeakerAvatarField.tsx`**
+- Prop `userId` → `speakerId: string | null | undefined`.
+- Ladelogik: `speakers` per `id = speakerId` holen (statt `user_id = userId`), Avatar-Path + `user_id` aus dem Ergebnis lesen.
+- Upload-Pfad im Bucket weiterhin `${speaker.user_id}/avatar-<ts>.webp` (Storage-Policies bleiben unberührt).
+- Button-Disabled-Bedingung auf `!speakerId` umstellen.
+- Fehlt bei einem Post der `speaker_id` (Alt-Posts), Hinweis-Text anzeigen: „Kein Speaker verknüpft — Speaker in Modul 1 anlegen/zuordnen."
 
-Storage-Policies auf `speaker-avatars` um Admin-Zugriff erweitern — analog zur bestehenden `speakers`-Tabellen-Policy.
+**`src/pages/EditPost.tsx`**
+- Aufruf ändern: `speakerId={(post as any)?.speaker_id}` statt `userId=…`.
 
-### Migration
-Drei zusätzliche Policies auf `storage.objects` für Bucket `speaker-avatars`:
-
-- `Admins upload any speaker avatar` (INSERT) — `has_role(auth.uid(), 'admin')`
-- `Admins update any speaker avatar` (UPDATE) — `has_role(auth.uid(), 'admin')`
-- `Admins delete any speaker avatar` (DELETE) — `has_role(auth.uid(), 'admin')`
-
-Die bestehenden User-Policies bleiben unverändert; Speaker können weiterhin ihr eigenes Bild pflegen.
-
-### Kein UI-Change nötig
-`SpeakerAvatarField` in `src/pages/EditPost.tsx` ist bereits eingebunden und lädt in den Ordner des Post-Owners (`post.user_id`) hoch. Nach der Policy-Erweiterung funktioniert der bestehende Upload-Button für Admins direkt.
-
-### Verifikation
-Als Admin einen fremden Post öffnen → neues Bild wählen → Toast „Avatar aktualisiert" → Preview + Modul 1 zeigen das neue Bild.
+### Nicht angefasst
+- Renderer, Preview, Push-to-Hub, DB-Schema, RLS, Storage-Buckets.
