@@ -47,8 +47,8 @@ const SECTIONS: Section[] = [
     items: [
       { name: "generate-content", desc: "AI block generation via Lovable AI Gateway" },
       { name: "youtube-transcript", desc: "Fetches YouTube video transcripts" },
-      { name: "wp-upload", desc: "Uploads images to WordPress via REST API" },
-      { name: "wp-upload-ftp", desc: "Uploads images to WordPress via FTP" },
+      { name: "push-to-hub", desc: "Sendet fertige Interview-Posts an den Freigeist Content-Hub" },
+      { name: "vorab-scan", desc: "Compliance-Vorab-Scan von Interview-Texten via Gemini" },
     ],
   },
   {
