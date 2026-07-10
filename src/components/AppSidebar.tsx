@@ -115,7 +115,7 @@ const speakerModules: Module[] = [
   { num: 5, title: "Vorgespräch", url: "/speaker/modul/5", icon: MessagesSquare, status: "planned" },
   { num: 6, title: "Aufzeichnung / Live", url: "/speaker/modul/6", icon: Video, status: "planned" },
   { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "planned" },
-  { num: 8, title: "News-Plattform", url: "/speaker/modul/8", icon: Newspaper, status: "planned" },
+  { num: 8, title: "News-Plattform", url: "/speaker/modul/8", icon: Newspaper, status: "active" },
 ];
 
 export function AppSidebar() {
