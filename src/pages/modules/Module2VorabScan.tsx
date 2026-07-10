@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AmpelBadge } from "@/components/vorab-scan/AmpelBadge";
 import { ScanDetailSheet } from "@/components/vorab-scan/ScanDetailSheet";
@@ -13,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ScanSearch, Loader2, RefreshCw, Eye, Play } from "lucide-react";
+import { ScanSearch, Loader2, RefreshCw, Eye, Play, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 
 type SpeakerScanRow = {
