@@ -139,6 +139,27 @@ export default function Module2VorabScan() {
     } finally { setRescanning(null); }
   }
 
+  async function createProfil(postId: string, speakerId: string | null) {
+    if (!speakerId) {
+      toast.error("Diesem Interview ist kein Speaker-Profil zugeordnet.");
+      return;
+    }
+    setCreatingProfilFor(postId);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ status: "in_bearbeitung" })
+        .eq("id", postId);
+      if (error) throw error;
+      toast.success("Interview an Modul 3 übergeben.");
+      navigate(`/module/profil?post_id=${postId}&speaker_id=${speakerId}`);
+    } catch (e) {
+      toast.error("Fehler: " + (e as Error).message);
+    } finally {
+      setCreatingProfilFor(null);
+    }
+  }
+
   function openScan(row: any) {
     setSelected(row);
     setSheetOpen(true);
