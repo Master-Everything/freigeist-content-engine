@@ -27,6 +27,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type Verdict = "green" | "yellow" | "red" | null;
+
 type SpeakerScanRow = {
   id: string;
   speaker_id: string;
