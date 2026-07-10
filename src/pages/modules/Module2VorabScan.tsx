@@ -47,7 +47,11 @@ type InterviewScanRow = {
     interview_title: string | null;
     status: string;
     speaker_id: string | null;
-    speakers: { first_name: string | null; last_name: string | null } | null;
+    speakers: {
+      first_name: string | null;
+      last_name: string | null;
+      speaker_scans: { verdict: "green" | "yellow" | "red" | null; created_at: string }[] | null;
+    } | null;
   } | null;
 };
 
