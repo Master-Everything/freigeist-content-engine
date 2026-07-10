@@ -81,7 +81,7 @@ export default function Module2VorabScan() {
     if (sErr) toast.error("Konnte Speaker-Scans nicht laden: " + sErr.message);
     if (iErr) toast.error("Konnte Interview-Scans nicht laden: " + iErr.message);
     setSpeakerRows((sData ?? []) as SpeakerScanRow[]);
-    setInterviewRows((iData ?? []) as InterviewScanRow[]);
+    setInterviewRows((iData ?? []) as unknown as InterviewScanRow[]);
     setLoading(false);
   }
 
