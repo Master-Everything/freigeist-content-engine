@@ -110,7 +110,7 @@ const speakerModules: Module[] = [
       { title: "Eingereichte Interviews", url: "/module/vorab-scan/eingereicht" },
     ],
   },
-  { num: 3, title: "Profil & Sprechermappe", url: "/speaker/modul/3", icon: UserCheck, status: "planned" },
+  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
   { num: 4, title: "Interview-Leitfaden", url: "/speaker/modul/4", icon: BookOpen, status: "planned" },
   { num: 5, title: "Vorgespräch", url: "/speaker/modul/5", icon: MessagesSquare, status: "planned" },
   { num: 6, title: "Aufzeichnung / Live", url: "/speaker/modul/6", icon: Video, status: "planned" },
