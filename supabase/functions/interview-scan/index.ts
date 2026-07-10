@@ -163,8 +163,18 @@ Deno.serve(async (req) => {
   if (insErr || !scanRow) return json({ error: "Konnte Scan nicht starten: " + insErr?.message });
   const scanId = scanRow.id;
 
+  // Status vor dem Scan merken, damit wir bei Fehlern nicht willkürlich zurücksetzen
+  const previousStatus: string = post.status ?? "erfassung";
+  const revertStatus = previousStatus === "scan_pending" ? "erfassung" : previousStatus;
+
   // Status auf scan_pending während der Verarbeitung
-  await supabaseAdmin.from("posts").update({ status: "scan_pending" }).eq("id", postId);
+  {
+    const { error: upErr } = await supabaseAdmin
+      .from("posts")
+      .update({ status: "scan_pending" })
+      .eq("id", postId);
+    if (upErr) console.error("[interview-scan] status→scan_pending failed", upErr);
+  }
 
   try {
     const [{ data: banned }, { data: rules }, { data: prompts }] = await Promise.all([
