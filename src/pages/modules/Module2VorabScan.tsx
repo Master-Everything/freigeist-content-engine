@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AmpelBadge } from "@/components/vorab-scan/AmpelBadge";
 import { ScanDetailSheet } from "@/components/vorab-scan/ScanDetailSheet";
@@ -13,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ScanSearch, Loader2, RefreshCw, Eye, Play } from "lucide-react";
+import { ScanSearch, Loader2, RefreshCw, Eye, Play, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 
 type SpeakerScanRow = {
@@ -45,11 +46,14 @@ type InterviewScanRow = {
     id: string;
     interview_title: string | null;
     status: string;
+    speaker_id: string | null;
     speakers: { first_name: string | null; last_name: string | null } | null;
   } | null;
 };
 
 export default function Module2VorabScan() {
+  const navigate = useNavigate();
+  const [creatingProfilFor, setCreatingProfilFor] = useState<string | null>(null);
   const [tab, setTab] = useState<"speakers" | "interviews">("speakers");
   const [speakerRows, setSpeakerRows] = useState<SpeakerScanRow[]>([]);
   const [interviewRows, setInterviewRows] = useState<InterviewScanRow[]>([]);
@@ -67,7 +71,7 @@ export default function Module2VorabScan() {
         .select("*, speakers(first_name, last_name, industry)")
         .order("created_at", { ascending: false }).limit(500),
       supabase.from("post_scans")
-        .select("*, posts(id, interview_title, status, speakers(first_name, last_name))")
+        .select("*, posts(id, interview_title, status, speaker_id, speakers(first_name, last_name))")
         .order("created_at", { ascending: false }).limit(500),
     ]);
     if (sErr) toast.error("Konnte Speaker-Scans nicht laden: " + sErr.message);
@@ -133,6 +137,27 @@ export default function Module2VorabScan() {
     } catch (e) {
       toast.error("Re-Scan fehlgeschlagen: " + (e as Error).message);
     } finally { setRescanning(null); }
+  }
+
+  async function createProfil(postId: string, speakerId: string | null) {
+    if (!speakerId) {
+      toast.error("Diesem Interview ist kein Speaker-Profil zugeordnet.");
+      return;
+    }
+    setCreatingProfilFor(postId);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ status: "in_bearbeitung" })
+        .eq("id", postId);
+      if (error) throw error;
+      toast.success("Interview an Modul 3 übergeben.");
+      navigate(`/module/profil?post_id=${postId}&speaker_id=${speakerId}`);
+    } catch (e) {
+      toast.error("Fehler: " + (e as Error).message);
+    } finally {
+      setCreatingProfilFor(null);
+    }
   }
 
   function openScan(row: any) {
@@ -253,12 +278,17 @@ export default function Module2VorabScan() {
                       <TableHead className="w-36">Verdict</TableHead>
                       <TableHead className="w-20">Score</TableHead>
                       <TableHead className="w-20">Findings</TableHead>
-                      <TableHead className="w-40">Aktion</TableHead>
+                      <TableHead className="w-40">Post-Status</TableHead>
+                      <TableHead className="w-56">Aktion</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredInterviews.map((r) => (
-                      <TableRow key={r.id}>
+                    {filteredInterviews.map((r) => {
+                      const postStatus = r.posts?.status;
+                      const isRequested = postStatus === "redaktion_angefragt";
+                      const isInBearbeitung = postStatus === "in_bearbeitung";
+                      return (
+                      <TableRow key={r.id} className={isRequested ? "bg-violet-50/60 dark:bg-violet-950/20" : ""}>
                         <TableCell className="text-xs text-muted-foreground tabular-nums">
                           {new Date(r.created_at).toLocaleString("de-DE")}
                         </TableCell>
@@ -276,18 +306,38 @@ export default function Module2VorabScan() {
                         <TableCell className="text-xs tabular-nums">{r.score ?? "—"}</TableCell>
                         <TableCell className="text-xs tabular-nums">{r.findings?.length ?? 0}</TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
+                          {isRequested && <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200">Redaktion angefragt</Badge>}
+                          {isInBearbeitung && <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">In Bearbeitung</Badge>}
+                          {!isRequested && !isInBearbeitung && <span className="text-xs text-muted-foreground">{postStatus}</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
                             <Button size="sm" variant="ghost" onClick={() => openScan(r)}><Eye className="h-4 w-4" /></Button>
                             <Button size="sm" variant="ghost" onClick={() => reScanInterview(r.post_id)}
                               disabled={rescanning === r.post_id} title="Re-Scan">
                               {rescanning === r.post_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                             </Button>
+                            {isRequested && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => createProfil(r.post_id, r.posts?.speaker_id ?? null)}
+                                disabled={creatingProfilFor === r.post_id}
+                                title="Profil & Sprechermappe anlegen"
+                              >
+                                {creatingProfilFor === r.post_id
+                                  ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                                  : <UserCheck className="mr-1.5 h-4 w-4" />}
+                                Profil anlegen
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                     {filteredInterviews.length === 0 && (
-                      <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Keine Interview-Scans gefunden.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Keine Interview-Scans gefunden.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

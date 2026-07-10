@@ -163,8 +163,18 @@ Deno.serve(async (req) => {
   if (insErr || !scanRow) return json({ error: "Konnte Scan nicht starten: " + insErr?.message });
   const scanId = scanRow.id;
 
+  // Status vor dem Scan merken, damit wir bei Fehlern nicht willkürlich zurücksetzen
+  const previousStatus: string = post.status ?? "erfassung";
+  const revertStatus = previousStatus === "scan_pending" ? "erfassung" : previousStatus;
+
   // Status auf scan_pending während der Verarbeitung
-  await supabaseAdmin.from("posts").update({ status: "scan_pending" }).eq("id", postId);
+  {
+    const { error: upErr } = await supabaseAdmin
+      .from("posts")
+      .update({ status: "scan_pending" })
+      .eq("id", postId);
+    if (upErr) console.error("[interview-scan] status→scan_pending failed", upErr);
+  }
 
   try {
     const [{ data: banned }, { data: rules }, { data: prompts }] = await Promise.all([
@@ -237,7 +247,7 @@ Deno.serve(async (req) => {
         error_text: "Rate-Limit erreicht. Bitte später erneut versuchen.",
         duration_ms: Date.now() - t0,
       }).eq("id", scanId);
-      await supabaseAdmin.from("posts").update({ status: "erfassung" }).eq("id", postId);
+      await supabaseAdmin.from("posts").update({ status: revertStatus }).eq("id", postId);
       return json({ error: "AI-Rate-Limit erreicht. Bitte später erneut versuchen.", scan_id: scanId });
     }
     if (aiRes.status === 402) {
@@ -246,7 +256,7 @@ Deno.serve(async (req) => {
         error_text: "AI-Guthaben aufgebraucht.",
         duration_ms: Date.now() - t0,
       }).eq("id", scanId);
-      await supabaseAdmin.from("posts").update({ status: "erfassung" }).eq("id", postId);
+      await supabaseAdmin.from("posts").update({ status: revertStatus }).eq("id", postId);
       return json({ error: "AI-Guthaben aufgebraucht. Bitte Credits aufladen.", scan_id: scanId });
     }
     if (!aiRes.ok) {
@@ -293,7 +303,13 @@ Deno.serve(async (req) => {
       duration_ms: Date.now() - t0,
     }).eq("id", scanId);
 
-    await supabaseAdmin.from("posts").update({ status: "scan_done" }).eq("id", postId);
+    {
+      const { error: doneErr } = await supabaseAdmin
+        .from("posts")
+        .update({ status: "scan_done" })
+        .eq("id", postId);
+      if (doneErr) console.error("[interview-scan] status→scan_done failed", doneErr);
+    }
 
     return json({ scan_id: scanId, verdict, score, findings_count: allFindings.length });
   } catch (e) {
@@ -303,7 +319,7 @@ Deno.serve(async (req) => {
       error_text: msg.slice(0, 1000),
       duration_ms: Date.now() - t0,
     }).eq("id", scanId);
-    await supabaseAdmin.from("posts").update({ status: "erfassung" }).eq("id", postId);
+    await supabaseAdmin.from("posts").update({ status: revertStatus }).eq("id", postId);
     return json({ error: msg, scan_id: scanId });
   }
 });
