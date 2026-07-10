@@ -77,14 +77,14 @@ type Module = {
 };
 
 const adminModules: Module[] = [
-  { num: 1, title: "Erfassung", url: "/module/erfassung", icon: ClipboardList, status: "planned" },
-  { num: 2, title: "Vorab-Scan", url: "/module/vorab-scan", icon: ScanSearch, status: "planned" },
+  { num: 1, title: "Erfassung", url: "/module/erfassung", icon: ClipboardList, status: "active" },
+  { num: 2, title: "Vorab-Scan", url: "/module/vorab-scan", icon: ScanSearch, status: "active" },
   { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "planned" },
   { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "planned" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "planned" },
   { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "planned" },
   { num: 7, title: "Interview-Beiträge", url: "/module/interview-beitraege", icon: FileText, status: "active" },
-  { num: 8, title: "News-Plattform", url: "/module/news", icon: Newspaper, status: "planned" },
+  { num: 8, title: "News-Plattform", url: "/module/news", icon: Newspaper, status: "active" },
 ];
 
 const speakerModules: Module[] = [
@@ -105,7 +105,7 @@ const speakerModules: Module[] = [
     title: "Vorab-Scan",
     url: "/module/vorab-scan/eingereicht",
     icon: ScanSearch,
-    status: "in-progress",
+    status: "active",
     items: [
       { title: "Eingereichte Interviews", url: "/module/vorab-scan/eingereicht" },
     ],
