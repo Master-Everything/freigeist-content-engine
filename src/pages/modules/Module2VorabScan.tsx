@@ -14,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ScanSearch, Loader2, RefreshCw, Eye, Play, UserCheck } from "lucide-react";
+import { ScanSearch, Loader2, RefreshCw, Eye, Play, UserCheck, Send } from "lucide-react";
 import { toast } from "sonner";
 
 type SpeakerScanRow = {
