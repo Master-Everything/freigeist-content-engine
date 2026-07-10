@@ -25,6 +25,7 @@ import Module6Aufzeichnung from "./pages/modules/Module6Aufzeichnung";
 import Module8NewsPlattform from "./pages/modules/Module8NewsPlattform";
 import ErfassungDanke from "./pages/modules/erfassung/Danke";
 import InterviewForm from "./pages/modules/interview/InterviewForm";
+import InterviewEdit from "./pages/modules/interview/InterviewEdit";
 import VorabScanEingereicht from "./pages/modules/vorab-scan/Eingereicht";
 import SpeakerModulePlaceholder from "./pages/SpeakerModulePlaceholder";
 import Wissensbasis from "./pages/admin/Wissensbasis";
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/module/erfassung" element={<Module1Erfassung />} />
               <Route path="/module/erfassung/danke" element={<ErfassungDanke />} />
               <Route path="/module/interview/neu" element={<InterviewForm />} />
+              <Route path="/module/interview/edit/:id" element={<InterviewEdit />} />
               <Route path="/module/vorab-scan/eingereicht" element={<VorabScanEingereicht />} />
               <Route path="/speaker/modul/:num" element={<SpeakerModulePlaceholder />} />
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -15,7 +16,7 @@ import {
 import { ScanSearch, Loader2, RefreshCw, Eye, Play } from "lucide-react";
 import { toast } from "sonner";
 
-type ScanRow = {
+type SpeakerScanRow = {
   id: string;
   speaker_id: string;
   status: string;
@@ -29,66 +30,115 @@ type ScanRow = {
   speakers: { first_name: string | null; last_name: string | null; industry: string | null } | null;
 };
 
+type InterviewScanRow = {
+  id: string;
+  post_id: string;
+  status: string;
+  verdict: "green" | "yellow" | "red" | null;
+  score: number | null;
+  summary: string | null;
+  findings: any[];
+  model_used: string | null;
+  error_text: string | null;
+  created_at: string;
+  posts: {
+    id: string;
+    interview_title: string | null;
+    status: string;
+    speakers: { first_name: string | null; last_name: string | null } | null;
+  } | null;
+};
+
 export default function Module2VorabScan() {
-  const [rows, setRows] = useState<ScanRow[]>([]);
+  const [tab, setTab] = useState<"speakers" | "interviews">("speakers");
+  const [speakerRows, setSpeakerRows] = useState<SpeakerScanRow[]>([]);
+  const [interviewRows, setInterviewRows] = useState<InterviewScanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [verdictFilter, setVerdictFilter] = useState<string>("all");
-  const [selected, setSelected] = useState<ScanRow | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [rescanning, setRescanning] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("speaker_scans")
-      .select("*, speakers(first_name, last_name, industry)")
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (error) toast.error("Konnte Scans nicht laden: " + error.message);
-    setRows((data ?? []) as ScanRow[]);
+    const [{ data: sData, error: sErr }, { data: iData, error: iErr }] = await Promise.all([
+      supabase.from("speaker_scans")
+        .select("*, speakers(first_name, last_name, industry)")
+        .order("created_at", { ascending: false }).limit(500),
+      supabase.from("post_scans")
+        .select("*, posts(id, interview_title, status, speakers(first_name, last_name))")
+        .order("created_at", { ascending: false }).limit(500),
+    ]);
+    if (sErr) toast.error("Konnte Speaker-Scans nicht laden: " + sErr.message);
+    if (iErr) toast.error("Konnte Interview-Scans nicht laden: " + iErr.message);
+    setSpeakerRows((sData ?? []) as SpeakerScanRow[]);
+    setInterviewRows((iData ?? []) as InterviewScanRow[]);
     setLoading(false);
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const filtered = useMemo(() => {
+  const filteredSpeakers = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return rows.filter((r) => {
+    return speakerRows.filter((r) => {
       if (verdictFilter !== "all" && r.verdict !== verdictFilter) return false;
       if (!needle) return true;
       const name = `${r.speakers?.first_name ?? ""} ${r.speakers?.last_name ?? ""}`.toLowerCase();
       return name.includes(needle) || (r.speakers?.industry ?? "").toLowerCase().includes(needle);
     });
-  }, [rows, q, verdictFilter]);
+  }, [speakerRows, q, verdictFilter]);
 
-  async function reScan(speakerId: string) {
+  const filteredInterviews = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return interviewRows.filter((r) => {
+      if (verdictFilter !== "all" && r.verdict !== verdictFilter) return false;
+      if (!needle) return true;
+      const title = (r.posts?.interview_title ?? "").toLowerCase();
+      const sp = r.posts?.speakers;
+      const name = `${sp?.first_name ?? ""} ${sp?.last_name ?? ""}`.toLowerCase();
+      return title.includes(needle) || name.includes(needle);
+    });
+  }, [interviewRows, q, verdictFilter]);
+
+  const activeRows = tab === "speakers" ? speakerRows : interviewRows;
+  const counts = useMemo(() => ({
+    total: activeRows.length,
+    red: activeRows.filter((r) => r.verdict === "red").length,
+    yellow: activeRows.filter((r) => r.verdict === "yellow").length,
+    green: activeRows.filter((r) => r.verdict === "green").length,
+  }), [activeRows]);
+
+  async function reScanSpeaker(speakerId: string) {
     setRescanning(speakerId);
     try {
-      const { data, error } = await supabase.functions.invoke("vorab-scan", {
-        body: { speaker_id: speakerId },
-      });
+      const { data, error } = await supabase.functions.invoke("vorab-scan", { body: { speaker_id: speakerId } });
       if (error) throw error;
       if (data?.error) toast.error(data.error);
       else toast.success(`Scan: ${data?.verdict ?? "—"}`);
       await load();
     } catch (e) {
       toast.error("Re-Scan fehlgeschlagen: " + (e as Error).message);
-    } finally {
-      setRescanning(null);
-    }
+    } finally { setRescanning(null); }
   }
 
-  const counts = useMemo(() => {
-    return {
-      total: rows.length,
-      red: rows.filter((r) => r.verdict === "red").length,
-      yellow: rows.filter((r) => r.verdict === "yellow").length,
-      green: rows.filter((r) => r.verdict === "green").length,
-    };
-  }, [rows]);
+  async function reScanInterview(postId: string) {
+    setRescanning(postId);
+    try {
+      const { data, error } = await supabase.functions.invoke("interview-scan", { body: { post_id: postId } });
+      if (error) throw error;
+      if (data?.error) toast.error(data.error);
+      else toast.success(`Scan: ${data?.verdict ?? "—"}`);
+      await load();
+    } catch (e) {
+      toast.error("Re-Scan fehlgeschlagen: " + (e as Error).message);
+    } finally { setRescanning(null); }
+  }
+
+  function openScan(row: any) {
+    setSelected(row);
+    setSheetOpen(true);
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 space-y-6">
@@ -102,7 +152,7 @@ export default function Module2VorabScan() {
             Vorab-Scan · Admin-Übersicht
           </h1>
           <p className="text-muted-foreground mt-2">
-            Alle Profil-Audits über alle Speaker. Manuelle Re-Scans möglich.
+            Alle Audits über alle Speaker-Profile und Interviews. Manuelle Re-Scans möglich.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -118,141 +168,176 @@ export default function Module2VorabScan() {
         <StatCard label="Grün" value={counts.green} tone="green" />
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <CardTitle className="text-lg">Alle Scans</CardTitle>
-            <CardDescription>Sortiert nach Datum, neueste oben.</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Select value={verdictFilter} onValueChange={setVerdictFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Verdict" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="red">Rot</SelectItem>
-                <SelectItem value="yellow">Gelb</SelectItem>
-                <SelectItem value="green">Grün</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Suche Name oder Branche…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className="w-64"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-40">Datum</TableHead>
-                  <TableHead>Speaker</TableHead>
-                  <TableHead className="w-32">Branche</TableHead>
-                  <TableHead className="w-36">Verdict</TableHead>
-                  <TableHead className="w-20">Score</TableHead>
-                  <TableHead className="w-20">Findings</TableHead>
-                  <TableHead className="w-40">Aktion</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-xs text-muted-foreground tabular-nums">
-                      {new Date(r.created_at).toLocaleString("de-DE")}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {r.speakers?.first_name} {r.speakers?.last_name}
-                    </TableCell>
-                    <TableCell className="text-xs capitalize text-muted-foreground">
-                      {r.speakers?.industry ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      {r.status === "error" ? (
-                        <Badge variant="outline" className="text-xs text-destructive border-destructive/40">
-                          Fehler
-                        </Badge>
-                      ) : (
-                        <AmpelBadge verdict={r.verdict} />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs tabular-nums">
-                      {r.score ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-xs tabular-nums">
-                      {r.findings?.length ?? 0}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelected(r);
-                            setSheetOpen(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => reScan(r.speaker_id)}
-                          disabled={rescanning === r.speaker_id}
-                          title="Re-Scan"
-                        >
-                          {rescanning === r.speaker_id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Play className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filtered.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
-                      Keine Scans gefunden.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+        <TabsList>
+          <TabsTrigger value="speakers">Speaker-Profile ({speakerRows.length})</TabsTrigger>
+          <TabsTrigger value="interviews">Interviews ({interviewRows.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="speakers">
+          <Card>
+            <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <CardTitle className="text-lg">Profil-Scans</CardTitle>
+                <CardDescription>Sortiert nach Datum, neueste oben.</CardDescription>
+              </div>
+              <Filters q={q} setQ={setQ} verdictFilter={verdictFilter} setVerdictFilter={setVerdictFilter} placeholder="Suche Name oder Branche…" />
+            </CardHeader>
+            <CardContent>
+              {loading ? <Spinner /> : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-40">Datum</TableHead>
+                      <TableHead>Speaker</TableHead>
+                      <TableHead className="w-32">Branche</TableHead>
+                      <TableHead className="w-36">Verdict</TableHead>
+                      <TableHead className="w-20">Score</TableHead>
+                      <TableHead className="w-20">Findings</TableHead>
+                      <TableHead className="w-40">Aktion</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSpeakers.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="text-xs text-muted-foreground tabular-nums">
+                          {new Date(r.created_at).toLocaleString("de-DE")}
+                        </TableCell>
+                        <TableCell className="text-sm">{r.speakers?.first_name} {r.speakers?.last_name}</TableCell>
+                        <TableCell className="text-xs capitalize text-muted-foreground">{r.speakers?.industry ?? "—"}</TableCell>
+                        <TableCell>
+                          {r.status === "error"
+                            ? <Badge variant="outline" className="text-xs text-destructive border-destructive/40">Fehler</Badge>
+                            : <AmpelBadge verdict={r.verdict} />}
+                        </TableCell>
+                        <TableCell className="text-xs tabular-nums">{r.score ?? "—"}</TableCell>
+                        <TableCell className="text-xs tabular-nums">{r.findings?.length ?? 0}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => openScan(r)}><Eye className="h-4 w-4" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => reScanSpeaker(r.speaker_id)}
+                              disabled={rescanning === r.speaker_id} title="Re-Scan">
+                              {rescanning === r.speaker_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredSpeakers.length === 0 && (
+                      <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Keine Scans gefunden.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="interviews">
+          <Card>
+            <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <CardTitle className="text-lg">Interview-Scans</CardTitle>
+                <CardDescription>Von Speakern zum Scan freigegebene Interviews.</CardDescription>
+              </div>
+              <Filters q={q} setQ={setQ} verdictFilter={verdictFilter} setVerdictFilter={setVerdictFilter} placeholder="Suche Titel oder Speaker…" />
+            </CardHeader>
+            <CardContent>
+              {loading ? <Spinner /> : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-40">Datum</TableHead>
+                      <TableHead>Interview</TableHead>
+                      <TableHead className="w-40">Speaker</TableHead>
+                      <TableHead className="w-36">Verdict</TableHead>
+                      <TableHead className="w-20">Score</TableHead>
+                      <TableHead className="w-20">Findings</TableHead>
+                      <TableHead className="w-40">Aktion</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredInterviews.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="text-xs text-muted-foreground tabular-nums">
+                          {new Date(r.created_at).toLocaleString("de-DE")}
+                        </TableCell>
+                        <TableCell className="text-sm truncate max-w-[280px]">
+                          {r.posts?.interview_title ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {r.posts?.speakers?.first_name} {r.posts?.speakers?.last_name}
+                        </TableCell>
+                        <TableCell>
+                          {r.status === "error"
+                            ? <Badge variant="outline" className="text-xs text-destructive border-destructive/40">Fehler</Badge>
+                            : <AmpelBadge verdict={r.verdict} />}
+                        </TableCell>
+                        <TableCell className="text-xs tabular-nums">{r.score ?? "—"}</TableCell>
+                        <TableCell className="text-xs tabular-nums">{r.findings?.length ?? 0}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => openScan(r)}><Eye className="h-4 w-4" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => reScanInterview(r.post_id)}
+                              disabled={rescanning === r.post_id} title="Re-Scan">
+                              {rescanning === r.post_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredInterviews.length === 0 && (
+                      <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Keine Interview-Scans gefunden.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <ScanDetailSheet scan={selected as any} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   );
 }
 
-function StatCard({
-  label,
-  value,
-  tone,
+function Spinner() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+function Filters({
+  q, setQ, verdictFilter, setVerdictFilter, placeholder,
 }: {
-  label: string;
-  value: number;
-  tone?: "red" | "yellow" | "green";
+  q: string; setQ: (v: string) => void;
+  verdictFilter: string; setVerdictFilter: (v: string) => void;
+  placeholder: string;
 }) {
-  const toneCls =
-    tone === "red"
-      ? "text-destructive"
-      : tone === "yellow"
-      ? "text-amber-600 dark:text-amber-400"
-      : tone === "green"
-      ? "text-emerald-600 dark:text-emerald-400"
-      : "text-foreground";
+  return (
+    <div className="flex gap-2">
+      <Select value={verdictFilter} onValueChange={setVerdictFilter}>
+        <SelectTrigger className="w-40"><SelectValue placeholder="Verdict" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Alle</SelectItem>
+          <SelectItem value="red">Rot</SelectItem>
+          <SelectItem value="yellow">Gelb</SelectItem>
+          <SelectItem value="green">Grün</SelectItem>
+        </SelectContent>
+      </Select>
+      <Input placeholder={placeholder} value={q} onChange={(e) => setQ(e.target.value)} className="w-64" />
+    </div>
+  );
+}
+
+function StatCard({ label, value, tone }: { label: string; value: number; tone?: "red" | "yellow" | "green" }) {
+  const toneCls = tone === "red" ? "text-destructive"
+    : tone === "yellow" ? "text-amber-600 dark:text-amber-400"
+    : tone === "green" ? "text-emerald-600 dark:text-emerald-400"
+    : "text-foreground";
   return (
     <Card>
       <CardContent className="py-4">
