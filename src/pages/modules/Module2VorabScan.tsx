@@ -454,6 +454,68 @@ export default function Module2VorabScan() {
       </Tabs>
 
       <ScanDetailSheet scan={selected as any} open={sheetOpen} onOpenChange={setSheetOpen} />
+
+      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          {confirm?.kind === "reopen" && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Interview erneut bearbeiten?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  „{confirm.title}" wird zur Bearbeitung entsperrt (Status: erfassung). Der letzte Scan bleibt in der Historie.
+                  Nach der Bearbeitung muss das Interview erneut zum Scan freigegeben werden.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    const id = confirm.postId;
+                    setConfirm(null);
+                    reopenForEdit(id);
+                  }}
+                >
+                  Zur Bearbeitung entsperren
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+          {confirm?.kind === "submit" && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Bei der Redaktion einreichen?</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-2">
+                    <p>„{confirm.title}" geht an die Redaktion und ist danach nicht mehr für den Speaker bearbeitbar.</p>
+                    <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span>Interview-Scan</span>
+                        <AmpelBadge verdict={confirm.interviewVerdict} />
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span>Profil-Scan</span>
+                        <AmpelBadge verdict={confirm.speakerVerdict} />
+                      </div>
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    const id = confirm.postId;
+                    setConfirm(null);
+                    submitToRedaktion(id);
+                  }}
+                >
+                  Einreichen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
