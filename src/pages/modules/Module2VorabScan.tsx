@@ -78,6 +78,12 @@ export default function Module2VorabScan() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [rescanning, setRescanning] = useState<string | null>(null);
   const [submittingFor, setSubmittingFor] = useState<string | null>(null);
+  const [reopeningFor, setReopeningFor] = useState<string | null>(null);
+  type Confirm =
+    | { kind: "reopen"; postId: string; title: string }
+    | { kind: "submit"; postId: string; title: string; interviewVerdict: Verdict; speakerVerdict: Verdict; blockedReason: string | null }
+    | null;
+  const [confirm, setConfirm] = useState<Confirm>(null);
 
   async function load() {
     setLoading(true);
