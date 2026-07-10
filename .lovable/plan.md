@@ -1,28 +1,34 @@
-## Admin-Einreichung in Modul 2 ermöglichen
+# Admin-Aktionen in Modul 2 spiegeln (analog Speaker Modul 1)
 
-### Ziel
-Admin soll ein Interview direkt aus Modul 2 (Tab „Interviews") „Bei Redaktion einreichen" können — analog zum Speaker-Button in Modul 1.
+Ziel: In Modul 2 → Tab „Interviews" bekommt der Admin dieselben Aktions-Buttons wie der Speaker in „Meine Interviews", mit denselben Bestätigungs-Dialogen und Regeln.
 
-### Änderung nur in `src/pages/modules/Module2VorabScan.tsx`
+## Änderungen in `src/pages/modules/Module2VorabScan.tsx`
 
-**1. Daten erweitern**
-- Query um Speaker-Verdict ergänzen: `posts(..., speakers(id, speaker_scans(verdict, created_at)))`.
-- Neuestes Speaker-Scan-Verdict pro Zeile ableiten (`latest_speaker_verdict`).
+Neue Spalte „Aktionen" pro Interview-Zeile, kontextabhängig zum `posts.status`:
 
-**2. Neuer Button „Bei Redaktion einreichen"**
-- Sichtbar wenn `post.status === "scan_done"`.
-- Setzt `posts.status = 'redaktion_angefragt'` und lädt neu.
-- Deaktiviert (mit Tooltip-Grund) wenn:
-  - Interview-Verdict = red → „Interview-Scan rot"
-  - Speaker-Verdict = red → „Profil-Scan rot"
-  - Speaker-Verdict fehlt → „Profil noch nicht gescannt"
-- Loading-Spinner via lokalem State.
+- **`erfassung`** → Button **„Zum Scan freigeben"**
+  - Ruft die vorhandene `interview-scan` Edge Function auf (gleicher Trigger wie in `MyPosts.tsx`).
+  - Setzt Status auf `scan_pending` → nach Abschluss `scan_done`.
+  - Loading-State + Toast.
 
-**3. Status-Badges erweitern**
-- `scan_done` → grüner Badge „Scan abgeschlossen" (damit klar ist, wann Button erscheint).
-- Bestehende Badges (`redaktion_angefragt`, `in_bearbeitung`) bleiben.
+- **`scan_pending`** → deaktivierter Button „Scan läuft…" (Spinner).
 
-### Nicht betroffen
-- Speaker-Flow in `MyPosts.tsx` bleibt unverändert.
-- Regeln (rot blockiert, gelb/grün ok) identisch mit Speaker-Seite.
-- „Profil anlegen"-Button bleibt für `redaktion_angefragt`.
+- **`scan_done`** → zwei Buttons nebeneinander:
+  - **„Erneut bearbeiten"** (Unlock) — Bestätigungs-Dialog: setzt Status zurück auf `erfassung`, damit der Post editierbar wird.
+  - **„Bei Redaktion einreichen"** — Bestätigungs-Dialog mit Zusammenfassung der Verdicts (Profil + Interview, Ampelfarben). Deaktiviert wenn Interview-Scan rot, Profil-Scan rot oder Profil-Scan fehlt (Tooltip mit Grund). Setzt Status auf `redaktion_angefragt`.
+
+- **`redaktion_angefragt`** → Button **„Profil anlegen"** (bereits vorhanden, bleibt).
+
+- **`in_bearbeitung`** → Badge „In Bearbeitung" + Link zu Modul 3.
+
+## Wiederverwendung
+
+- Bestätigungs-Dialoge als AlertDialog inline (analog `MyPosts.tsx`), keine neue Komponente nötig.
+- Verdict-Ampel: `AmpelBadge` (bereits importiert).
+- Handler-Logik (Unlock, Submit, Trigger-Scan) 1:1 aus `MyPosts.tsx` übernehmen — nur ohne Speaker-Ownership-Check, da Admin.
+
+## Nicht Teil des Plans
+
+- Keine Datenbank-Änderungen (Status-Werte existieren bereits).
+- Keine Änderungen an Speaker-Ansicht, Modul 3 oder Edge Functions.
+- Zähler/Stats bleiben unverändert.
