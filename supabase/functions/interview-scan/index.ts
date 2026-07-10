@@ -303,7 +303,13 @@ Deno.serve(async (req) => {
       duration_ms: Date.now() - t0,
     }).eq("id", scanId);
 
-    await supabaseAdmin.from("posts").update({ status: "scan_done" }).eq("id", postId);
+    {
+      const { error: doneErr } = await supabaseAdmin
+        .from("posts")
+        .update({ status: "scan_done" })
+        .eq("id", postId);
+      if (doneErr) console.error("[interview-scan] status→scan_done failed", doneErr);
+    }
 
     return json({ scan_id: scanId, verdict, score, findings_count: allFindings.length });
   } catch (e) {
