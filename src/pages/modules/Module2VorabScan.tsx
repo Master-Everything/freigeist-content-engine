@@ -67,6 +67,7 @@ export default function Module2VorabScan() {
   const [selected, setSelected] = useState<any | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [rescanning, setRescanning] = useState<string | null>(null);
+  const [submittingFor, setSubmittingFor] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
