@@ -202,6 +202,23 @@ export default function Module2VorabScan() {
     }
   }
 
+  async function reopenForEdit(postId: string) {
+    setReopeningFor(postId);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ status: "erfassung" })
+        .eq("id", postId);
+      if (error) throw error;
+      toast.success("Zur Bearbeitung entsperrt. Alter Scan bleibt in der Historie.");
+      await load();
+    } catch (e) {
+      toast.error("Fehler: " + (e as Error).message);
+    } finally {
+      setReopeningFor(null);
+    }
+  }
+
   function openScan(row: any) {
     setSelected(row);
     setSheetOpen(true);
