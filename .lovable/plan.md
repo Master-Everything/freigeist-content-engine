@@ -1,14 +1,19 @@
-## Nichts zu bauen — Test-Anleitung
+## Fix: Stat-Zähler in Modul 2 auf Summe beider Tabs umstellen
 
-Die Änderungen aus dem letzten Turn sind bereits im Code. Du warst nur als Speaker eingeloggt (`/speaker/modul/3`), deshalb waren sie nicht sichtbar.
+### Problem
+In `src/pages/modules/Module2VorabScan.tsx` berechnet `counts` aktuell nur `activeRows` (nur den aktiven Tab). Zusätzlich zeigt der Zähler beim Interview-Tab ggf. 1 statt der tatsächlichen Anzahl, weil er nicht die kombinierten Daten nutzt.
 
-### So testest du als Admin
+### Änderung
+Eine einzige Anpassung in `Module2VorabScan.tsx`:
 
-1. Rechts oben ausloggen und mit einem Admin-Account neu einloggen.
-2. `/module/vorab-scan` öffnen → Tab **„Interviews"** → Zeilen mit Status `redaktion_angefragt` sind violett hervorgehoben; Button **„Profil anlegen"** sichtbar.
-3. Klick auf den Button → Post-Status wird auf `in_bearbeitung` gesetzt, Navigation zu `/module/profil?post_id=…&speaker_id=…`.
-4. Modul 3 zeigt dann Interview- und Speaker-Kontext oben an.
+- `activeRows` entfernen.
+- `counts` neu berechnen aus `[...speakerRows, ...interviewRows]`:
+  - `total = speakerRows.length + interviewRows.length`
+  - `red/yellow/green` = Summe beider Arrays nach Verdict
+- Dependency-Array auf `[speakerRows, interviewRows]` setzen.
 
-Falls kein Interview auf `redaktion_angefragt` steht: vorher als Speaker in „Meine Interviews" auf **„Bei Redaktion einreichen"** klicken (Voraussetzung: Interview- und Speaker-Scan-Verdicts nicht rot).
+Labels der 4 StatCards bleiben unverändert („Scans gesamt", „Rot", „Gelb", „Grün") — sie repräsentieren jetzt korrekt die Gesamtsumme über Profile und Interviews, unabhängig vom aktiven Tab.
 
-Sag Bescheid, sobald du getestet hast — oder wenn du magst, gebe ich deinem User zusätzlich die Admin-Rolle, damit du zwischen den Sichten wechseln kannst.
+### Nicht betroffen
+- Tab-Zähler (`Speaker-Profile (n)` / `Interviews (n)`) — bleiben pro Tab.
+- Filter (Suche / Verdict-Dropdown) — wirken weiterhin nur auf die sichtbare Tabelle, nicht auf die Stats.
