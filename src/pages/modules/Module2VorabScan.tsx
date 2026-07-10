@@ -105,13 +105,15 @@ export default function Module2VorabScan() {
     });
   }, [interviewRows, q, verdictFilter]);
 
-  const activeRows = tab === "speakers" ? speakerRows : interviewRows;
-  const counts = useMemo(() => ({
-    total: activeRows.length,
-    red: activeRows.filter((r) => r.verdict === "red").length,
-    yellow: activeRows.filter((r) => r.verdict === "yellow").length,
-    green: activeRows.filter((r) => r.verdict === "green").length,
-  }), [activeRows]);
+  const counts = useMemo(() => {
+    const all = [...speakerRows, ...interviewRows];
+    return {
+      total: all.length,
+      red: all.filter((r) => r.verdict === "red").length,
+      yellow: all.filter((r) => r.verdict === "yellow").length,
+      green: all.filter((r) => r.verdict === "green").length,
+    };
+  }, [speakerRows, interviewRows]);
 
   async function reScanSpeaker(speakerId: string) {
     setRescanning(speakerId);
