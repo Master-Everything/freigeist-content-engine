@@ -247,7 +247,7 @@ Deno.serve(async (req) => {
         error_text: "Rate-Limit erreicht. Bitte später erneut versuchen.",
         duration_ms: Date.now() - t0,
       }).eq("id", scanId);
-      await supabaseAdmin.from("posts").update({ status: "erfassung" }).eq("id", postId);
+      await supabaseAdmin.from("posts").update({ status: revertStatus }).eq("id", postId);
       return json({ error: "AI-Rate-Limit erreicht. Bitte später erneut versuchen.", scan_id: scanId });
     }
     if (aiRes.status === 402) {
