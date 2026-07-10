@@ -83,7 +83,7 @@ const App = () => (
               <Route
                 path="/module/profil"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute>
                     <Module3Profil />
                   </ProtectedRoute>
                 }

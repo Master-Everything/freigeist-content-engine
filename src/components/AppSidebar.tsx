@@ -79,7 +79,7 @@ type Module = {
 const adminModules: Module[] = [
   { num: 1, title: "Erfassung", url: "/module/erfassung", icon: ClipboardList, status: "active" },
   { num: 2, title: "Vorab-Scan", url: "/module/vorab-scan", icon: ScanSearch, status: "active" },
-  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "planned" },
+  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
   { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "planned" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "planned" },
   { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "planned" },
@@ -110,7 +110,7 @@ const speakerModules: Module[] = [
       { title: "Eingereichte Interviews", url: "/module/vorab-scan/eingereicht" },
     ],
   },
-  { num: 3, title: "Profil & Sprechermappe", url: "/speaker/modul/3", icon: UserCheck, status: "planned" },
+  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
   { num: 4, title: "Interview-Leitfaden", url: "/speaker/modul/4", icon: BookOpen, status: "planned" },
   { num: 5, title: "Vorgespräch", url: "/speaker/modul/5", icon: MessagesSquare, status: "planned" },
   { num: 6, title: "Aufzeichnung / Live", url: "/speaker/modul/6", icon: Video, status: "planned" },

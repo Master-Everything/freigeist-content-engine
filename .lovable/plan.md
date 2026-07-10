@@ -1,28 +1,27 @@
-## Admin-Einreichung in Modul 2 ermöglichen
+## Ziel
+Verwirrung auflösen: Modul 3 für Speaker aktivieren (gleiche Ansicht wie Admin), Sidebar-Status auf „Umsetzung" setzen, und Modul 2 Interview-Tab prüfen (Violette Zeile + „Bei Redaktion einreichen" + „Profil anlegen" existieren bereits im Code — vermutlich sichtbar sobald ein Post im richtigen Status ist).
 
-### Ziel
-Admin soll ein Interview direkt aus Modul 2 (Tab „Interviews") „Bei Redaktion einreichen" können — analog zum Speaker-Button in Modul 1.
+## Änderungen
 
-### Änderung nur in `src/pages/modules/Module2VorabScan.tsx`
+### 1. Modul 3 auch für Speaker (Antwort 1a)
+- **`src/App.tsx`**: Route `/speaker/modul/3` entfernen bzw. auf `Module3Profil` mappen (statt `SpeakerModulePlaceholder`). Alternativ: Sidebar-Link für Speaker auf `/module/profil` zeigen, damit die gleiche Komponente greift.
+- **`src/pages/modules/Module3Profil.tsx`**: Rolle-agnostisch — Kontext-Karten (Interview + Speaker) werden angezeigt, sobald `post_id`/`speaker_id` in URL sind. Ohne Params: gleicher generischer Platzhalter wie Admin. Keine Rolle-Prüfung nötig, RLS erlaubt Speaker ihre eigenen Posts/Speakers.
+- **`src/components/AppSidebar.tsx`**: In `speakerModules` Modul 3 auf `/module/profil` umbiegen.
 
-**1. Daten erweitern**
-- Query um Speaker-Verdict ergänzen: `posts(..., speakers(id, speaker_scans(verdict, created_at)))`.
-- Neuestes Speaker-Scan-Verdict pro Zeile ableiten (`latest_speaker_verdict`).
+### 2. Sidebar-Status Modul 3 → „Umsetzung" (Antwort 2)
+- **`src/components/AppSidebar.tsx`**: In `adminModules` und `speakerModules` Modul 3 von `status: "planned"` auf `status: "in-progress"` setzen.
 
-**2. Neuer Button „Bei Redaktion einreichen"**
-- Sichtbar wenn `post.status === "scan_done"`.
-- Setzt `posts.status = 'redaktion_angefragt'` und lädt neu.
-- Deaktiviert (mit Tooltip-Grund) wenn:
-  - Interview-Verdict = red → „Interview-Scan rot"
-  - Speaker-Verdict = red → „Profil-Scan rot"
-  - Speaker-Verdict fehlt → „Profil noch nicht gescannt"
-- Loading-Spinner via lokalem State.
+### 3. Modul 2 · Tab „Interviews" — Verifikation (Antwort 3)
+Die Features sind bereits im Code (`Module2VorabScan.tsx`):
+- Violette Zeile bei `redaktion_angefragt` ✅ (Z. 327)
+- Badge „Redaktion angefragt" ✅ (Z. 345)
+- Button „Bei Redaktion einreichen" bei `scan_done` ✅ (Z. 357–370)
+- Button „Profil anlegen" bei `redaktion_angefragt` ✅ (Z. 371 ff.)
 
-**3. Status-Badges erweitern**
-- `scan_done` → grüner Badge „Scan abgeschlossen" (damit klar ist, wann Button erscheint).
-- Bestehende Badges (`redaktion_angefragt`, `in_bearbeitung`) bleiben.
+Wenn du diese nicht siehst, liegt es am Post-Status. Nach dem Test-Klick auf „Profil anlegen" wurde der Status auf `in_bearbeitung` gesetzt → violette Zeile weg, Button weg (korrekt).
 
-### Nicht betroffen
-- Speaker-Flow in `MyPosts.tsx` bleibt unverändert.
-- Regeln (rot blockiert, gelb/grün ok) identisch mit Speaker-Seite.
-- „Profil anlegen"-Button bleibt für `redaktion_angefragt`.
+**Zur Sichtprüfung**: Ich setze den Test-Post „Duale Intelligenz…" per Migration einmalig zurück auf `redaktion_angefragt`, damit du beide Buttons sofort siehst. (Nur Daten-Reset, kein Code-Change.)
+
+## Nicht betroffen
+- Renderer, Push-to-Hub, Wissensbasis, `MyPosts` bleiben unverändert.
+- Modul 3 UI bleibt der bestehende Kontext-View — kein neuer Funktionsumfang.
