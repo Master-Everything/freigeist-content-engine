@@ -14,20 +14,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ScanSearch, Loader2, RefreshCw, Eye, Play, UserCheck, Send, RotateCcw } from "lucide-react";
+import { ScanSearch, Loader2, RefreshCw, Eye, Play, UserCheck, Send } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-type Verdict = "green" | "yellow" | "red" | null;
 
 type SpeakerScanRow = {
   id: string;
@@ -80,12 +68,6 @@ export default function Module2VorabScan() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [rescanning, setRescanning] = useState<string | null>(null);
   const [submittingFor, setSubmittingFor] = useState<string | null>(null);
-  const [reopeningFor, setReopeningFor] = useState<string | null>(null);
-  type Confirm =
-    | { kind: "reopen"; postId: string; title: string }
-    | { kind: "submit"; postId: string; title: string; interviewVerdict: Verdict; speakerVerdict: Verdict; blockedReason: string | null }
-    | null;
-  const [confirm, setConfirm] = useState<Confirm>(null);
 
   async function load() {
     setLoading(true);
@@ -199,23 +181,6 @@ export default function Module2VorabScan() {
       toast.error("Fehler: " + (e as Error).message);
     } finally {
       setSubmittingFor(null);
-    }
-  }
-
-  async function reopenForEdit(postId: string) {
-    setReopeningFor(postId);
-    try {
-      const { error } = await supabase
-        .from("posts")
-        .update({ status: "erfassung" })
-        .eq("id", postId);
-      if (error) throw error;
-      toast.success("Zur Bearbeitung entsperrt. Alter Scan bleibt in der Historie.");
-      await load();
-    } catch (e) {
-      toast.error("Fehler: " + (e as Error).message);
-    } finally {
-      setReopeningFor(null);
     }
   }
 
@@ -392,28 +357,8 @@ export default function Module2VorabScan() {
                             {canSubmit && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                onClick={() => setConfirm({ kind: "reopen", postId: r.post_id, title: r.posts?.interview_title ?? "—" })}
-                                disabled={reopeningFor === r.post_id}
-                              >
-                                {reopeningFor === r.post_id
-                                  ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                                  : <RotateCcw className="mr-1.5 h-4 w-4" />}
-                                Erneut bearbeiten
-                              </Button>
-                            )}
-                            {canSubmit && (
-                              <Button
-                                size="sm"
                                 variant="default"
-                                onClick={() => setConfirm({
-                                  kind: "submit",
-                                  postId: r.post_id,
-                                  title: r.posts?.interview_title ?? "—",
-                                  interviewVerdict: r.verdict,
-                                  speakerVerdict: latestSpeakerVerdict,
-                                  blockedReason: submitBlockReason,
-                                })}
+                                onClick={() => submitToRedaktion(r.post_id)}
                                 disabled={!!submitBlockReason || submittingFor === r.post_id}
                                 title={submitBlockReason ?? "Bei Redaktion einreichen"}
                               >
@@ -454,68 +399,6 @@ export default function Module2VorabScan() {
       </Tabs>
 
       <ScanDetailSheet scan={selected as any} open={sheetOpen} onOpenChange={setSheetOpen} />
-
-      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
-        <AlertDialogContent>
-          {confirm?.kind === "reopen" && (
-            <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Interview erneut bearbeiten?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  „{confirm.title}" wird zur Bearbeitung entsperrt (Status: erfassung). Der letzte Scan bleibt in der Historie.
-                  Nach der Bearbeitung muss das Interview erneut zum Scan freigegeben werden.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    const id = confirm.postId;
-                    setConfirm(null);
-                    reopenForEdit(id);
-                  }}
-                >
-                  Zur Bearbeitung entsperren
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </>
-          )}
-          {confirm?.kind === "submit" && (
-            <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Bei der Redaktion einreichen?</AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div className="space-y-2">
-                    <p>„{confirm.title}" geht an die Redaktion und ist danach nicht mehr für den Speaker bearbeitbar.</p>
-                    <div className="rounded-md border bg-muted/40 p-3 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span>Interview-Scan</span>
-                        <AmpelBadge verdict={confirm.interviewVerdict} />
-                      </div>
-                      <div className="mt-1.5 flex items-center justify-between">
-                        <span>Profil-Scan</span>
-                        <AmpelBadge verdict={confirm.speakerVerdict} />
-                      </div>
-                    </div>
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    const id = confirm.postId;
-                    setConfirm(null);
-                    submitToRedaktion(id);
-                  }}
-                >
-                  Einreichen
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </>
-          )}
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
