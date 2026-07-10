@@ -238,6 +238,74 @@ export type Database = {
         }
         Relationships: []
       }
+      post_scans: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_text: string | null
+          findings: Json
+          id: string
+          model_used: string | null
+          post_id: string
+          prompt_key_used: string | null
+          prompt_version_used: number | null
+          score: number | null
+          status: string
+          summary: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          triggered_by: string | null
+          updated_at: string
+          verdict: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_text?: string | null
+          findings?: Json
+          id?: string
+          model_used?: string | null
+          post_id: string
+          prompt_key_used?: string | null
+          prompt_version_used?: number | null
+          score?: number | null
+          status?: string
+          summary?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          triggered_by?: string | null
+          updated_at?: string
+          verdict?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_text?: string | null
+          findings?: Json
+          id?: string
+          model_used?: string | null
+          post_id?: string
+          prompt_key_used?: string | null
+          prompt_version_used?: number | null
+          score?: number | null
+          status?: string
+          summary?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          triggered_by?: string | null
+          updated_at?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_scans_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           blocks: Json | null
