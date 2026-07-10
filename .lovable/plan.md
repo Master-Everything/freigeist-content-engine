@@ -1,75 +1,73 @@
 ## Ziel
 
-Speaker können angelegte Interviews bearbeiten (bis zur Scan-Freigabe), sie über einen Button zum Scan freigeben, und die Ergebnisse werden — analog zu den Speaker-Profil-Scans — sowohl im Speaker- als auch im Admin-Bereich von Modul 2 dargestellt.
+1. Bugfix: `posts.status` nach Interview-Scan korrekt auf `scan_done` setzen.
+2. Speaker kann ein gescanntes Interview beliebig oft entsperren, bearbeiten und neu scannen — alte Scans bleiben als Historie erhalten.
+3. Speaker beantragt fertig gescannte Interviews bei der Redaktion.
+4. Admin sieht Antrags-Queue und stößt Modul 3 (Profil Interviewgast) an.
 
-## 1. Datenbank
+## 1. Bugfix Status-Update
 
-**Migration 1 — Interviews:**
-- `posts.status` bekommt zwei neue erlaubte Werte: `scan_pending`, `scan_done` (frontend-seitige Status-Map, kein Enum-Change nötig, `status` ist bereits `text`).
+`supabase/functions/interview-scan/index.ts`: nach erfolgreichem Insert in `post_scans` fehlt/greift das `update posts.status = 'scan_done'` nicht. Prüfen und sicherstellen, dass der Status bei Erfolg auf `scan_done`, bei Fehler auf `erfassung` (mit `error_text` im Scan) zurückfällt. Kein Schema-Change nötig.
 
-**Migration 2 — Neue Tabelle `post_scans`** (analog `speaker_scans`):
-- Felder: `post_id` (FK → posts, cascade), `triggered_by`, `status` (pending/running/done/error), `verdict` (green/yellow/red), `score`, `summary`, `findings jsonb`, `model_used`, `prompt_key_used`, `prompt_version_used`, `tokens_in/out`, `duration_ms`, `error_text`, `created_at`.
-- GRANTs für authenticated + service_role, kein anon.
-- RLS-Policies analog `speaker_scans`:
-  - Speaker sieht Scans seiner eigenen Posts (via `posts.speaker_id → speakers.user_id`).
-  - Admin sieht alles.
-  - Insert/Update nur via Service-Role (Edge Function).
+## 2. Re-Scan-Flow (Speaker)
 
-## 2. Interview bearbeiten (Speaker + Admin)
+**Neuer Button „Erneut bearbeiten"** in `MyPosts.tsx` — sichtbar bei `status ∈ {scan_done}`:
+- Klick → `update posts set status = 'erfassung'` (mit Confirm-Dialog: „Alter Scan bleibt als Historie erhalten").
+- Anschließend sind „Bearbeiten" und „Zum Scan freigeben" wieder aktiv.
+- Alte `post_scans`-Einträge bleiben unverändert; im Detail-Sheet wird immer der neueste angezeigt, mit Hinweis auf ältere Versionen (optional Dropdown „Scan-Historie" — Basisumsetzung: nur neuester Scan sichtbar, alle bleiben in DB).
 
-**Neu:** `src/pages/modules/interview/InterviewEdit.tsx`
-- Re-use von `InterviewForm.tsx`-Komponenten (TextInput/TextAreaInput/Affiliate-Auswahl) — Form wird in wiederverwendbare `InterviewFieldset`-Komponente extrahiert.
-- Lädt Post via `postId` aus URL, vorbefüllt Form.
-- Speichert per `update` statt `insert`.
-- **Editier-Gate:** Speaker darf nur bearbeiten wenn `status === "erfassung"`. Bei `scan_pending`/`scan_done`/späteren Status: Read-only-Anzeige mit Hinweis „Zur Bearbeitung freischalten lassen". Admin darf immer.
+Bei `status = 'redaktion_angefragt'` ist Bearbeiten für den Speaker gesperrt (kein „Erneut bearbeiten"-Button).
 
-**Route:** `/module/interview/:postId/edit` (in `App.tsx` ergänzen).
+## 3. Antrag an Redaktion
 
-**Anbindung:**
-- `MyPosts.tsx` (Speaker): Klick auf Zeile → Edit statt View, solange Status = erfassung. Danach View.
-- Admin-Liste analog (falls existiert; sonst Follow-up).
+**Neuer Status:** `redaktion_angefragt` (nur Frontend-Map, `posts.status` bleibt `text`).
 
-## 3. Scan-Freigabe aus „Meine Interviews"
+**In `MyPosts.tsx`:**
+- Neuer Button **„Bei Redaktion einreichen"** — sichtbar bei `status = 'scan_done'`.
+- Enabled-Bedingung: neuester Interview-Scan-Verdict `!= 'red'` UND neuester Speaker-Scan-Verdict des zugehörigen Speakers `!= 'red'`.
+- Bei disabled: Tooltip „Bitte zuerst rote Findings im Profil- oder Interview-Scan beheben".
+- Klick → Confirm-Dialog → `update posts set status = 'redaktion_angefragt'`.
+- Danach: Status-Badge „Bei Redaktion eingereicht", keine Edit-/Re-Scan-Buttons mehr (Speaker kann nur noch ansehen).
 
-`MyPosts.tsx` erweitern:
-- Neuer Button pro Zeile **„Zum Scan freigeben"** — sichtbar wenn `status === "erfassung"`.
-- Klick: Confirm-Dialog → setzt `status = "scan_pending"`, ruft Edge Function `interview-scan` mit `post_id`.
-- Bei Erfolg: `status = "scan_done"`, Verdict-Ampel wird angezeigt (aus `post_scans`).
-- Status-Badges in `statusConfig` ergänzen: `scan_pending` (amber, „Scan läuft"), `scan_done` (grün/gelb/rot je nach Verdict — via `AmpelBadge`).
+**Datenquelle Enabled-Check:** Kleine Erweiterung des Loads in `MyPosts.tsx` — pro Post neuesten `post_scans.verdict` mitladen (Join oder separater Query), Speaker-Verdict via `speaker_scans` zu `posts.speaker_id`.
 
-## 4. Edge Function `interview-scan`
+## 4. Admin: Antrags-Queue + Modul-3-Trigger
 
-Neu: `supabase/functions/interview-scan/index.ts` — 1:1-Kopie der Logik von `vorab-scan/index.ts`, angepasst:
-- Input: `{ post_id }`.
-- Lädt Post + zugehörigen Speaker (für Kontext).
-- Berechtigungscheck: Admin ODER `speaker.user_id === auth.uid()`.
-- Sammelt Text aus Interview-Feldern: `interview_title`, `interview_topic`, `product`, `product_market_since`, `previous_interviews`, `critical_voices`, plus ausgewählte Affiliate-Produkte via `selected_affiliate_indices`.
-- Verwendet **denselben Prompt `fg_kurator`** und dieselben `knowledge_banned_words` + `knowledge_compliance_rules`.
-- User-Payload an LLM enthält zusätzlich Speaker-Kontext (Name, Branche) damit die Regeln fair angewendet werden.
-- Schreibt Ergebnis in `post_scans`, setzt `posts.status = "scan_done"` bei Erfolg, `error` sonst.
-- Blockiert parallele Scans desselben Posts.
+**In `Module2VorabScan.tsx` (Interview-Tab):**
+- Neue Spalte „Antragsstatus" — zeigt `redaktion_angefragt` als farblich hervorgehobene Zeile.
+- Optional: Filter/Sortierung nach angefragten Posts oben.
 
-## 5. UI — Ergebnisse anzeigen
+**Neue Aktion pro Zeile: „Profil & Sprechermappe anlegen"**
+- Sichtbar wenn `posts.status = 'redaktion_angefragt'`.
+- Klick → `update posts set status = 'in_bearbeitung'` → Navigation zu `/module/profil-interviewgast?post=<id>&speaker=<id>`.
+- Modul 3 (`Module3Profil.tsx`) bleibt vorerst Placeholder, empfängt aber die Query-Params und zeigt sie an („Angefragt für Interview: <title>, Speaker: <name>"). Ausbau später.
 
-**Speaker-Bereich** (`src/pages/modules/vorab-scan/Eingereicht.tsx`):
-- Zweiter Card-Block **„Interview-Scans"** unter dem Profil-Scan-Block.
-- Neuer Hook `usePostScans(userId)` — lädt alle `post_scans` zu Posts des Speakers.
-- Liste analog: Datum, Interview-Titel, AmpelBadge, Score, Klick → `ScanDetailSheet` (bestehende Komponente, akzeptiert bereits generisches Scan-Objekt).
+## 5. Status-Map & Badges
 
-**Admin-Bereich** (`src/pages/modules/Module2VorabScan.tsx`):
-- Neuer Tab-Umschalter oben: „Speaker-Profile" ↔ „Interviews".
-- Für „Interviews": neue Tabelle mit Spalten Datum, Speaker, Interview-Titel, Verdict, Score, Findings, Aktionen (Detail, Re-Scan).
-- Re-Scan ruft `interview-scan` mit `post_id`.
-- Stats-Cards teilen sich denselben Aufbau (total/red/yellow/green).
+`statusConfig` in `MyPosts.tsx` und Admin-Views erweitern:
+- `erfassung` — blau „In Erfassung"
+- `scan_pending` — amber „Scan läuft"
+- `scan_done` — grün „Scan abgeschlossen"
+- `redaktion_angefragt` — violett „Bei Redaktion eingereicht"
+- `in_bearbeitung` — orange „Redaktion in Arbeit"
+- `exported` — grün „Veröffentlicht"
 
-## 6. Kleinigkeiten
+## 6. Berechtigungen
 
-- `useSpeakerScans.ts` als Vorlage für `usePostScans.ts` (fast identisch).
-- `ScanDetailSheet` prüfen — falls speaker-spezifisch, generisch machen (Titel-Prop).
-- `AppSidebar.tsx`: keine Änderung, „Eingereichte Interviews" zeigt jetzt beide Scan-Typen.
+Keine RLS-Änderungen nötig — bestehende Policies auf `posts` decken Update durch Speaker (eigene Posts) und Admin ab. `interview-scan`-Edge-Function nutzt weiterhin Service-Role.
 
 ## Technische Details
 
-- Kein DB-Enum für `status` — Änderung nur in Frontend-Status-Map.
-- Wiederverwendung: `AmpelBadge`, `ScanFindingsList`, `ScanDetailSheet`, `WatchedCounter`.
-- Trigger für `updated_at` auf `post_scans` mit bestehender `update_updated_at_column()`.
+- Kein DB-Migration nötig (nur Frontend-Status + Bugfix in Edge Function).
+- Wiederverwendung: `AmpelBadge`, `ScanDetailSheet`, bestehende Hooks (`usePostScans`, `useSpeakerScans`).
+- Confirm-Dialogs via bestehendem `AlertDialog`-Pattern.
+- Erweiterte Load-Query in `MyPosts.tsx`:
+  ```
+  posts.select("*, post_scans(verdict, created_at), speakers(id, speaker_scans(verdict, created_at))")
+  ```
+  Neueste Verdicts clientseitig ermitteln.
+
+## Nicht-Ziele
+
+- Ausbau Modul 3 (nur Trigger + Kontext-Übergabe).
+- Historien-UI für alte Scans (Daten bleiben in DB, sichtbar wird nur der neueste — Ausbau bei Bedarf später).
