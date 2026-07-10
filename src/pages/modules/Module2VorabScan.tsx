@@ -311,6 +311,18 @@ export default function Module2VorabScan() {
                       const postStatus = r.posts?.status;
                       const isRequested = postStatus === "redaktion_angefragt";
                       const isInBearbeitung = postStatus === "in_bearbeitung";
+                      const isScanDone = postStatus === "scan_done";
+                      const speakerScans = r.posts?.speakers?.speaker_scans ?? [];
+                      const sortedSpeakerScans = [...speakerScans].sort(
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                      );
+                      const latestSpeakerVerdict = sortedSpeakerScans[0]?.verdict ?? null;
+                      const canSubmit = isScanDone;
+                      const submitBlockReason =
+                        r.verdict === "red" ? "Interview-Scan rot"
+                        : latestSpeakerVerdict === "red" ? "Profil-Scan rot"
+                        : latestSpeakerVerdict === null ? "Profil noch nicht gescannt"
+                        : null;
                       return (
                       <TableRow key={r.id} className={isRequested ? "bg-violet-50/60 dark:bg-violet-950/20" : ""}>
                         <TableCell className="text-xs text-muted-foreground tabular-nums">
@@ -332,7 +344,8 @@ export default function Module2VorabScan() {
                         <TableCell>
                           {isRequested && <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200">Redaktion angefragt</Badge>}
                           {isInBearbeitung && <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">In Bearbeitung</Badge>}
-                          {!isRequested && !isInBearbeitung && <span className="text-xs text-muted-foreground">{postStatus}</span>}
+                          {isScanDone && <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">Scan abgeschlossen</Badge>}
+                          {!isRequested && !isInBearbeitung && !isScanDone && <span className="text-xs text-muted-foreground">{postStatus}</span>}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
@@ -341,6 +354,20 @@ export default function Module2VorabScan() {
                               disabled={rescanning === r.post_id} title="Re-Scan">
                               {rescanning === r.post_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                             </Button>
+                            {canSubmit && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => submitToRedaktion(r.post_id)}
+                                disabled={!!submitBlockReason || submittingFor === r.post_id}
+                                title={submitBlockReason ?? "Bei Redaktion einreichen"}
+                              >
+                                {submittingFor === r.post_id
+                                  ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                                  : <Send className="mr-1.5 h-4 w-4" />}
+                                Bei Redaktion einreichen
+                              </Button>
+                            )}
                             {isRequested && (
                               <Button
                                 size="sm"
