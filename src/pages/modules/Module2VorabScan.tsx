@@ -167,6 +167,23 @@ export default function Module2VorabScan() {
     }
   }
 
+  async function submitToRedaktion(postId: string) {
+    setSubmittingFor(postId);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ status: "redaktion_angefragt" })
+        .eq("id", postId);
+      if (error) throw error;
+      toast.success("Interview bei Redaktion eingereicht.");
+      await load();
+    } catch (e) {
+      toast.error("Fehler: " + (e as Error).message);
+    } finally {
+      setSubmittingFor(null);
+    }
+  }
+
   function openScan(row: any) {
     setSelected(row);
     setSheetOpen(true);
