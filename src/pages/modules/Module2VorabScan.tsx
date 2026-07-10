@@ -52,6 +52,8 @@ type InterviewScanRow = {
 };
 
 export default function Module2VorabScan() {
+  const navigate = useNavigate();
+  const [creatingProfilFor, setCreatingProfilFor] = useState<string | null>(null);
   const [tab, setTab] = useState<"speakers" | "interviews">("speakers");
   const [speakerRows, setSpeakerRows] = useState<SpeakerScanRow[]>([]);
   const [interviewRows, setInterviewRows] = useState<InterviewScanRow[]>([]);
