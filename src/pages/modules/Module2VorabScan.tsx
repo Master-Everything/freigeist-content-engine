@@ -392,8 +392,28 @@ export default function Module2VorabScan() {
                             {canSubmit && (
                               <Button
                                 size="sm"
+                                variant="outline"
+                                onClick={() => setConfirm({ kind: "reopen", postId: r.post_id, title: r.posts?.interview_title ?? "—" })}
+                                disabled={reopeningFor === r.post_id}
+                              >
+                                {reopeningFor === r.post_id
+                                  ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                                  : <RotateCcw className="mr-1.5 h-4 w-4" />}
+                                Erneut bearbeiten
+                              </Button>
+                            )}
+                            {canSubmit && (
+                              <Button
+                                size="sm"
                                 variant="default"
-                                onClick={() => submitToRedaktion(r.post_id)}
+                                onClick={() => setConfirm({
+                                  kind: "submit",
+                                  postId: r.post_id,
+                                  title: r.posts?.interview_title ?? "—",
+                                  interviewVerdict: r.verdict,
+                                  speakerVerdict: latestSpeakerVerdict,
+                                  blockedReason: submitBlockReason,
+                                })}
                                 disabled={!!submitBlockReason || submittingFor === r.post_id}
                                 title={submitBlockReason ?? "Bei Redaktion einreichen"}
                               >
