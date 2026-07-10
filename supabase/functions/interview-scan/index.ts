@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
       error_text: msg.slice(0, 1000),
       duration_ms: Date.now() - t0,
     }).eq("id", scanId);
-    await supabaseAdmin.from("posts").update({ status: "erfassung" }).eq("id", postId);
+    await supabaseAdmin.from("posts").update({ status: revertStatus }).eq("id", postId);
     return json({ error: msg, scan_id: scanId });
   }
 });
