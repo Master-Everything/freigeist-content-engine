@@ -75,7 +75,7 @@ export default function Module2VorabScan() {
         .select("*, speakers(first_name, last_name, industry)")
         .order("created_at", { ascending: false }).limit(500),
       supabase.from("post_scans")
-        .select("*, posts(id, interview_title, status, speaker_id, speakers(first_name, last_name))")
+        .select("*, posts(id, interview_title, status, speaker_id, speakers(first_name, last_name, speaker_scans(verdict, created_at)))")
         .order("created_at", { ascending: false }).limit(500),
     ]);
     if (sErr) toast.error("Konnte Speaker-Scans nicht laden: " + sErr.message);
