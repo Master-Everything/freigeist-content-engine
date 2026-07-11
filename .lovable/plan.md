@@ -1,39 +1,18 @@
-## Ziel
-Admin kann ein `kuratiert`es Speaker-Profil selbst freigeben, damit `posts.status = 'leitfaden'` wird und der Post in Modul 4 erscheint — ohne den regulären Speaker-Freigabe-Weg zu ersetzen.
+## Konsistenz-Fix: Admin-Bypass auch für `aenderung`
 
-## Claude-Feedback-Validierung
-- **Audit-Eintrag nur wenn `isAdmin && !isOwner`** → übernommen. Fällt der Admin zufällig auch mit dem Speaker-Owner zusammen, ist es eine reguläre Selbstfreigabe, keine „im Auftrag"-Aktion.
-- `postStatus`-Prop im `ProfilEditor` ist schon da → keine neue Verdrahtung nötig, bestätigt.
-- Button-Sichtbarkeit über den bestehenden `profile.status !== "freigegeben"`-Wrapper reicht → bestätigt.
-- Admin-E-Mail aus `userData.user.email` verfügbar → keine Extra-Query.
-- Kein Regex-Kollisionsrisiko mit `[Speaker-Feedback ...]` → Präfix `[Admin-Freigabe · ...]` bleibt reiner Notizen-Text (ok für Audit).
+Claudes Beobachtung ist korrekt und relevant: Die eben vereinbarte Regel „Admin darf ab Modul 3 alles, was sonst dem Speaker vorbehalten ist" ist in `speaker-profile-decision` für die Aktion `aenderung` noch nicht konsequent umgesetzt. Aktuell greift dort weiterhin `!isOwner` (Speaker-only), was der Regel widerspricht — auch wenn es praktisch harmlos ist, weil kein UI-Pfad einen Admin dorthin führt.
 
-## Umsetzung
+Ich ziehe den Fix mit, damit die Autorisierungsregel überall gleich lautet und ein späterer Admin-Button („Zurück an Entwurf mit Notiz") sofort funktioniert.
 
-### 1. `supabase/functions/speaker-profile-decision/index.ts`
-- Autorisierung für `freigeben` erweitern: `isOwner || isAdmin` (statt nur `isOwner`).
-- Falls **`isAdmin && !isOwner`** ist:
-  - Vor dem `speaker_profiles`-Update `notes` um Audit-Zeile ergänzen:
-    `\n\n[Admin-Freigabe · <de-DE-timestamp> · <admin-email>] Profil im Auftrag freigegeben.`
-  - `profileUpdate.notes` mitschreiben.
-- Sonst (Speaker-Owner) unverändert: nur `status: 'freigegeben'`.
-- Wirkung ansonsten identisch: `posts.status = 'leitfaden'`.
-- `aenderung` bleibt Speaker-only (kein Admin-Pfad).
+### Änderung
 
-### 2. `src/components/profil/ProfilEditor.tsx`
-- `useAuth()` einbinden, `role` lesen.
-- Neue Handler-Funktion `adminFreigeben()`:
-  - Ruft `supabase.functions.invoke("speaker-profile-decision", { body: { profile_id, action: "freigeben" } })`.
-  - Toast: „Profil im Auftrag freigegeben".
-- Neuer Button neben „Speichern" / „Als kuratiert markieren":
-  - **Sichtbar nur wenn** `role === "admin"` UND `profile.status` in (`entwurf`, `kuratiert`).
-  - Label: „Für Speaker freigeben (Shortcut)"
-  - Variante: `outline`, Icon `ShieldCheck`.
-  - `onClick` öffnet `window.confirm("Damit überspringst du die Speaker-Freigabe. Der Post geht direkt zu Modul 4. Fortfahren?")`; bei Bestätigung → `adminFreigeben()`.
+**Datei:** `supabase/functions/speaker-profile-decision/index.ts`
 
-### 3. Kein Migration-/RLS-/Sidebar-Change nötig
-- Nutzt bestehende `leitfaden`-Transition und `posts_status_check`.
-- Function läuft mit Service-Role, RLS bleibt unangetastet.
+- Zeile ~74: `aenderung`-Guard von `!isOwner` auf `!isOwner && !isAdmin` erweitern, sodass Admins die Aktion ebenfalls auslösen dürfen.
+- Kein zusätzlicher Audit-Stempel für diese Aktion (Speaker-Feedback wird ohnehin über den Text-Body erfasst; ein Admin-Fremdauslöser wäre ein anderer Use Case und kann später separat auditiert werden, wenn ein UI-Trigger existiert).
+- Keine Frontend-Änderung — es gibt bewusst noch keinen Admin-Button dafür.
 
-## Nach dem Build
-Für „Duale Intelligenz" öffnest du Modul 3 → Editor → „Für Speaker freigeben (Shortcut)" → bestätigen. Post erscheint in Modul 4, du kannst „Leitfaden generieren".
+### Nicht Teil dieses Fixes
+
+- Kein neuer Admin-Button „Zurück an Entwurf" im `ProfilEditor` — separat aufsetzen, sobald ein konkreter Workflow-Bedarf entsteht.
+- `kuratieren` bleibt Admin-only (per Definition Redaktions-Aktion, keine Speaker-Regel dahinter).
