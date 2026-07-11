@@ -38,6 +38,12 @@ function StatusBadge({ status }: { status: string }) {
         Profil-Entwurf
       </Badge>
     );
+  if (status === "profil_review")
+    return (
+      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+        Zur Freigabe
+      </Badge>
+    );
   return <Badge variant="outline">{status}</Badge>;
 }
 
