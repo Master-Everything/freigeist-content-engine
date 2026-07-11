@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { ProfilEditor, type SpeakerProfile } from "@/components/profil/ProfilEditor";
+import { ProfilReadonly } from "@/components/profil/ProfilReadonly";
 
 type QueueRow = {
   id: string;
