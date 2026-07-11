@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { ProfilEditor, type SpeakerProfile } from "@/components/profil/ProfilEditor";
+import { ProfilReadonly } from "@/components/profil/ProfilReadonly";
 
 type QueueRow = {
   id: string;
@@ -35,6 +36,12 @@ function StatusBadge({ status }: { status: string }) {
     return (
       <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
         Profil-Entwurf
+      </Badge>
+    );
+  if (status === "profil_review")
+    return (
+      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+        Zur Freigabe
       </Badge>
     );
   return <Badge variant="outline">{status}</Badge>;
@@ -85,7 +92,7 @@ export default function Module3Profil() {
     let query = supabase
       .from("posts")
       .select("id, interview_title, status, speaker_id, speaker:speakers(first_name, last_name, user_id)")
-      .in("status", ["redaktion_angefragt", "in_bearbeitung", "profil"])
+      .in("status", ["redaktion_angefragt", "in_bearbeitung", "profil", "profil_review"])
       .order("updated_at", { ascending: false });
 
     const { data, error } = await query;
@@ -184,11 +191,13 @@ export default function Module3Profil() {
             initial={profile}
             onChanged={setProfile}
           />
+        ) : role === "speaker" && profile && post?.status === "profil_review" ? (
+          <ProfilReadonly profile={profile} onChanged={setProfile} />
         ) : (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
               {profile
-                ? "Profil-Entwurf liegt vor. Freigabe-Ansicht folgt."
+                ? "Profil-Entwurf liegt vor. Die Redaktion kuratiert noch."
                 : "Redaktion arbeitet am Profil-Entwurf."}
             </CardContent>
           </Card>
@@ -294,6 +303,17 @@ export default function Module3Profil() {
                               Öffnen <ArrowRight className="ml-1 h-4 w-4" />
                             </Button>
                           )
+                        ) : row.status === "profil_review" ? (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              navigate(
+                                `/module/profil?post_id=${row.id}&speaker_id=${row.speaker_id ?? ""}`
+                              )
+                            }
+                          >
+                            Zur Freigabe <ArrowRight className="ml-1 h-4 w-4" />
+                          </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">
                             {requested ? "Wartet auf Redaktion" : "Redaktion in Arbeit"}
