@@ -340,6 +340,12 @@ export function ProfilEditor({
                 Als kuratiert markieren
               </Button>
             )}
+            {role === "admin" && (profile.status === "entwurf" || profile.status === "kuratiert") && (
+              <Button variant="outline" onClick={adminFreigeben} disabled={saving}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Für Speaker freigeben (Shortcut)
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
