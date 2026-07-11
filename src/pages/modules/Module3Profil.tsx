@@ -4,17 +4,11 @@ import { UserCheck, Loader2, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { ProfilEditor, type SpeakerProfile } from "@/components/profil/ProfilEditor";
 
 type QueueRow = {
   id: string;
@@ -37,6 +31,12 @@ function StatusBadge({ status }: { status: string }) {
         In Bearbeitung
       </Badge>
     );
+  if (status === "profil")
+    return (
+      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+        Profil-Entwurf
+      </Badge>
+    );
   return <Badge variant="outline">{status}</Badge>;
 }
 
@@ -50,6 +50,7 @@ export default function Module3Profil() {
   const [loading, setLoading] = useState(false);
   const [post, setPost] = useState<any | null>(null);
   const [speaker, setSpeaker] = useState<any | null>(null);
+  const [profile, setProfile] = useState<SpeakerProfile | null>(null);
 
   const [queueLoading, setQueueLoading] = useState(false);
   const [queue, setQueue] = useState<QueueRow[]>([]);
@@ -61,16 +62,20 @@ export default function Module3Profil() {
     if (!hasContext) return;
     setLoading(true);
     (async () => {
-      const [p, s] = await Promise.all([
+      const [p, s, pr] = await Promise.all([
         postId
           ? supabase.from("posts").select("id, interview_title, status").eq("id", postId).maybeSingle()
           : Promise.resolve({ data: null } as any),
         speakerId
           ? supabase.from("speakers").select("id, first_name, last_name, industry").eq("id", speakerId).maybeSingle()
           : Promise.resolve({ data: null } as any),
+        postId
+          ? (supabase as any).from("speaker_profiles").select("*").eq("post_id", postId).maybeSingle()
+          : Promise.resolve({ data: null } as any),
       ]);
       setPost((p as any).data);
       setSpeaker((s as any).data);
+      setProfile((pr as any).data ?? null);
       setLoading(false);
     })();
   }, [postId, speakerId, hasContext]);
@@ -80,7 +85,7 @@ export default function Module3Profil() {
     let query = supabase
       .from("posts")
       .select("id, interview_title, status, speaker_id, speaker:speakers(first_name, last_name, user_id)")
-      .in("status", ["redaktion_angefragt", "in_bearbeitung"])
+      .in("status", ["redaktion_angefragt", "in_bearbeitung", "profil"])
       .order("updated_at", { ascending: false });
 
     const { data, error } = await query;
@@ -171,11 +176,22 @@ export default function Module3Profil() {
           </div>
         )}
 
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Profil-Generator und Sprechermappen-Workflow folgen im nächsten Ausbauschritt.
-          </CardContent>
-        </Card>
+        {role === "admin" && postId && speakerId ? (
+          <ProfilEditor
+            postId={postId}
+            speakerId={speakerId}
+            initial={profile}
+            onChanged={setProfile}
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              {profile
+                ? "Profil-Entwurf liegt vor. Freigabe-Ansicht folgt."
+                : "Redaktion arbeitet am Profil-Entwurf."}
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
