@@ -189,6 +189,7 @@ export default function Module3Profil() {
             postId={postId}
             speakerId={speakerId}
             initial={profile}
+            postStatus={post?.status ?? null}
             onChanged={setProfile}
           />
         ) : role === "speaker" && profile && post?.status === "profil_review" ? (
