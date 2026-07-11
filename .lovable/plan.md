@@ -1,30 +1,89 @@
-## Validierung von Claudes Feedback
+## Modul 4 — Interview-Leitfaden
 
-**Punkt 1 — „atomarer Statuswechsel" ist keine echte DB-Transaktion:** Stimmt. `speaker-profile-decision/index.ts` macht zwei sequenzielle `.update()`-Calls (erst `speaker_profiles`, dann `posts`). Bei geringem Traffic (Admin-/Speaker-Klick, kein Bulk) akzeptables Restrisiko. **Kein Handlungsbedarf jetzt** — Notiz für später: bei Bedarf in eine `SECURITY DEFINER` Postgres-Funktion + RPC verschieben.
+Neubau analog Modul 3. Input: freigegebenes `speaker_profile` + Interview-Kontext auf `posts`. Output: strukturierter Leitfaden, den die Redaktion kuratiert und dem Speaker read-only zur Vorbereitung freigibt.
 
-**Punkt 2 — sieht der Admin das Speaker-Feedback im UI?** Teilweise. Aktuell:
-- Function hängt Feedback mit Zeitstempel an `speaker_profiles.notes` an (append, nicht überschreiben) ✅
-- `ProfilEditor.tsx` rendert `profile.notes` in einem generischen „Notizen"-Textarea am Ende des Formulars
-- **Problem:** Nichts signalisiert dem Admin, dass neues Speaker-Feedback vorliegt. Kein Badge, keine Hervorhebung, kein Hinweis oben. Der Admin muss ans Ende des Formulars scrollen und die Notizen mental parsen.
+## Workflow
 
-Claudes Sorge ist berechtigt: die Rückmeldung kann untergehen.
+```text
+posts.status = 'leitfaden'          → Admin sieht Post in Modul-4-Queue
+  → "Leitfaden generieren"          → interview_guides.status = 'entwurf'
+  → Admin kuratiert & finalisiert   → interview_guides.status = 'final'
+                                    → posts.status = 'leitfaden_final'
+  → Speaker sieht Read-only         → nächster Schritt (Modul 5)
+```
 
-## Umsetzung
+Kein Speaker-Feedback-Loop — Leitfaden ist redaktionsintern, Speaker sieht ihn nur zur Vorbereitung.
 
-Kleiner, gezielter UI-Fix in `src/components/profil/ProfilEditor.tsx`:
+## Datenbank (eine Migration)
 
-1. **Speaker-Feedback erkennen** — die Function präfixt jede Rückmeldung mit `[Speaker-Feedback <Zeitstempel>]`. Wir parsen `profile.notes` per Regex auf diese Blöcke und trennen sie von „echten" Redaktionsnotizen.
-2. **Prominenter Feedback-Kasten oben im Editor** (direkt unter dem Header, vor der Kurzbio):
-   - Nur sichtbar, wenn Post-Status `in_bearbeitung` ist UND mindestens ein `[Speaker-Feedback …]`-Block existiert
-   - Amber/Warn-Farbschema (analog zu bestehenden Info-Kästen), Icon `MessageSquareWarning`
-   - Zeigt die Feedback-Blöcke chronologisch (neuester oben), jeweils mit Zeitstempel-Header
-3. **„Notizen"-Feld bleibt** wie bisher — enthält weiterhin den vollständigen `notes`-String (inkl. Feedback-Blöcke), damit nichts verloren geht und Admin sie beim Speichern nicht versehentlich löscht.
+**`interview_guides`** (1:1 zu `posts`):
+- `id`, `post_id` UNIQUE (FK → posts, ON DELETE CASCADE)
+- `speaker_id` (FK → speakers)
+- `speaker_profile_id` **FK → public.speaker_profiles(id) ON DELETE SET NULL**
+- `intro` text — Einstieg/Begrüßung
+- `hauptfragen` jsonb — Array Kernfragen
+- `vertiefungsfragen` jsonb — Array Follow-ups
+- `kritische_fragen` jsonb — aus `critical_voices` + Compliance
+- `abschluss` text
+- `redaktionelle_hinweise` text — nur intern, Speaker sieht das NICHT
+- `notes` text, `status` text ('entwurf' | 'final')
+- `generated_by` uuid **REFERENCES auth.users(id) ON DELETE SET NULL**
+- `model_used`, `prompt_version`, `raw_json` jsonb
+- `created_at`, `updated_at` + Update-Trigger
 
-Der Editor braucht den Post-Status, um den Kasten nur bei `in_bearbeitung` zu zeigen. Den reicht `Module3Profil.tsx` bereits via `postStatus`-Prop an — falls nicht, ergänzen wir eine optionale Prop `postStatus?: string`.
+**Grants (in derselben Migration):**
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.interview_guides TO authenticated;
+GRANT ALL ON public.interview_guides TO service_role;
+```
 
-## Technische Details
+**RLS — vier Einzel-Policies für Admin + eine für Speaker, exakt wie bei `speaker_profiles` (KEIN `FOR ALL`):**
+- `interview_guides_admin_select` — `has_role(auth.uid(),'admin')`
+- `interview_guides_admin_insert` — `has_role(auth.uid(),'admin')`
+- `interview_guides_admin_update` — `has_role(auth.uid(),'admin')`
+- `interview_guides_admin_delete` — `has_role(auth.uid(),'admin')`
+- `interview_guides_speaker_select` — Speaker sieht eigenen Post UND `status = 'final'`
+  (`EXISTS (SELECT 1 FROM speakers WHERE id = interview_guides.speaker_id AND user_id = auth.uid()) AND status = 'final'`)
 
-- Regex: `/\[Speaker-Feedback ([^\]]+)\]\n([\s\S]*?)(?=\n\n\[Speaker-Feedback |$)/g`
-- Keine Backend-Änderungen, keine Migration, keine Function-Anpassung
-- Rein Frontend, ein File: `src/components/profil/ProfilEditor.tsx`
-- Optional: dieselbe Anzeige auch im `MyPosts`-Kontext für Speaker als Erinnerung, was er zuletzt geschickt hat — würde ich **weglassen**, um Scope klein zu halten
+**`posts_status_check`** in derselben Migration erweitern um `'leitfaden_final'`.
+
+**Prompt seeden** (`knowledge_prompts`): `key='leitfaden_generator'`, nutzt Profil + Interview-Kontext + Compliance-Regeln.
+
+## Edge Functions
+
+**`generate-interview-guide`** — analog `generate-speaker-profile`:
+- Admin-only. Lädt Post, Profil, `knowledge_compliance_rules`, `knowledge_banned_words`, aktiven Prompt
+- Ruft Lovable AI (`google/gemini-2.5-flash`) via direktem `fetch` mit `tool_choice`
+- Upsert in `interview_guides` (onConflict `post_id`), Status `entwurf`
+
+**`interview-guide-decision`** — analog `speaker-profile-decision`:
+- `finalisieren` (Admin): `guide.status='final'` + `posts.status='leitfaden_final'`
+- `zurueck_entwurf` (Admin): `guide.status='entwurf'` + `posts.status='leitfaden'`
+
+Reine Inhaltsbearbeitung (Speichern der Felder) läuft direkt per `supabase.from('interview_guides').update()` über die Admin-RLS — keine Function nötig.
+
+## Frontend
+
+**`src/pages/modules/Module4Leitfaden.tsx`** — Neubau (aktuell nur 13-Zeilen-Placeholder), Struktur wie `Module3Profil.tsx`:
+- Admin-Queue: Posts mit Status `leitfaden` oder `leitfaden_final`
+- Speaker-Queue: eigene Posts mit `leitfaden_final` → öffnet Read-only-Ansicht
+- Detail-Ansicht rendert Editor (Admin) oder Reader (Speaker)
+
+**`src/components/leitfaden/LeitfadenEditor.tsx`** (Admin):
+- Felder für alle Sektionen, Fragen als Listen (add/remove/edit/reorder)
+- Buttons: „Generieren" / „Neu generieren", „Speichern", „Als final markieren" / „Zurück zu Entwurf"
+- Amber-Hinweis wenn `leitfaden_final` (Speaker sieht mit — `redaktionelle_hinweise` bleibt trotzdem intern)
+
+**`src/components/leitfaden/LeitfadenReadonly.tsx`** (Speaker):
+- Read-only, ohne `redaktionelle_hinweise`
+- Hinweistext: „Zur Vorbereitung auf dein Vorgespräch/Interview"
+
+**`src/pages/MyPosts.tsx`** — Status-Badge + Link für `leitfaden_final` („Leitfaden ansehen").
+
+**`src/components/AppSidebar.tsx`** — Modul 4 auf `active`.
+
+## Nicht-Ziele
+
+- Kein Speaker-Feedback-Loop auf den Leitfaden.
+- Kein Export/PDF in diesem Schritt.
+- Keine Änderungen an Modul 5+.
