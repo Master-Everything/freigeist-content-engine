@@ -221,6 +221,12 @@ export function ProfilEditor({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        {profile.status === "freigegeben" && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+            Der Speaker hat dieses Profil freigegeben. Zur Sicherheit ist die Bearbeitung gesperrt – bei Bedarf „Neu generieren".
+          </div>
+        )}
+        <fieldset disabled={profile.status === "freigegeben"} className="space-y-5 disabled:opacity-70">
         <div className="space-y-2">
           <Label>Kurzbio</Label>
           <Textarea rows={3} value={profile.kurzbio ?? ""} onChange={(e) => patch({ kurzbio: e.target.value })} />
@@ -258,19 +264,22 @@ export function ProfilEditor({
           <Label>Notizen</Label>
           <Textarea rows={3} value={profile.notes ?? ""} onChange={(e) => patch({ notes: e.target.value })} />
         </div>
+        </fieldset>
 
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Button onClick={() => save()} disabled={saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Speichern
-          </Button>
-          {profile.status !== "kuratiert" && (
-            <Button variant="outline" onClick={() => save("kuratiert")} disabled={saving}>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Als kuratiert markieren
+        {profile.status !== "freigegeben" && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button onClick={() => save()} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Speichern
             </Button>
-          )}
-        </div>
+            {profile.status !== "kuratiert" && (
+              <Button variant="outline" onClick={kuratieren} disabled={saving}>
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Als kuratiert markieren
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
