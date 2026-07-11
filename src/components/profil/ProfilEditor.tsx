@@ -142,7 +142,7 @@ export function ProfilEditor({
       notes: profile.notes,
       ...(nextStatus ? { status: nextStatus } : {}),
     };
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("speaker_profiles")
       .update(update)
       .eq("id", profile.id)
