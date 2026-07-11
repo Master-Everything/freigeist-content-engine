@@ -95,11 +95,13 @@ export function ProfilEditor({
   postId,
   speakerId,
   initial,
+  postStatus,
   onChanged,
 }: {
   postId: string;
   speakerId: string;
   initial: SpeakerProfile | null;
+  postStatus?: string | null;
   onChanged: (p: SpeakerProfile | null) => void;
 }) {
   const [profile, setProfile] = useState<SpeakerProfile | null>(initial);
