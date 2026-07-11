@@ -55,6 +55,94 @@ export type Database = {
           },
         ]
       }
+      interview_guides: {
+        Row: {
+          abschluss: string | null
+          created_at: string
+          generated_at: string | null
+          generated_by: string | null
+          hauptfragen: Json
+          id: string
+          intro: string | null
+          kritische_fragen: Json
+          model_used: string | null
+          notes: string | null
+          post_id: string
+          prompt_version: number | null
+          raw_json: Json | null
+          redaktionelle_hinweise: string | null
+          speaker_id: string | null
+          speaker_profile_id: string | null
+          status: string
+          updated_at: string
+          vertiefungsfragen: Json
+        }
+        Insert: {
+          abschluss?: string | null
+          created_at?: string
+          generated_at?: string | null
+          generated_by?: string | null
+          hauptfragen?: Json
+          id?: string
+          intro?: string | null
+          kritische_fragen?: Json
+          model_used?: string | null
+          notes?: string | null
+          post_id: string
+          prompt_version?: number | null
+          raw_json?: Json | null
+          redaktionelle_hinweise?: string | null
+          speaker_id?: string | null
+          speaker_profile_id?: string | null
+          status?: string
+          updated_at?: string
+          vertiefungsfragen?: Json
+        }
+        Update: {
+          abschluss?: string | null
+          created_at?: string
+          generated_at?: string | null
+          generated_by?: string | null
+          hauptfragen?: Json
+          id?: string
+          intro?: string | null
+          kritische_fragen?: Json
+          model_used?: string | null
+          notes?: string | null
+          post_id?: string
+          prompt_version?: number | null
+          raw_json?: Json | null
+          redaktionelle_hinweise?: string | null
+          speaker_id?: string | null
+          speaker_profile_id?: string | null
+          status?: string
+          updated_at?: string
+          vertiefungsfragen?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_guides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_guides_speaker_id_fkey"
+            columns: ["speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_guides_speaker_profile_id_fkey"
+            columns: ["speaker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "speaker_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_banned_words: {
         Row: {
           active: boolean
