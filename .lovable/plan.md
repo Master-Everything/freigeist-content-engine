@@ -1,85 +1,55 @@
-# Modul 3 – Profil-Generator (AI)  — GEPARKT
+# Modul 3 – Profil-Generator (überarbeitet)
 
-Status: geparkt. Zuerst offene Bugs fixen, danach hier weitermachen.
+## Review von Claudes Einschätzung
 
-Ziel: In der Kontext-Ansicht von Modul 3 (`?post_id=…&speaker_id=…`) erzeugt der Admin per Knopfdruck einen strukturierten **Profil-Entwurf** für den Interviewgast, kann ihn kuratieren und speichern. Basis: Speaker-Stammdaten (Modul 1), Interview-Details (Modul 1), optional Transcript/Sources und die Wissensbasis (Compliance-Regeln, Banned Words, Prompt „profil_generator").
+Alle 6 Punkte am Repo verifiziert und relevant:
 
-## Umfang dieses Schritts
+| # | Punkt | Verifiziert | Übernehmen? |
+|---|---|---|---|
+| 1 | Kein `ai`/`@ai-sdk` im Repo, kein `_shared/`, alle Functions nutzen direkten `fetch` | ✅ | **Ja** — bestehendes Pattern beibehalten |
+| 2 | Tabellen heißen `post_scans`/`speaker_scans` (Plural) | ✅ | **Ja** |
+| 3 | `posts_status_check` erlaubt `profil_entwurf` nicht, aber `profil` ist frei | ✅ | **Ja** — `profil` wiederverwenden |
+| 4 | `gemini-2.5-pro` weicht vom Repo-Default `gemini-2.5-flash` ab | ✅ | **Ja** — bewusst wählen |
+| 5 | `knowledge_prompts.version` ist `integer`, nicht `text` | ✅ | **Ja** — `integer` |
+| 6 | RLS-Konvention ist `has_role(auth.uid(),'admin')` | ✅ | **Ja** |
 
-1. Backend (Tabelle + Edge Function + Prompt-Seed)
-2. UI in `Module3Profil.tsx` (nur Kontext-Ansicht, Listen-Ansicht bleibt unverändert)
-3. Speaker-Freigabe/Sprechermappe **nicht** in diesem Schritt
+## Angepasster Umsetzungsplan
 
-## Daten & Schema
+### 1. Migration
+- Neue Tabelle `speaker_profiles` (1:1 pro Post, `post_id unique`).
+- Felder wie im geparkten Plan, aber:
+  - `prompt_version integer` (statt text)
+  - `status text check (status in ('entwurf','kuratiert','freigegeben'))`
+- GRANT SELECT/INSERT/UPDATE/DELETE auf `authenticated`, ALL auf `service_role`.
+- RLS enable + Policies mit `public.has_role(auth.uid(),'admin')` für Vollzugriff; Speaker SELECT nur wenn Post gehört und `status='freigegeben'`.
+- `updated_at`-Trigger via bestehender `update_updated_at_column()`.
+- Kein CHECK-Constraint-Umbau nötig: Post-Status-Übergang nutzt vorhandenes **`'profil'`** statt neuem `profil_entwurf`.
+- Seed `knowledge_prompts` mit `key='profil_generator'`, `model='google/gemini-2.5-flash'`, `version=1`.
 
-Neue Tabelle `speaker_profiles` (1:1 pro Post):
+### 2. Edge Function `generate-speaker-profile`
+- Style analog zu `vorab-scan/index.ts`: direkter `fetch` an `https://ai.gateway.lovable.dev/v1/chat/completions`, kein AI SDK, keine neue Dependency.
+- Optional (leichte Aufräumaktion): kleinen Helper `_shared/ai-gateway.ts` mit `callLovableGateway({model, messages, tools})` extrahieren und in dieser Function nutzen. Refactor der bestehenden Functions ist **nicht** Teil dieses Schritts.
+- Modell: **`google/gemini-2.5-flash`** (Repo-Default). Kein Pro. Modellname aus `knowledge_prompts.model` lesen (Fallback flash), damit Admin es später in der Wissensbasis-UI wechseln kann.
+- Strukturierte Ausgabe via `tool_calls` mit flachem JSON-Schema (kein `min`/`max`/Enum-Zwänge, Limits nur im Prompt). Selber Fehlerpfad wie im Rest: 200 OK mit `{ error: "..." }`.
+- Verify JWT bleibt Default (an), Function ruft mit Service-Role-Client Wissensbasis + Scans.
+- Upsert in `speaker_profiles` (`onConflict: post_id`), Post-Status auf **`'profil'`** setzen.
+- Anschließend im Frontend: Filter in Modul 3 Liste um `'profil'` erweitern, damit Post nach Generierung dort weiter sichtbar bleibt.
 
-```
-id uuid pk
-post_id uuid fk posts unique
-speaker_id uuid fk speakers
-generated_at timestamptz
-generated_by uuid
-model text                 -- z. B. google/gemini-2.5-pro
-prompt_version text        -- Referenz auf knowledge_prompts.version
-status text                -- 'entwurf' | 'kuratiert' | 'freigegeben'
--- generierte Felder
-kurzbio text
-langbio text
-themen jsonb               -- string[]
-kernaussagen jsonb         -- string[]
-expertise_score int        -- 1-10
-positionierung text
-zielgruppe text
-mediale_hooks jsonb        -- string[]
-kritische_punkte jsonb     -- string[] (aus Vorab-Scan + Wissensbasis)
-raw_json jsonb             -- vollständige LLM-Antwort
-notes text                 -- Admin-Kommentar
-created_at, updated_at
-```
+### 3. Frontend
+- `Module3Profil.tsx` Kontext-Ansicht bekommt Sektion **Profil-Entwurf**:
+  - Kein Datensatz → Button „Profil generieren" (ruft Function).
+  - Vorhanden → editierbare Felder (Kurzbio, Langbio, Positionierung, Zielgruppe, Themen-Chips, Kernaussagen, Mediale Hooks, Kritische Punkte, Expertise-Slider), Meta-Zeile, Buttons „Neu generieren"/„Speichern"/„Als kuratiert markieren".
+- Neue Datei `src/components/profil/ProfilEditor.tsx` hält Formularlogik.
+- Listen-Ansicht Modul 3: `.in('status', ['redaktion_angefragt','in_bearbeitung','profil'])`.
+- Speaker-Freigabe/Sprechermappe/Status `freigegeben` bleiben wie im geparkten Plan explizit **out of scope**.
 
-- RLS: Admin voll; Speaker nur SELECT wenn `posts.speaker_id.user_id = auth.uid()` UND `status = 'freigegeben'`.
-- GRANTs für `authenticated` + `service_role`.
+### 4. Technische Punkte
 
-Neuer Prompt-Eintrag in `knowledge_prompts`: `key = 'profil_generator'` per Seed, damit Admin ihn in `/admin/wissensbasis` editieren kann.
+- Kein neues npm-Package.
+- Keine Änderung an bestehenden Scan-Functions.
+- `posts.status`-CHECK-Constraint unverändert.
+- Types-Regeneration erfolgt automatisch nach Migration.
 
-Post-Status-Übergang: nach Speichern `posts.status = 'profil_entwurf'`.
+## Antwort auf Claudes Schlussfrage
 
-## Edge Function `generate-speaker-profile`
-
-- Input: `{ post_id, speaker_id }`.
-- Lädt: Speaker-Stammdaten, Post (Interview-Felder + Transcript/Source), letzten `post_scan` + `speaker_scan`, Wissensbasis (`compliance_rules`, `banned_words`, Prompt `profil_generator`).
-- Baut System-Prompt aus Wissensbasis + festem Rahmen.
-- Ruft **Lovable AI Gateway** über AI SDK (`@ai-sdk/openai-compatible` via `npm:ai`) mit `google/gemini-2.5-pro`.
-- Strukturierte Ausgabe via `generateText({ output: Output.object({ schema }) })` mit flachem Zod-Schema. Bounds nur im Prompt, nicht im Schema.
-- Fehlerpfad: 200 OK mit `{ error: "..." }` (Projekt-Konvention).
-- Upsert in `speaker_profiles` (unique `post_id`), Post-Status auf `profil_entwurf` setzen.
-
-## UI in `Module3Profil.tsx` (Kontext-Ansicht)
-
-Neue Sektion **Profil-Entwurf** zwischen Kontext-Karten und Platzhalter:
-
-- Kein Eintrag → Card mit Button **„Profil generieren"** (Loader).
-- Eintrag vorhanden → editierbare Felder:
-  - Kurzbio, Langbio, Positionierung, Zielgruppe (Input/Textarea)
-  - Themen, Kernaussagen, Mediale Hooks, Kritische Punkte (Chips + Add/Remove)
-  - Expertise-Score (Slider 1–10)
-  - Meta: Modell, Prompt-Version, generated_at
-  - Buttons: **„Neu generieren"**, **„Speichern"**, **„Als kuratiert markieren"**
-
-Speaker sieht in der Listen-Ansicht weiterhin nur Hinweistext.
-
-## Files
-
-- Migration: neue Tabelle + GRANTs + RLS + Seed `knowledge_prompts.profil_generator`.
-- `supabase/functions/generate-speaker-profile/index.ts` (neu).
-- `supabase/functions/_shared/ai-gateway.ts` (falls noch nicht vorhanden).
-- `src/pages/modules/Module3Profil.tsx`: Kontext-Ansicht erweitern.
-- `src/components/profil/ProfilEditor.tsx` (neu, hält Formularlogik).
-- `src/integrations/supabase/types.ts` regeneriert sich automatisch.
-
-## Offene Punkte (bewusst später)
-
-- Sprechermappe (Layout + PDF/Share-Link).
-- Speaker-Freigabe-Flow und Statusübergang → Modul 4.
-- Sidebar-Badges für Post-Status `profil_entwurf` / `profil_freigegeben`.
+Ja, die sechs Korrekturen sind übernommen. Der ursprüngliche `.lovable/plan.md` wird durch diesen Plan ersetzt, sobald du zustimmst.
