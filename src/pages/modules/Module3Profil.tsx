@@ -92,7 +92,7 @@ export default function Module3Profil() {
     let query = supabase
       .from("posts")
       .select("id, interview_title, status, speaker_id, speaker:speakers(first_name, last_name, user_id)")
-      .in("status", ["redaktion_angefragt", "in_bearbeitung", "profil"])
+      .in("status", ["redaktion_angefragt", "in_bearbeitung", "profil", "profil_review"])
       .order("updated_at", { ascending: false });
 
     const { data, error } = await query;
