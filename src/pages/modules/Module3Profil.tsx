@@ -191,11 +191,13 @@ export default function Module3Profil() {
             initial={profile}
             onChanged={setProfile}
           />
+        ) : role === "speaker" && profile && post?.status === "profil_review" ? (
+          <ProfilReadonly profile={profile} onChanged={setProfile} />
         ) : (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
               {profile
-                ? "Profil-Entwurf liegt vor. Freigabe-Ansicht folgt."
+                ? "Profil-Entwurf liegt vor. Die Redaktion kuratiert noch."
                 : "Redaktion arbeitet am Profil-Entwurf."}
             </CardContent>
           </Card>
