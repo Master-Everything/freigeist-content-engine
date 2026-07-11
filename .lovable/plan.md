@@ -1,59 +1,32 @@
-# Fix: Migration `speaker_profiles` nachziehen
+# Abgleich `.lovable/plan.md` ↔ aktueller Stand
 
-## Befund
-- `SELECT to_regclass('public.speaker_profiles')` → `NULL` → Tabelle fehlt in der DB.
-- Prompt `profil_generator` (v1, active, `google/gemini-2.5-flash`) ist bereits geseedet.
-- Ohne Tabelle crasht der erste Klick auf „Profil generieren".
+Der geparkte Plan „Fix: Migration `speaker_profiles` nachziehen" ist **komplett abgearbeitet**. Nichts davon steht noch offen.
 
-## Claudes Konsistenz-Hinweise — übernommen
-1. **RLS-Policies aufsplitten** statt `FOR ALL` (analog `speaker_scans`): je eine Policy für SELECT / INSERT / UPDATE / DELETE für Admins. Speaker-SELECT bleibt separat.
-2. **`generated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL`** (statt loser uuid) — analog `speaker_scans.triggered_by`.
-3. Arrays bleiben `text[]` (Function liefert String-Arrays, kein Handlungsbedarf).
+## Was der Plan gefordert hat — und wo es liegt
 
-## Migration (eine Datei)
+| Punkt aus plan.md | Status | Beleg |
+|---|---|---|
+| Tabelle `public.speaker_profiles` anlegen (Spalten wie spezifiziert) | erledigt | Migration `20260711080221_…sql` |
+| `GRANT SELECT/INSERT/UPDATE/DELETE … TO authenticated`, `ALL TO service_role`, kein `anon` | erledigt | selbe Migration |
+| RLS aufgesplittet: `admin_select/insert/update/delete` + `speaker_select` (nur eigener Post, Status `freigegeben`) | erledigt | selbe Migration |
+| `generated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL` | erledigt | selbe Migration |
+| `BEFORE UPDATE` Trigger → `update_updated_at_column()` | erledigt | selbe Migration |
+| Seed Prompt `profil_generator` (v1, active, `google/gemini-2.5-flash`) | erledigt (bereits vorher via `supabase--insert`) | wird von Edge Function geladen |
+| Kein Umbau an `posts.status` CHECK — `'profil'` bereits erlaubt | erledigt | Constraint enthält `'profil'` |
+| Edge Function `generate-speaker-profile` (fetch-Pattern, tool_calls, upsert on `post_id`, `posts.status = 'profil'`) | erledigt | `supabase/functions/generate-speaker-profile/index.ts` |
+| `ProfilEditor` + Kontext-Ansicht in Modul 3 | erledigt | `src/components/profil/ProfilEditor.tsx`, `src/pages/modules/Module3Profil.tsx` |
 
-Reihenfolge: CREATE TABLE → GRANT → ENABLE RLS → POLICIES → TRIGGER.
+## Was der Plan als „nicht Teil dieses Fixes" markiert hat
+- Sprechermappe
+- Speaker-Freigabe-Flow (Speaker sieht Profil-Entwurf, kommentiert, gibt frei)
+- Weitere Statusübergänge nach `profil` (Richtung Modul 4)
 
-**Spalten**
-- `id uuid pk default gen_random_uuid()`
-- `post_id uuid NOT NULL UNIQUE REFERENCES posts(id) ON DELETE CASCADE`
-- `speaker_id uuid NOT NULL REFERENCES speakers(id) ON DELETE CASCADE`
-- `status text NOT NULL DEFAULT 'entwurf'` CHECK in (`entwurf`, `kuratiert`, `freigegeben`)
-- Inhalte: `kurzbio text`, `langbio text`, `positionierung text`, `zielgruppe text`, `notes text`
-- Arrays default `'{}'`: `themen text[]`, `kernaussagen text[]`, `mediale_hooks text[]`, `kritische_punkte text[]`
-- `expertise_score int` CHECK 1..10
-- Meta: `model text`, `prompt_version int`, `generated_at timestamptz`, `generated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL`, `raw_json jsonb`
-- `created_at`, `updated_at timestamptz NOT NULL DEFAULT now()`
+Das sind die nächsten sinnvollen Bausteine für Modul 3 — aber nicht Bestandteil des geparkten Fix-Plans.
 
-**Grants**
-```
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.speaker_profiles TO authenticated;
-GRANT ALL ON public.speaker_profiles TO service_role;
-```
-(kein `anon` — alle Policies scopen auf `auth.uid()`)
+## Empfehlung
 
-**RLS-Policies** (Stil analog `speaker_scans`, `has_role(auth.uid(),'admin')`)
-- `speaker_profiles_admin_select` — SELECT, USING admin
-- `speaker_profiles_admin_insert` — INSERT, WITH CHECK admin
-- `speaker_profiles_admin_update` — UPDATE, USING/WITH CHECK admin
-- `speaker_profiles_admin_delete` — DELETE, USING admin
-- `speaker_profiles_speaker_select` — SELECT für eigenen Post nur wenn `status='freigegeben'`:
-  ```
-  EXISTS (
-    SELECT 1 FROM posts p
-    JOIN speakers s ON s.id = p.speaker_id
-    WHERE p.id = speaker_profiles.post_id
-      AND s.user_id = auth.uid()
-  ) AND status = 'freigegeben'
-  ```
+1. **Smoke-Test** aus dem Plan noch durchziehen, falls nicht geschehen: Modul 2 → „Profil anlegen" → Modul 3 → „Profil generieren". Prüfen: Zeile in `speaker_profiles`, `posts.status = 'profil'`, Editor zeigt Entwurf.
+2. `.lovable/plan.md` **löschen oder als erledigt markieren**, damit der geparkte Zustand nicht später verwirrt.
+3. Danach entscheiden, welcher der drei „nicht Teil dieses Fixes"-Punkte als Nächstes drankommt (Vorschlag: Speaker-Freigabe-Flow, weil er den Statusübergang zu Modul 4 vorbereitet).
 
-**Trigger**
-- `BEFORE UPDATE` → bestehende Funktion `public.update_updated_at_column()`.
-
-**Kein CHECK-Umbau an `posts.status`** — `'profil'` ist bereits erlaubt.
-
-## Smoke-Test danach
-Modul 2 → „Profil anlegen" → Modul 3 → „Profil generieren". Erwartet: Zeile in `speaker_profiles`, `posts.status = 'profil'`, Editor zeigt Entwurf. Types werden auto-regeneriert; die `(supabase as any)`-Casts im `ProfilEditor` können bleiben.
-
-## Nicht Teil dieses Fixes
-Sprechermappe, Speaker-Freigabe-Flow, weitere Statusübergänge.
+Sag mir, ob ich (a) den Smoke-Test skripten und die geparkte Datei aufräumen soll, oder (b) direkt in den Speaker-Freigabe-Flow einsteigen soll.
