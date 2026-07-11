@@ -1,32 +1,39 @@
-# Abgleich `.lovable/plan.md` ↔ aktueller Stand
+## Problem
 
-Der geparkte Plan „Fix: Migration `speaker_profiles` nachziehen" ist **komplett abgearbeitet**. Nichts davon steht noch offen.
+Das Profil zum Interview existiert in der DB und wird auch geladen (Network-Request liefert die Zeile), aber `ProfilEditor` zeigt nur den "Profil generieren"-Button.
 
-## Was der Plan gefordert hat — und wo es liegt
+## Ursache
 
-| Punkt aus plan.md | Status | Beleg |
-|---|---|---|
-| Tabelle `public.speaker_profiles` anlegen (Spalten wie spezifiziert) | erledigt | Migration `20260711080221_…sql` |
-| `GRANT SELECT/INSERT/UPDATE/DELETE … TO authenticated`, `ALL TO service_role`, kein `anon` | erledigt | selbe Migration |
-| RLS aufgesplittet: `admin_select/insert/update/delete` + `speaker_select` (nur eigener Post, Status `freigegeben`) | erledigt | selbe Migration |
-| `generated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL` | erledigt | selbe Migration |
-| `BEFORE UPDATE` Trigger → `update_updated_at_column()` | erledigt | selbe Migration |
-| Seed Prompt `profil_generator` (v1, active, `google/gemini-2.5-flash`) | erledigt (bereits vorher via `supabase--insert`) | wird von Edge Function geladen |
-| Kein Umbau an `posts.status` CHECK — `'profil'` bereits erlaubt | erledigt | Constraint enthält `'profil'` |
-| Edge Function `generate-speaker-profile` (fetch-Pattern, tool_calls, upsert on `post_id`, `posts.status = 'profil'`) | erledigt | `supabase/functions/generate-speaker-profile/index.ts` |
-| `ProfilEditor` + Kontext-Ansicht in Modul 3 | erledigt | `src/components/profil/ProfilEditor.tsx`, `src/pages/modules/Module3Profil.tsx` |
+In `src/components/profil/ProfilEditor.tsx`:
 
-## Was der Plan als „nicht Teil dieses Fixes" markiert hat
-- Sprechermappe
-- Speaker-Freigabe-Flow (Speaker sieht Profil-Entwurf, kommentiert, gibt frei)
-- Weitere Statusübergänge nach `profil` (Richtung Modul 4)
+```ts
+const [profile, setProfile] = useState<SpeakerProfile | null>(initial);
+```
 
-Das sind die nächsten sinnvollen Bausteine für Modul 3 — aber nicht Bestandteil des geparkten Fix-Plans.
+`useState(initial)` nimmt den Wert **nur beim ersten Mount**. `Module3Profil` mountet den Editor sofort mit `initial=null` (State ist beim ersten Render noch nicht geladen), fetcht dann die Zeile und aktualisiert seinen eigenen `profile`-State — aber der Editor synchronisiert seinen internen State nie mit dem geänderten `initial`-Prop. Ergebnis: der Editor bleibt bei `null` und rendert den "Profil generieren"-Zweig.
 
-## Empfehlung
+## Fix
 
-1. **Smoke-Test** aus dem Plan noch durchziehen, falls nicht geschehen: Modul 2 → „Profil anlegen" → Modul 3 → „Profil generieren". Prüfen: Zeile in `speaker_profiles`, `posts.status = 'profil'`, Editor zeigt Entwurf.
-2. `.lovable/plan.md` **löschen oder als erledigt markieren**, damit der geparkte Zustand nicht später verwirrt.
-3. Danach entscheiden, welcher der drei „nicht Teil dieses Fixes"-Punkte als Nächstes drankommt (Vorschlag: Speaker-Freigabe-Flow, weil er den Statusübergang zu Modul 4 vorbereitet).
+`src/pages/modules/Module3Profil.tsx`: Editor erst rendern, wenn das initiale Laden fertig ist. Dadurch bekommt der Editor den geladenen Wert direkt als `initial` beim Mount, kein State-Sync nötig.
 
-Sag mir, ob ich (a) den Smoke-Test skripten und die geparkte Datei aufräumen soll, oder (b) direkt in den Speaker-Freigabe-Flow einsteigen soll.
+```ts
+{loading ? (
+  <Spinner …/>
+) : role === "admin" && postId && speakerId ? (
+  <ProfilEditor
+    key={profile?.id ?? "new"}   // Remount, falls sich Post wechselt
+    postId={postId}
+    speakerId={speakerId}
+    initial={profile}
+    onChanged={setProfile}
+  />
+) : ( … )}
+```
+
+Der `key` sichert zusätzlich ab, dass beim Wechsel des Interviews (URL-Param ändert sich) der Editor neu gemountet wird und den neuen Datensatz übernimmt.
+
+## Verifikation
+
+- Seite `/module/profil?post_id=…&speaker_id=…` neu laden → Editor zeigt Kurzbio, Langbio, Themen, Kernaussagen etc. vorbefüllt.
+- Wechsel zu einem Interview ohne Profil → nur "Profil generieren" sichtbar.
+- Nach Klick auf "Neu generieren" oder "Speichern" bleibt der Editor stabil (setProfile aus onChanged).
