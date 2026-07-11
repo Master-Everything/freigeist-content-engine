@@ -91,7 +91,7 @@ const App = () => (
               <Route
                 path="/module/leitfaden"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute>
                     <Module4Leitfaden />
                   </ProtectedRoute>
                 }
