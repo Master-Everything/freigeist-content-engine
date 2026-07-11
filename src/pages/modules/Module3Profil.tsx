@@ -56,16 +56,20 @@ export default function Module3Profil() {
     if (!hasContext) return;
     setLoading(true);
     (async () => {
-      const [p, s] = await Promise.all([
+      const [p, s, pr] = await Promise.all([
         postId
           ? supabase.from("posts").select("id, interview_title, status").eq("id", postId).maybeSingle()
           : Promise.resolve({ data: null } as any),
         speakerId
           ? supabase.from("speakers").select("id, first_name, last_name, industry").eq("id", speakerId).maybeSingle()
           : Promise.resolve({ data: null } as any),
+        postId
+          ? (supabase as any).from("speaker_profiles").select("*").eq("post_id", postId).maybeSingle()
+          : Promise.resolve({ data: null } as any),
       ]);
       setPost((p as any).data);
       setSpeaker((s as any).data);
+      setProfile((pr as any).data ?? null);
       setLoading(false);
     })();
   }, [postId, speakerId, hasContext]);
