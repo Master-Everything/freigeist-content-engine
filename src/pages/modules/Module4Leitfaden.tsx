@@ -203,7 +203,7 @@ export default function Module4Leitfaden() {
           </CardTitle>
           <CardDescription>
             {isAdmin
-              ? "Status: „Leitfaden in Vorbereitung" oder „Leitfaden finalisiert"."
+              ? 'Status: „Leitfaden in Vorbereitung" oder „Leitfaden finalisiert".'
               : "Nur finalisierte Leitfäden werden hier angezeigt."}
           </CardDescription>
         </CardHeader>
