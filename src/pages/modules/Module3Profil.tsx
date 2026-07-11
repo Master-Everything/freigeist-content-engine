@@ -308,7 +308,7 @@ export default function Module3Profil() {
           </CardTitle>
           <CardDescription>
             {isAdmin
-              ? "Status: „Redaktion angefragt" oder „In Bearbeitung""
+              ? `Status: „Redaktion angefragt" oder „In Bearbeitung"`
               : "Sobald dein Profil zur Freigabe bereitsteht, kannst du es hier prüfen."}
           </CardDescription>
         </CardHeader>
