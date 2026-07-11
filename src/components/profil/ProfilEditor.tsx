@@ -126,7 +126,7 @@ export function ProfilEditor({
     toast({ title: "Profil-Entwurf generiert" });
   }
 
-  async function save(nextStatus?: SpeakerProfile["status"]) {
+  async function save() {
     if (!profile) return;
     setSaving(true);
     const update = {
@@ -140,7 +140,6 @@ export function ProfilEditor({
       kritische_punkte: profile.kritische_punkte ?? [],
       expertise_score: profile.expertise_score,
       notes: profile.notes,
-      ...(nextStatus ? { status: nextStatus } : {}),
     };
     const { data, error } = await (supabase as any)
       .from("speaker_profiles")
@@ -155,7 +154,33 @@ export function ProfilEditor({
     }
     setProfile(data as any);
     onChanged(data as any);
-    toast({ title: nextStatus ? "Status aktualisiert" : "Gespeichert" });
+    toast({ title: "Gespeichert" });
+  }
+
+  async function kuratieren() {
+    if (!profile) return;
+    setSaving(true);
+    // Erst Formularfelder sichern
+    await save();
+    const { data, error } = await supabase.functions.invoke("speaker-profile-decision", {
+      body: { profile_id: profile.id, action: "kuratieren" },
+    });
+    setSaving(false);
+    if (error) {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      return;
+    }
+    if ((data as any)?.error) {
+      toast({ title: "Fehler", description: (data as any).error, variant: "destructive" });
+      return;
+    }
+    const next = (data as any).profile as SpeakerProfile;
+    setProfile(next);
+    onChanged(next);
+    toast({
+      title: "Als kuratiert markiert",
+      description: "Der Speaker wurde zur Freigabe eingeladen.",
+    });
   }
 
   if (!profile) {
