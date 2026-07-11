@@ -30,6 +30,7 @@ import {
   ScanSearch,
   RotateCcw,
   Send,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +43,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   profil: { label: "Profil-Entwurf (Redaktion)", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
   profil_review: { label: "Profil zur Freigabe", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
   leitfaden: { label: "Leitfaden in Vorbereitung", className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
+  leitfaden_final: { label: "Leitfaden bereit", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
   draft: { label: "Entwurf", className: "bg-muted text-muted-foreground" },
   in_progress: { label: "In Arbeit", className: "bg-warning text-warning-foreground" },
   exported: { label: "Veröffentlicht", className: "bg-success text-success-foreground" },
@@ -303,6 +305,16 @@ export default function MyPosts() {
                           }
                         >
                           Profil freigeben
+                        </Button>
+                      )}
+                      {post.status === "leitfaden_final" && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => navigate(`/module/leitfaden?post_id=${post.id}`)}
+                        >
+                          <BookOpen className="mr-1.5 h-4 w-4" />
+                          Leitfaden ansehen
                         </Button>
                       )}
                     </div>
