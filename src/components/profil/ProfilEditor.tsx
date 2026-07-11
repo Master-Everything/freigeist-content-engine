@@ -187,6 +187,32 @@ export function ProfilEditor({
     });
   }
 
+  async function adminFreigeben() {
+    if (!profile) return;
+    if (!window.confirm("Damit überspringst du die Speaker-Freigabe. Der Post geht direkt zu Modul 4. Fortfahren?")) return;
+    setSaving(true);
+    await save();
+    const { data, error } = await supabase.functions.invoke("speaker-profile-decision", {
+      body: { profile_id: profile.id, action: "freigeben" },
+    });
+    setSaving(false);
+    if (error) {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      return;
+    }
+    if ((data as any)?.error) {
+      toast({ title: "Fehler", description: (data as any).error, variant: "destructive" });
+      return;
+    }
+    const next = (data as any).profile as SpeakerProfile;
+    setProfile(next);
+    onChanged(next);
+    toast({
+      title: "Profil im Auftrag freigegeben",
+      description: "Der Post ist jetzt in Modul 4 verfügbar.",
+    });
+  }
+
   if (!profile) {
     return (
       <Card>
