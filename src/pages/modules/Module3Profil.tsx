@@ -44,6 +44,7 @@ export default function Module3Profil() {
   const [loading, setLoading] = useState(false);
   const [post, setPost] = useState<any | null>(null);
   const [speaker, setSpeaker] = useState<any | null>(null);
+  const [profile, setProfile] = useState<SpeakerProfile | null>(null);
 
   const [queueLoading, setQueueLoading] = useState(false);
   const [queue, setQueue] = useState<QueueRow[]>([]);
