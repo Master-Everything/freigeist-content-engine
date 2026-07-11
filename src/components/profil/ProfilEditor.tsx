@@ -204,6 +204,22 @@ export function ProfilEditor({
 
   const patch = (u: Partial<SpeakerProfile>) => setProfile({ ...profile, ...u });
 
+  // Parse Speaker-Feedback-Blöcke aus notes (von der Edge Function präfixt).
+  const feedbackBlocks = useMemo(() => {
+    const notes = profile?.notes ?? "";
+    if (!notes) return [] as { timestamp: string; text: string }[];
+    const re = /\[Speaker-Feedback ([^\]]+)\]\n([\s\S]*?)(?=\n\n\[Speaker-Feedback |$)/g;
+    const out: { timestamp: string; text: string }[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(notes)) !== null) {
+      out.push({ timestamp: m[1], text: m[2].trim() });
+    }
+    return out.reverse(); // neuester oben
+  }, [profile?.notes]);
+
+  const showFeedbackCallout =
+    postStatus === "in_bearbeitung" && feedbackBlocks.length > 0 && profile.status !== "freigegeben";
+
   return (
     <Card>
       <CardHeader>
