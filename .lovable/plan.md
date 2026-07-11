@@ -1,70 +1,30 @@
-## Ziel
+## Validierung von Claudes Feedback
 
-Freigabe-Flow für kuratierte Speaker-Profile: Redaktion kuratiert → Speaker prüft & gibt frei → Modul 4 (Leitfaden) öffnet. Statuswechsel laufen atomar über eine Edge Function; RLS auf `speaker_profiles` bleibt eng.
+**Punkt 1 — „atomarer Statuswechsel" ist keine echte DB-Transaktion:** Stimmt. `speaker-profile-decision/index.ts` macht zwei sequenzielle `.update()`-Calls (erst `speaker_profiles`, dann `posts`). Bei geringem Traffic (Admin-/Speaker-Klick, kein Bulk) akzeptables Restrisiko. **Kein Handlungsbedarf jetzt** — Notiz für später: bei Bedarf in eine `SECURITY DEFINER` Postgres-Funktion + RPC verschieben.
 
-## Ablauf aus Nutzersicht
+**Punkt 2 — sieht der Admin das Speaker-Feedback im UI?** Teilweise. Aktuell:
+- Function hängt Feedback mit Zeitstempel an `speaker_profiles.notes` an (append, nicht überschreiben) ✅
+- `ProfilEditor.tsx` rendert `profile.notes` in einem generischen „Notizen"-Textarea am Ende des Formulars
+- **Problem:** Nichts signalisiert dem Admin, dass neues Speaker-Feedback vorliegt. Kein Badge, keine Hervorhebung, kein Hinweis oben. Der Admin muss ans Ende des Formulars scrollen und die Notizen mental parsen.
 
-**Redaktion (Admin) in Modul 3**
-- „Als kuratiert markieren" ruft Edge Function `speaker-profile-decision` mit `action: 'kuratieren'` auf → setzt `speaker_profiles.status='kuratiert'` und `posts.status='profil_review'` atomar.
-- Editor bleibt bis zur Freigabe editierbar.
+Claudes Sorge ist berechtigt: die Rückmeldung kann untergehen.
 
-**Speaker in Modul 3**
-- Posts mit Status `profil_review` erscheinen in „Meine Anfragen" mit neuem blauen Badge „Zur Freigabe".
-- Klick öffnet **Read-only-Profilansicht** (`ProfilReadonly.tsx`) mit allen kuratierten Feldern.
-- Zwei Aktionen (beide via Edge Function):
-  - **„Profil freigeben"** → `action: 'freigeben'` → `speaker_profiles.status='freigegeben'` + `posts.status='leitfaden'`.
-  - **„Änderungen erbitten"** → `action: 'aenderung'` + `feedback`-Text → hängt Feedback an `speaker_profiles.notes` (mit Prefix und Timestamp), setzt `speaker_profiles.status='entwurf'` + `posts.status='in_bearbeitung'`.
+## Umsetzung
 
-**Redaktion nach Freigabe**
-- Editor: Formularfelder disabled, „Neu generieren" bleibt verfügbar, Status-Badge „freigegeben".
-- Post fällt aus der Modul-3-Queue (Status ist jetzt `leitfaden`).
+Kleiner, gezielter UI-Fix in `src/components/profil/ProfilEditor.tsx`:
+
+1. **Speaker-Feedback erkennen** — die Function präfixt jede Rückmeldung mit `[Speaker-Feedback <Zeitstempel>]`. Wir parsen `profile.notes` per Regex auf diese Blöcke und trennen sie von „echten" Redaktionsnotizen.
+2. **Prominenter Feedback-Kasten oben im Editor** (direkt unter dem Header, vor der Kurzbio):
+   - Nur sichtbar, wenn Post-Status `in_bearbeitung` ist UND mindestens ein `[Speaker-Feedback …]`-Block existiert
+   - Amber/Warn-Farbschema (analog zu bestehenden Info-Kästen), Icon `MessageSquareWarning`
+   - Zeigt die Feedback-Blöcke chronologisch (neuester oben), jeweils mit Zeitstempel-Header
+3. **„Notizen"-Feld bleibt** wie bisher — enthält weiterhin den vollständigen `notes`-String (inkl. Feedback-Blöcke), damit nichts verloren geht und Admin sie beim Speichern nicht versehentlich löscht.
+
+Der Editor braucht den Post-Status, um den Kasten nur bei `in_bearbeitung` zu zeigen. Den reicht `Module3Profil.tsx` bereits via `postStatus`-Prop an — falls nicht, ergänzen wir eine optionale Prop `postStatus?: string`.
 
 ## Technische Details
 
-### Migration (Blocker 1)
-
-`posts_status_check` DROP + ADD mit erweiterter Whitelist um `profil_review`. Restliche Werte unverändert.
-
-### Edge Function `speaker-profile-decision` (Blocker 2)
-
-- Payload: `{ profile_id, action: 'kuratieren' | 'freigeben' | 'aenderung', feedback?: string }`.
-- Authentifiziert via JWT (`verify_jwt = false`, Prüfung in Code analog `generate-speaker-profile`).
-- Autorisierung:
-  - `kuratieren` → nur Admin (via `has_role`).
-  - `freigeben` / `aenderung` → nur der Speaker, dessen `speakers.user_id = auth.uid()` mit dem Profil verknüpft ist (Join über `speaker_profiles.speaker_id`).
-- Führt beide Updates mit Service-Role aus (atomar aus Client-Sicht, kein RLS-Blocker).
-- Response: `{ ok: true, profile, post_status }` oder `{ error }` (immer 200, gemäß Projekt-Konvention).
-- Kein RLS-Update auf `speaker_profiles` nötig — Schreibweg läuft komplett über die Function.
-- `supabase/config.toml`: Eintrag `[functions.speaker-profile-decision] verify_jwt = false`.
-
-### Frontend-Änderungen
-
-1. `src/components/profil/ProfilEditor.tsx`
-   - „Als kuratiert markieren" ruft Function statt direktem `.update()`.
-   - Bei `profile.status === 'freigegeben'`: alle Formfelder disabled, „Speichern" ausgeblendet, „Neu generieren" bleibt.
-
-2. `src/components/profil/ProfilReadonly.tsx` (neu)
-   - Zeigt Kurzbio, Langbio, Positionierung, Zielgruppe, Chip-Listen (Themen, Kernaussagen, Hooks, kritische Punkte), Score, Notes.
-   - Buttons „Profil freigeben" (direkt) und „Änderungen erbitten" (öffnet Textarea, dann Submit).
-   - Beide Aktionen → `supabase.functions.invoke('speaker-profile-decision', …)`.
-
-3. `src/pages/modules/Module3Profil.tsx`
-   - Queue-Filter: `['redaktion_angefragt', 'in_bearbeitung', 'profil', 'profil_review']`.
-   - `StatusBadge`: neuer Case `profil_review` → blau, Label „Zur Freigabe".
-   - Kontext-Ansicht für Speaker: bei `post.status === 'profil_review'` und vorhandenem `profile` → `ProfilReadonly` rendern statt Platzhalter-Card.
-
-4. `src/pages/MyPosts.tsx` (falls Interviews dort gelistet werden)
-   - Badge „Zur Freigabe" + Deep-Link auf `/module/profil?post_id=…&speaker_id=…`.
-
-## Nicht Teil dieses Schritts
-
-- Sprechermappe / PDF-Export.
-- Modul-4-Leitfaden-Generator selbst.
-- E-Mail-Benachrichtigung bei Statuswechsel.
-
-## Reihenfolge
-
-1. Migration (`profil_review` in Constraint).
-2. Edge Function `speaker-profile-decision` + `config.toml`.
-3. Frontend (`ProfilEditor`-Anpassung, neue `ProfilReadonly`, `Module3Profil`-Queue, `MyPosts`-Badge).
-4. Smoke-Test: Admin kuratiert → Speaker sieht Read-only → Freigabe → Post-Status `leitfaden`.
+- Regex: `/\[Speaker-Feedback ([^\]]+)\]\n([\s\S]*?)(?=\n\n\[Speaker-Feedback |$)/g`
+- Keine Backend-Änderungen, keine Migration, keine Function-Anpassung
+- Rein Frontend, ein File: `src/components/profil/ProfilEditor.tsx`
+- Optional: dieselbe Anzeige auch im `MyPosts`-Kontext für Speaker als Erinnerung, was er zuletzt geschickt hat — würde ich **weglassen**, um Scope klein zu halten

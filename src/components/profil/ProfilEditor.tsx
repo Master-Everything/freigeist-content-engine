@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Loader2, Plus, X, Sparkles, Save, CheckCircle2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2, Plus, X, Sparkles, Save, CheckCircle2, MessageSquareWarning } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,11 +95,13 @@ export function ProfilEditor({
   postId,
   speakerId,
   initial,
+  postStatus,
   onChanged,
 }: {
   postId: string;
   speakerId: string;
   initial: SpeakerProfile | null;
+  postStatus?: string | null;
   onChanged: (p: SpeakerProfile | null) => void;
 }) {
   const [profile, setProfile] = useState<SpeakerProfile | null>(initial);
@@ -202,6 +204,22 @@ export function ProfilEditor({
 
   const patch = (u: Partial<SpeakerProfile>) => setProfile({ ...profile, ...u });
 
+  // Parse Speaker-Feedback-Blöcke aus notes (von der Edge Function präfixt).
+  const feedbackBlocks = useMemo(() => {
+    const notes = profile?.notes ?? "";
+    if (!notes) return [] as { timestamp: string; text: string }[];
+    const re = /\[Speaker-Feedback ([^\]]+)\]\n([\s\S]*?)(?=\n\n\[Speaker-Feedback |$)/g;
+    const out: { timestamp: string; text: string }[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(notes)) !== null) {
+      out.push({ timestamp: m[1], text: m[2].trim() });
+    }
+    return out.reverse(); // neuester oben
+  }, [profile?.notes]);
+
+  const showFeedbackCallout =
+    postStatus === "in_bearbeitung" && feedbackBlocks.length > 0 && profile.status !== "freigegeben";
+
   return (
     <Card>
       <CardHeader>
@@ -221,6 +239,22 @@ export function ProfilEditor({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        {showFeedbackCallout && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+            <div className="flex items-center gap-2 font-medium">
+              <MessageSquareWarning className="h-4 w-4" />
+              Änderungswunsch vom Speaker
+            </div>
+            <div className="mt-2 space-y-3">
+              {feedbackBlocks.map((b, i) => (
+                <div key={i} className="rounded border border-amber-200 bg-white/60 p-2 dark:border-amber-900 dark:bg-black/20">
+                  <div className="text-xs font-mono text-amber-800 dark:text-amber-300">{b.timestamp}</div>
+                  <div className="mt-1 whitespace-pre-wrap">{b.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {profile.status === "freigegeben" && (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
             Der Speaker hat dieses Profil freigegeben. Zur Sicherheit ist die Bearbeitung gesperrt – bei Bedarf „Neu generieren".
