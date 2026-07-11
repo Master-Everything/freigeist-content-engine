@@ -239,6 +239,22 @@ export function ProfilEditor({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        {showFeedbackCallout && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+            <div className="flex items-center gap-2 font-medium">
+              <MessageSquareWarning className="h-4 w-4" />
+              Änderungswunsch vom Speaker
+            </div>
+            <div className="mt-2 space-y-3">
+              {feedbackBlocks.map((b, i) => (
+                <div key={i} className="rounded border border-amber-200 bg-white/60 p-2 dark:border-amber-900 dark:bg-black/20">
+                  <div className="text-xs font-mono text-amber-800 dark:text-amber-300">{b.timestamp}</div>
+                  <div className="mt-1 whitespace-pre-wrap">{b.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {profile.status === "freigegeben" && (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
             Der Speaker hat dieses Profil freigegeben. Zur Sicherheit ist die Bearbeitung gesperrt – bei Bedarf „Neu generieren".
