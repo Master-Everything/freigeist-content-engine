@@ -108,6 +108,7 @@ export function ProfilEditor({
   const [profile, setProfile] = useState<SpeakerProfile | null>(initial);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { role } = useAuth();
 
   async function generate() {
     setGenerating(true);
