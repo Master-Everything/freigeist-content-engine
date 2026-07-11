@@ -303,6 +303,17 @@ export default function Module3Profil() {
                               Öffnen <ArrowRight className="ml-1 h-4 w-4" />
                             </Button>
                           )
+                        ) : row.status === "profil_review" ? (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              navigate(
+                                `/module/profil?post_id=${row.id}&speaker_id=${row.speaker_id ?? ""}`
+                              )
+                            }
+                          >
+                            Zur Freigabe <ArrowRight className="ml-1 h-4 w-4" />
+                          </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">
                             {requested ? "Wartet auf Redaktion" : "Redaktion in Arbeit"}
