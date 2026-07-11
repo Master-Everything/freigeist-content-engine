@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { UserCheck, Loader2, ArrowRight } from "lucide-react";
+import { UserCheck, Loader2, ArrowRight, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,21 +19,29 @@ type QueueRow = {
   speaker: { first_name: string | null; last_name: string | null } | null;
 };
 
-function StatusBadge({ status }: { status: string }) {
+type Role = "admin" | "speaker" | null | undefined;
+
+function StatusBadge({ status, role }: { status: string; role: Role }) {
+  const isSpeaker = role === "speaker";
+
   if (status === "redaktion_angefragt")
     return (
       <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200">
-        Redaktion angefragt
+        {isSpeaker ? "Angefragt" : "Redaktion angefragt"}
       </Badge>
     );
   if (status === "in_bearbeitung")
     return (
       <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-        In Bearbeitung
+        {isSpeaker ? "Redaktion arbeitet" : "In Bearbeitung"}
       </Badge>
     );
   if (status === "profil")
-    return (
+    return isSpeaker ? (
+      <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+        Redaktion arbeitet
+      </Badge>
+    ) : (
       <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
         Profil-Entwurf
       </Badge>
@@ -45,6 +53,44 @@ function StatusBadge({ status }: { status: string }) {
       </Badge>
     );
   return <Badge variant="outline">{status}</Badge>;
+}
+
+function headerBadgeFor(status: string | null | undefined, role: Role) {
+  const isSpeaker = role === "speaker";
+  switch (status) {
+    case "redaktion_angefragt":
+      return {
+        label: isSpeaker ? "Angefragt" : "Redaktion angefragt",
+        className:
+          "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+      };
+    case "in_bearbeitung":
+      return {
+        label: isSpeaker ? "Redaktion arbeitet" : "In Bearbeitung",
+        className:
+          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+      };
+    case "profil":
+      return isSpeaker
+        ? {
+            label: "Redaktion arbeitet",
+            className:
+              "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+          }
+        : {
+            label: "Profil-Entwurf",
+            className:
+              "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+          };
+    case "profil_review":
+      return {
+        label: "Zur Freigabe",
+        className:
+          "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      };
+    default:
+      return { label: status ?? "—", className: "" };
+  }
 }
 
 export default function Module3Profil() {
@@ -64,6 +110,8 @@ export default function Module3Profil() {
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
 
   const hasContext = !!(postId || speakerId);
+  const isSpeaker = role === "speaker";
+  const isAdmin = role === "admin";
 
   useEffect(() => {
     if (!hasContext) return;
@@ -133,6 +181,10 @@ export default function Module3Profil() {
 
   // Kontext-Ansicht
   if (hasContext) {
+    const badge = headerBadgeFor(post?.status, role as Role);
+    // Flicker-frei: nur wenn Ladevorgang durch UND eine post_id angefragt war UND kein Post zurückkam
+    const postMissing = !loading && !!postId && post === null;
+
     return (
       <div className="mx-auto max-w-4xl px-6 py-10 space-y-6">
         <div className="flex items-start gap-4">
@@ -146,69 +198,92 @@ export default function Module3Profil() {
               Vorbereitung von Profil und Sprechermappe für dieses Interview.
             </p>
           </div>
-          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-            Redaktion in Arbeit
-          </Badge>
+          {!postMissing && post?.status && (
+            <Badge className={badge.className}>{badge.label}</Badge>
+          )}
         </div>
 
-        {loading ? (
+        {postMissing ? (
+          <Card>
+            <CardContent className="py-12 flex flex-col items-center gap-4 text-center">
+              <AlertCircle className="h-8 w-8 text-muted-foreground" />
+              <div className="max-w-md text-sm text-muted-foreground">
+                {isSpeaker
+                  ? "Dieses Interview gehört nicht zu deinem Account."
+                  : "Dieses Interview konnte nicht geladen werden. Möglicherweise wurde es gelöscht oder der Link ist ungültig."}
+              </div>
+              <Button variant="outline" onClick={() => navigate("/module/profil")}>
+                Zurück zur Übersicht
+              </Button>
+            </CardContent>
+          </Card>
+        ) : loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Interview</CardTitle>
-                <CardDescription>Aus Modul 1</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                <div className="font-medium">{post?.interview_title ?? "—"}</div>
-                <div className="text-xs text-muted-foreground font-mono">{postId}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Speaker</CardTitle>
-                <CardDescription>Verknüpftes Profil</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                <div className="font-medium">
-                  {speaker?.first_name} {speaker?.last_name}
-                </div>
-                <div className="text-xs text-muted-foreground">{speaker?.industry ?? "—"}</div>
-                <div className="text-xs text-muted-foreground font-mono">{speakerId}</div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          <>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Interview</CardTitle>
+                  {!isSpeaker && <CardDescription>Aus Modul 1</CardDescription>}
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm">
+                  <div className="font-medium">{post?.interview_title ?? "—"}</div>
+                  {!isSpeaker && (
+                    <div className="text-xs text-muted-foreground font-mono">{postId}</div>
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Speaker</CardTitle>
+                  {!isSpeaker && <CardDescription>Verknüpftes Profil</CardDescription>}
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm">
+                  <div className="font-medium">
+                    {speaker?.first_name} {speaker?.last_name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{speaker?.industry ?? "—"}</div>
+                  {!isSpeaker && (
+                    <div className="text-xs text-muted-foreground font-mono">{speakerId}</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-        {loading ? null : role === "admin" && postId && speakerId ? (
-          <ProfilEditor
-            key={profile?.id ?? "new"}
-            postId={postId}
-            speakerId={speakerId}
-            initial={profile}
-            postStatus={post?.status ?? null}
-            onChanged={setProfile}
-          />
-        ) : role === "speaker" && profile && post?.status === "profil_review" ? (
-          <ProfilReadonly profile={profile} onChanged={setProfile} />
-        ) : (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              {profile
-                ? "Profil-Entwurf liegt vor. Die Redaktion kuratiert noch."
-                : "Redaktion arbeitet am Profil-Entwurf."}
-            </CardContent>
-          </Card>
+            {isAdmin && postId && speakerId ? (
+              <ProfilEditor
+                key={profile?.id ?? "new"}
+                postId={postId}
+                speakerId={speakerId}
+                initial={profile}
+                postStatus={post?.status ?? null}
+                onChanged={setProfile}
+              />
+            ) : isSpeaker && profile && post?.status === "profil_review" ? (
+              <ProfilReadonly profile={profile} onChanged={setProfile} />
+            ) : (
+              <Card>
+                <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                  {isSpeaker
+                    ? profile
+                      ? "Die Redaktion kuratiert dein Profil. Du bekommst es zur Freigabe, sobald es soweit ist."
+                      : "Die Redaktion bereitet dein Profil vor."
+                    : profile
+                      ? "Profil-Entwurf liegt vor. Die Redaktion kuratiert noch."
+                      : "Redaktion arbeitet am Profil-Entwurf."}
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </div>
     );
   }
 
   // Listen-Ansicht
-  const isAdmin = role === "admin";
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 space-y-6">
       <div className="flex items-start gap-4">
@@ -229,10 +304,12 @@ export default function Module3Profil() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {isAdmin ? "Redaktionsanfragen" : "Meine Anfragen"}
+            {isAdmin ? "Redaktionsanfragen" : "Meine Interviews in Vorbereitung"}
           </CardTitle>
           <CardDescription>
-            Status: „Redaktion angefragt" oder „In Bearbeitung"
+            {isAdmin
+              ? "Status: „Redaktion angefragt" oder „In Bearbeitung""
+              : "Sobald dein Profil zur Freigabe bereitsteht, kannst du es hier prüfen."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -275,7 +352,7 @@ export default function Module3Profil() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <StatusBadge status={row.status} />
+                        <StatusBadge status={row.status} role={role as Role} />
                       </TableCell>
                       <TableCell className="text-right">
                         {isAdmin ? (
@@ -317,7 +394,7 @@ export default function Module3Profil() {
                           </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">
-                            {requested ? "Wartet auf Redaktion" : "Redaktion in Arbeit"}
+                            {requested ? "Wartet auf Redaktion" : "Redaktion arbeitet"}
                           </span>
                         )}
                       </TableCell>
