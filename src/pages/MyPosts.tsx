@@ -292,6 +292,19 @@ export default function MyPosts() {
                           )}
                         </Tooltip>
                       )}
+                      {post.status === "profil_review" && post.speaker_id && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() =>
+                            navigate(
+                              `/module/profil?post_id=${post.id}&speaker_id=${post.speaker_id}`
+                            )
+                          }
+                        >
+                          Profil freigeben
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
