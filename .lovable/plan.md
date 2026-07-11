@@ -1,18 +1,73 @@
-## Konsistenz-Fix: Admin-Bypass auch für `aenderung`
+# Modul 3 — Speaker-UI Angleichung (final)
 
-Claudes Beobachtung ist korrekt und relevant: Die eben vereinbarte Regel „Admin darf ab Modul 3 alles, was sonst dem Speaker vorbehalten ist" ist in `speaker-profile-decision` für die Aktion `aenderung` noch nicht konsequent umgesetzt. Aktuell greift dort weiterhin `!isOwner` (Speaker-only), was der Regel widerspricht — auch wenn es praktisch harmlos ist, weil kein UI-Pfad einen Admin dorthin führt.
+Alle Änderungen ausschließlich in `src/pages/modules/Module3Profil.tsx`. Keine Backend-/RLS-/Edge-Function-Änderungen.
 
-Ich ziehe den Fix mit, damit die Autorisierungsregel überall gleich lautet und ein späterer Admin-Button („Zurück an Entwurf mit Notiz") sofort funktioniert.
+## 1. Speaker-freundliche Status-Labels
 
-### Änderung
+`StatusBadge` bekommt eine `role`-Variante. Für Speaker:
 
-**Datei:** `supabase/functions/speaker-profile-decision/index.ts`
+| Interner Status        | Speaker-Label            | Farbe   |
+|------------------------|--------------------------|---------|
+| `redaktion_angefragt`  | „Angefragt"              | violett |
+| `in_bearbeitung`       | „Redaktion arbeitet"     | orange  |
+| `profil`               | „Redaktion arbeitet"     | orange  |
+| `profil_review`        | „Zur Freigabe"           | blau    |
 
-- Zeile ~74: `aenderung`-Guard von `!isOwner` auf `!isOwner && !isAdmin` erweitern, sodass Admins die Aktion ebenfalls auslösen dürfen.
-- Kein zusätzlicher Audit-Stempel für diese Aktion (Speaker-Feedback wird ohnehin über den Text-Body erfasst; ein Admin-Fremdauslöser wäre ein anderer Use Case und kann später separat auditiert werden, wenn ein UI-Trigger existiert).
-- Keine Frontend-Änderung — es gibt bewusst noch keinen Admin-Button dafür.
+Admin behält die aktuellen internen Labels (inkl. Smaragd „Profil-Entwurf" bei `profil`). Bewusste Divergenz — gleicher Status, zwei Farben je nach Rolle.
 
-### Nicht Teil dieses Fixes
+## 2. Listen-Header (nur Wortlaut)
 
-- Kein neuer Admin-Button „Zurück an Entwurf" im `ProfilEditor` — separat aufsetzen, sobald ein konkreter Workflow-Bedarf entsteht.
-- `kuratieren` bleibt Admin-only (per Definition Redaktions-Aktion, keine Speaker-Regel dahinter).
+Klick-/Aktions-Logik bleibt unverändert. Nur Textänderungen:
+
+- Speaker Card-Titel: „Meine Anfragen" → **„Meine Interviews in Vorbereitung"**
+- Speaker Card-Description: statt „Status: …" → **„Sobald dein Profil zur Freigabe bereitsteht, kannst du es hier prüfen."**
+- Speaker Muted-Fallback (Zeile 320): „Redaktion in Arbeit" → **„Redaktion arbeitet"**
+- Admin-Titel/Description bleiben.
+
+## 3. Kontext-Ansicht: vereinfachte Cards für Speaker
+
+Zwei Karten „Interview" / „Speaker" bleiben, aber für `role === 'speaker'`:
+- `post_id` / `speaker_id` (monospace-Debug-Zeilen) ausblenden
+- CardDescriptions („Aus Modul 1" / „Verknüpftes Profil") ausblenden
+
+## 4. Header-Badge (Kontext-Ansicht) — für beide Rollen dynamisch
+
+Aktuell hart codiert auf „Redaktion in Arbeit" (Zeile 149–151), unabhängig vom Post-Status. Wird ersetzt durch eine status-abhängige, rollen-differenzierte Ableitung:
+
+- `redaktion_angefragt` → „Redaktion angefragt" (Admin) / „Angefragt" (Speaker)
+- `in_bearbeitung` → „In Bearbeitung" (Admin) / „Redaktion arbeitet" (Speaker)
+- `profil` → „Profil-Entwurf" (Admin) / „Redaktion arbeitet" (Speaker)
+- `profil_review` → „Zur Freigabe" (beide)
+- Fallback: Rohstatus
+
+Behebt gleichzeitig den bestehenden Anzeigefehler in der Admin-Ansicht.
+
+## 5. Platzhalter-Text unterhalb der Cards (Speaker, kein `profil_review`)
+
+Statt „Profil-Entwurf liegt vor. …" / „Redaktion arbeitet am Profil-Entwurf.":
+- Wenn `profile` existiert: „Die Redaktion kuratiert dein Profil. Du bekommst es zur Freigabe, sobald es soweit ist."
+- Wenn kein `profile`: „Die Redaktion bereitet dein Profil vor."
+
+## 6. Zugriffs-verweigert / nicht gefunden — flicker-frei
+
+RLS liefert bei fremdem `post_id` `null` zurück und läuft aktuell in den missverständlichen „Redaktion arbeitet…"-Fallback.
+
+**Race-Condition-Guard:** Header rendert oberhalb des Loading-Blocks, `post` startet mit `null`. Prüfung MUSS lauten:
+
+```
+!loading && postId && post === null
+```
+
+Niemals nur `post === null`, sonst Flicker bei jedem Aufruf. Zusätzliches `postId`-Guard schützt den Fall, dass nur `speaker_id` in der URL steht (dann läuft gar keine Post-Abfrage).
+
+Anzeige rollen-differenziert:
+- Speaker: „Dieses Interview gehört nicht zu deinem Account."
+- Admin: „Dieses Interview konnte nicht geladen werden. Möglicherweise wurde es gelöscht oder der Link ist ungültig."
+
+Plus Button „Zurück zur Übersicht" → `/module/profil` (ohne Params).
+
+## Nicht Teil dieses Plans
+
+- Admin-Editor-Logik, Listen-Aktionen, Klick-Verhalten bleiben identisch.
+- Edge Functions, RLS, Datenbank: keine Änderungen.
+- `ProfilReadonly` bleibt unverändert.
