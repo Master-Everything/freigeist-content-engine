@@ -404,6 +404,93 @@ export type Database = {
           },
         ]
       }
+      speaker_profiles: {
+        Row: {
+          created_at: string
+          expertise_score: number | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          kernaussagen: string[]
+          kritische_punkte: string[]
+          kurzbio: string | null
+          langbio: string | null
+          mediale_hooks: string[]
+          model: string | null
+          notes: string | null
+          positionierung: string | null
+          post_id: string
+          prompt_version: number | null
+          raw_json: Json | null
+          speaker_id: string
+          status: string
+          themen: string[]
+          updated_at: string
+          zielgruppe: string | null
+        }
+        Insert: {
+          created_at?: string
+          expertise_score?: number | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          kernaussagen?: string[]
+          kritische_punkte?: string[]
+          kurzbio?: string | null
+          langbio?: string | null
+          mediale_hooks?: string[]
+          model?: string | null
+          notes?: string | null
+          positionierung?: string | null
+          post_id: string
+          prompt_version?: number | null
+          raw_json?: Json | null
+          speaker_id: string
+          status?: string
+          themen?: string[]
+          updated_at?: string
+          zielgruppe?: string | null
+        }
+        Update: {
+          created_at?: string
+          expertise_score?: number | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          kernaussagen?: string[]
+          kritische_punkte?: string[]
+          kurzbio?: string | null
+          langbio?: string | null
+          mediale_hooks?: string[]
+          model?: string | null
+          notes?: string | null
+          positionierung?: string | null
+          post_id?: string
+          prompt_version?: number | null
+          raw_json?: Json | null
+          speaker_id?: string
+          status?: string
+          themen?: string[]
+          updated_at?: string
+          zielgruppe?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaker_profiles_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_profiles_speaker_id_fkey"
+            columns: ["speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speaker_scans: {
         Row: {
           created_at: string
