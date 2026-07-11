@@ -176,8 +176,9 @@ export default function Module3Profil() {
           </div>
         )}
 
-        {role === "admin" && postId && speakerId ? (
+        {loading ? null : role === "admin" && postId && speakerId ? (
           <ProfilEditor
+            key={profile?.id ?? "new"}
             postId={postId}
             speakerId={speakerId}
             initial={profile}
