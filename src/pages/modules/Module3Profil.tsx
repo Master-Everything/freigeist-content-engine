@@ -170,11 +170,22 @@ export default function Module3Profil() {
           </div>
         )}
 
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Profil-Generator und Sprechermappen-Workflow folgen im nächsten Ausbauschritt.
-          </CardContent>
-        </Card>
+        {role === "admin" && postId && speakerId ? (
+          <ProfilEditor
+            postId={postId}
+            speakerId={speakerId}
+            initial={profile}
+            onChanged={setProfile}
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              {profile
+                ? "Profil-Entwurf liegt vor. Freigabe-Ansicht folgt."
+                : "Redaktion arbeitet am Profil-Entwurf."}
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
