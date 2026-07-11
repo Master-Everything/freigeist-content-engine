@@ -68,8 +68,11 @@ Deno.serve(async (req) => {
   if (action === "kuratieren" && !isAdmin) {
     return json({ error: "Nur Admins dürfen kuratieren." });
   }
-  if ((action === "freigeben" || action === "aenderung") && !isOwner) {
-    return json({ error: "Nur der zugeordnete Speaker darf diese Aktion ausführen." });
+  if (action === "freigeben" && !isOwner && !isAdmin) {
+    return json({ error: "Nur der zugeordnete Speaker oder ein Admin darf freigeben." });
+  }
+  if (action === "aenderung" && !isOwner) {
+    return json({ error: "Nur der zugeordnete Speaker darf Änderungen erbitten." });
   }
 
   let profileUpdate: Record<string, unknown> = {};
@@ -81,6 +84,13 @@ Deno.serve(async (req) => {
   } else if (action === "freigeben") {
     profileUpdate = { status: "freigegeben" };
     postStatus = "leitfaden";
+    // Audit-Notiz nur bei echter Admin-im-Auftrag-Freigabe
+    if (isAdmin && !isOwner) {
+      const stamp = new Date().toLocaleString("de-DE");
+      const email = userData.user.email ?? userId;
+      const audit = `\n\n[Admin-Freigabe · ${stamp} · ${email}] Profil im Auftrag freigegeben.`;
+      profileUpdate.notes = (profile.notes ?? "") + audit;
+    }
   } else {
     const stamp = new Date().toLocaleString("de-DE");
     const fb = (feedback ?? "").trim();

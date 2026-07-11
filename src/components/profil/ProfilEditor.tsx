@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Loader2, Plus, X, Sparkles, Save, CheckCircle2, MessageSquareWarning } from "lucide-react";
+import { Loader2, Plus, X, Sparkles, Save, CheckCircle2, MessageSquareWarning, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type SpeakerProfile = {
   id: string;
@@ -107,6 +108,7 @@ export function ProfilEditor({
   const [profile, setProfile] = useState<SpeakerProfile | null>(initial);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { role } = useAuth();
 
   async function generate() {
     setGenerating(true);
@@ -182,6 +184,32 @@ export function ProfilEditor({
     toast({
       title: "Als kuratiert markiert",
       description: "Der Speaker wurde zur Freigabe eingeladen.",
+    });
+  }
+
+  async function adminFreigeben() {
+    if (!profile) return;
+    if (!window.confirm("Damit überspringst du die Speaker-Freigabe. Der Post geht direkt zu Modul 4. Fortfahren?")) return;
+    setSaving(true);
+    await save();
+    const { data, error } = await supabase.functions.invoke("speaker-profile-decision", {
+      body: { profile_id: profile.id, action: "freigeben" },
+    });
+    setSaving(false);
+    if (error) {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      return;
+    }
+    if ((data as any)?.error) {
+      toast({ title: "Fehler", description: (data as any).error, variant: "destructive" });
+      return;
+    }
+    const next = (data as any).profile as SpeakerProfile;
+    setProfile(next);
+    onChanged(next);
+    toast({
+      title: "Profil im Auftrag freigegeben",
+      description: "Der Post ist jetzt in Modul 4 verfügbar.",
     });
   }
 
@@ -310,6 +338,12 @@ export function ProfilEditor({
               <Button variant="outline" onClick={kuratieren} disabled={saving}>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Als kuratiert markieren
+              </Button>
+            )}
+            {role === "admin" && (profile.status === "entwurf" || profile.status === "kuratiert") && (
+              <Button variant="outline" onClick={adminFreigeben} disabled={saving}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Für Speaker freigeben (Shortcut)
               </Button>
             )}
           </div>
