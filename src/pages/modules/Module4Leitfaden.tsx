@@ -71,9 +71,13 @@ export default function Module4Leitfaden() {
         sp = s;
       }
       setSpeaker(sp);
+      const guideSelect =
+        role === "admin"
+          ? "*"
+          : "id, post_id, speaker_id, speaker_profile_id, status, intro, hauptfragen, vertiefungsfragen, kritische_fragen, abschluss, created_at, updated_at";
       const { data: g } = await (supabase as any)
         .from("interview_guides")
-        .select("*")
+        .select(guideSelect)
         .eq("post_id", postId!)
         .maybeSingle();
       setGuide((g as any) ?? null);
