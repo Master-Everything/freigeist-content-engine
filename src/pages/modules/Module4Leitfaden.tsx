@@ -83,7 +83,7 @@ export default function Module4Leitfaden() {
       setGuide((g as any) ?? null);
       setLoading(false);
     })();
-  }, [postId, hasContext]);
+  }, [postId, hasContext, role]);
 
   async function loadQueue() {
     setQueueLoading(true);
