@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
   if (action === "freigeben" && !isOwner && !isAdmin) {
     return json({ error: "Nur der zugeordnete Speaker oder ein Admin darf freigeben." });
   }
-  if (action === "aenderung" && !isOwner) {
-    return json({ error: "Nur der zugeordnete Speaker darf Änderungen erbitten." });
+  if (action === "aenderung" && !isOwner && !isAdmin) {
+    return json({ error: "Nur der zugeordnete Speaker oder ein Admin darf Änderungen erbitten." });
   }
 
   let profileUpdate: Record<string, unknown> = {};
