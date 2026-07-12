@@ -232,6 +232,19 @@ export function AppSidebar() {
                   </div>
                 </SidebarMenuItem>
               )}
+              {!collapsed && (
+                <SidebarMenuItem>
+                  <div
+                    className="mx-2 mt-1 mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-gradient-to-r from-primary/10 to-transparent px-2 py-0.5 text-[10px] text-muted-foreground shadow-[0_0_0_0_transparent] transition-shadow hover:shadow-[0_0_12px_-2px_hsl(var(--primary)/0.5)]"
+                    title="Powered by Martina Hautau"
+                  >
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    <span>
+                      Powered by <span className="font-medium text-foreground">Martina Hautau</span>
+                    </span>
+                  </div>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === "/tech-stack"}>
                   <NavLink to="/tech-stack" className="flex items-center gap-2">
