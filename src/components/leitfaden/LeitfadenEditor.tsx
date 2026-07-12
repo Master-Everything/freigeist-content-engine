@@ -62,14 +62,33 @@ function QuestionList({
   items,
   onChange,
   showOnlyActive,
+  compact,
   placeholder,
 }: {
   label: string;
   items: GuideQuestion[];
   onChange: (next: GuideQuestion[]) => void;
   showOnlyActive: boolean;
+  compact: boolean;
   placeholder?: string;
 }) {
+  const cls = compact
+    ? {
+        listWrap: "space-y-1.5",
+        card: "px-2 py-1.5",
+        textareaRows: 1,
+        textareaClass: "flex-1 min-h-0",
+        iconBtn: "h-7 w-7",
+        noteWrap: "mt-1.5 pl-12 pr-2 space-y-1",
+      }
+    : {
+        listWrap: "space-y-2",
+        card: "p-3",
+        textareaRows: 2,
+        textareaClass: "flex-1",
+        iconBtn: "",
+        noteWrap: "mt-2 pl-12 pr-2 space-y-1",
+      };
   const [draft, setDraft] = useState("");
   const [openNoteIds, setOpenNoteIds] = useState<Set<string>>(new Set());
   const activeCount = items.filter((q) => q.active).length;
