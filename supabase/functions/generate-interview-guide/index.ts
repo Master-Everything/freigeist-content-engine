@@ -112,6 +112,15 @@ Deno.serve(async (req) => {
       instruction: "Rufe das Tool 'emit_interview_guide' EINMAL mit dem strukturierten Leitfaden auf.",
     };
 
+    const questionArraySchema = {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { text: { type: "string" } },
+        required: ["text"],
+        additionalProperties: false,
+      },
+    };
     const tool = {
       type: "function",
       function: {
@@ -121,9 +130,9 @@ Deno.serve(async (req) => {
           type: "object",
           properties: {
             intro: { type: "string" },
-            hauptfragen: { type: "array", items: { type: "string" } },
-            vertiefungsfragen: { type: "array", items: { type: "string" } },
-            kritische_fragen: { type: "array", items: { type: "string" } },
+            hauptfragen: questionArraySchema,
+            vertiefungsfragen: questionArraySchema,
+            kritische_fragen: questionArraySchema,
             abschluss: { type: "string" },
             redaktionelle_hinweise: { type: "string" },
           },
@@ -165,7 +174,12 @@ Deno.serve(async (req) => {
     try { parsed = JSON.parse(call.function.arguments); }
     catch { return json({ error: "LLM-Antwort war kein gültiges JSON" }); }
 
-    const arr = (v: any) => Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()) : [];
+    const arr = (v: any) =>
+      Array.isArray(v)
+        ? v
+            .filter((x) => x && typeof x === "object" && typeof x.text === "string" && x.text.trim())
+            .map((x) => ({ id: crypto.randomUUID(), text: x.text.trim(), active: true }))
+        : [];
 
     const record = {
       post_id: postId,

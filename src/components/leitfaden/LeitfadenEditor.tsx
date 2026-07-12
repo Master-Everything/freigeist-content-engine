@@ -1,13 +1,19 @@
-import { useState } from "react";
-import { Loader2, Plus, X, Sparkles, Save, CheckCircle2, RotateCcw } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Loader2, Plus, X, Sparkles, Save, CheckCircle2, RotateCcw,
+  ArrowUp, ArrowDown, Wand2,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+export type GuideQuestion = { id: string; text: string; active: boolean };
 
 export type InterviewGuide = {
   id: string;
@@ -16,57 +22,140 @@ export type InterviewGuide = {
   speaker_profile_id: string | null;
   status: "entwurf" | "final";
   intro: string | null;
-  hauptfragen: string[] | null;
-  vertiefungsfragen: string[] | null;
-  kritische_fragen: string[] | null;
+  hauptfragen: GuideQuestion[] | null;
+  vertiefungsfragen: GuideQuestion[] | null;
+  kritische_fragen: GuideQuestion[] | null;
   abschluss: string | null;
   redaktionelle_hinweise: string | null;
+  ki_instruktionen: string | null;
   notes: string | null;
   model_used: string | null;
   prompt_version: number | null;
   generated_at: string | null;
 };
 
+function newQ(text = ""): GuideQuestion {
+  return { id: crypto.randomUUID(), text, active: true };
+}
+
+// Bestandsdaten defensiv in Objektform bringen (falls Alt-Daten aus Cache reinkommen).
+function toQArray(v: unknown): GuideQuestion[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((x: any) => {
+      if (typeof x === "string" && x.trim()) return newQ(x.trim());
+      if (x && typeof x === "object" && typeof x.text === "string" && x.text.trim()) {
+        return {
+          id: typeof x.id === "string" && x.id ? x.id : crypto.randomUUID(),
+          text: x.text.trim(),
+          active: typeof x.active === "boolean" ? x.active : true,
+        };
+      }
+      return null;
+    })
+    .filter((x): x is GuideQuestion => x !== null);
+}
+
 function QuestionList({
   label,
   items,
   onChange,
+  showOnlyActive,
   placeholder,
 }: {
   label: string;
-  items: string[];
-  onChange: (next: string[]) => void;
+  items: GuideQuestion[];
+  onChange: (next: GuideQuestion[]) => void;
+  showOnlyActive: boolean;
   placeholder?: string;
 }) {
   const [draft, setDraft] = useState("");
+  const activeCount = items.filter((q) => q.active).length;
+
+  function update(idx: number, patch: Partial<GuideQuestion>) {
+    const next = [...items];
+    next[idx] = { ...next[idx], ...patch };
+    onChange(next);
+  }
+  function remove(idx: number) {
+    onChange(items.filter((_, i) => i !== idx));
+  }
+  function move(idx: number, dir: -1 | 1) {
+    const j = idx + dir;
+    if (j < 0 || j >= items.length) return;
+    const next = [...items];
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onChange(next);
+  }
+  function add() {
+    const t = draft.trim();
+    if (!t) return;
+    onChange([...items, newQ(t)]);
+    setDraft("");
+  }
+
   return (
     <div className="space-y-2">
-      <Label>{label} <span className="text-xs text-muted-foreground">({items.length})</span></Label>
+      <Label>
+        {label}{" "}
+        <span className="text-xs text-muted-foreground">
+          ({activeCount} übernommen / {items.length} gesamt)
+        </span>
+      </Label>
       <div className="space-y-2">
-        {items.map((q, i) => (
-          <div key={i} className="flex gap-2 items-start">
-            <span className="mt-2 text-xs font-mono text-muted-foreground w-6 shrink-0 text-right">{i + 1}.</span>
-            <Textarea
-              rows={2}
-              value={q}
-              onChange={(e) => {
-                const next = [...items];
-                next[i] = e.target.value;
-                onChange(next);
-              }}
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => onChange(items.filter((_, j) => j !== i))}
-              aria-label="Entfernen"
+        {items.map((q, i) => {
+          if (showOnlyActive && !q.active) return null;
+          return (
+            <div
+              key={q.id}
+              className={`flex gap-2 items-start rounded-md border p-2 ${
+                q.active ? "" : "opacity-60 bg-muted/30"
+              }`}
             >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
+              <div className="flex flex-col items-center gap-1 pt-1">
+                <span className="text-xs font-mono text-muted-foreground w-6 text-center">
+                  {i + 1}.
+                </span>
+                <Switch
+                  checked={q.active}
+                  onCheckedChange={(v) => update(i, { active: v })}
+                  aria-label="Übernehmen"
+                />
+              </div>
+              <Textarea
+                rows={2}
+                value={q.text}
+                onChange={(e) => update(i, { text: e.target.value })}
+                className="flex-1"
+              />
+              <div className="flex flex-col gap-1">
+                <Button
+                  type="button" variant="ghost" size="icon"
+                  disabled={i === 0}
+                  onClick={() => move(i, -1)}
+                  aria-label="Nach oben"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button" variant="ghost" size="icon"
+                  disabled={i === items.length - 1}
+                  onClick={() => move(i, 1)}
+                  aria-label="Nach unten"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button" variant="ghost" size="icon"
+                  onClick={() => remove(i)}
+                  aria-label="Entfernen"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <div className="flex gap-2">
         <Input
@@ -74,24 +163,13 @@ function QuestionList({
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder ?? "Frage hinzufügen…"}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && draft.trim()) {
+            if (e.key === "Enter") {
               e.preventDefault();
-              onChange([...items, draft.trim()]);
-              setDraft("");
+              add();
             }
           }}
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            if (draft.trim()) {
-              onChange([...items, draft.trim()]);
-              setDraft("");
-            }
-          }}
-        >
+        <Button type="button" variant="outline" size="icon" onClick={add}>
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -108,9 +186,20 @@ export function LeitfadenEditor({
   initial: InterviewGuide | null;
   onChanged: (g: InterviewGuide | null) => void;
 }) {
-  const [guide, setGuide] = useState<InterviewGuide | null>(initial);
+  const [guide, setGuide] = useState<InterviewGuide | null>(
+    initial
+      ? {
+          ...initial,
+          hauptfragen: toQArray(initial.hauptfragen),
+          vertiefungsfragen: toQArray(initial.vertiefungsfragen),
+          kritische_fragen: toQArray(initial.kritische_fragen),
+        }
+      : null,
+  );
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [prioritizing, setPrioritizing] = useState(false);
+  const [showOnlyActive, setShowOnlyActive] = useState(false);
 
   async function generate() {
     setGenerating(true);
@@ -126,7 +215,13 @@ export function LeitfadenEditor({
       toast({ title: "Fehler", description: (data as any).error, variant: "destructive" });
       return;
     }
-    const g = (data as any).guide as InterviewGuide;
+    const raw = (data as any).guide as any;
+    const g: InterviewGuide = {
+      ...raw,
+      hauptfragen: toQArray(raw.hauptfragen),
+      vertiefungsfragen: toQArray(raw.vertiefungsfragen),
+      kritische_fragen: toQArray(raw.kritische_fragen),
+    };
     setGuide(g);
     onChanged(g);
     toast({ title: "Leitfaden-Entwurf generiert" });
@@ -142,6 +237,7 @@ export function LeitfadenEditor({
       kritische_fragen: guide.kritische_fragen ?? [],
       abschluss: guide.abschluss,
       redaktionelle_hinweise: guide.redaktionelle_hinweise,
+      ki_instruktionen: guide.ki_instruktionen,
       notes: guide.notes,
     };
     const { data, error } = await (supabase as any)
@@ -155,9 +251,54 @@ export function LeitfadenEditor({
       toast({ title: "Speichern fehlgeschlagen", description: error.message, variant: "destructive" });
       return;
     }
-    setGuide(data as any);
-    onChanged(data as any);
+    const next: InterviewGuide = {
+      ...(data as any),
+      hauptfragen: toQArray((data as any).hauptfragen),
+      vertiefungsfragen: toQArray((data as any).vertiefungsfragen),
+      kritische_fragen: toQArray((data as any).kritische_fragen),
+    };
+    setGuide(next);
+    onChanged(next);
     toast({ title: "Gespeichert" });
+  }
+
+  async function prioritize() {
+    if (!guide) return;
+    if (!(guide.ki_instruktionen ?? "").trim()) {
+      toast({ title: "KI-Instruktionen fehlen", description: "Bitte oben angeben, was die KI machen soll.", variant: "destructive" });
+      return;
+    }
+    setPrioritizing(true);
+    // Erst speichern, damit KI die aktuellen Fragen und Instruktionen sieht.
+    await save();
+    const { data, error } = await supabase.functions.invoke("prioritize-interview-guide", {
+      body: { guide_id: guide.id, ki_instruktionen: guide.ki_instruktionen },
+    });
+    setPrioritizing(false);
+    if (error) {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      return;
+    }
+    if ((data as any)?.error) {
+      toast({ title: "Fehler", description: (data as any).error, variant: "destructive" });
+      return;
+    }
+    const raw = (data as any).guide as any;
+    const next: InterviewGuide = {
+      ...raw,
+      hauptfragen: toQArray(raw.hauptfragen),
+      vertiefungsfragen: toQArray(raw.vertiefungsfragen),
+      kritische_fragen: toQArray(raw.kritische_fragen),
+    };
+    setGuide(next);
+    onChanged(next);
+    const invalids = (data as any).invalid_ids as string[] | undefined;
+    toast({
+      title: "KI-Vorschlag übernommen",
+      description: invalids && invalids.length > 0
+        ? `Hinweis: ${invalids.length} ungültige ID(s) wurden ignoriert (siehe Notizen).`
+        : "Toggle und Reihenfolge nach Wunsch nachjustieren.",
+    });
   }
 
   async function decision(action: "finalisieren" | "zurueck_entwurf") {
@@ -176,14 +317,32 @@ export function LeitfadenEditor({
       toast({ title: "Fehler", description: (data as any).error, variant: "destructive" });
       return;
     }
-    const next = (data as any).guide as InterviewGuide;
+    const raw = (data as any).guide as any;
+    const next: InterviewGuide = {
+      ...raw,
+      hauptfragen: toQArray(raw.hauptfragen),
+      vertiefungsfragen: toQArray(raw.vertiefungsfragen),
+      kritische_fragen: toQArray(raw.kritische_fragen),
+    };
     setGuide(next);
     onChanged(next);
     toast({
       title: action === "finalisieren" ? "Leitfaden finalisiert" : "Zurück zu Entwurf",
-      description: action === "finalisieren" ? "Der Speaker sieht den Leitfaden jetzt in seiner Vorbereitungsansicht." : "Der Leitfaden ist wieder editierbar.",
+      description: action === "finalisieren"
+        ? "Der Speaker sieht den Leitfaden jetzt in seiner Vorbereitungsansicht."
+        : "Der Leitfaden ist wieder editierbar.",
     });
   }
+
+  const totals = useMemo(() => {
+    if (!guide) return { active: 0, total: 0 };
+    const all = [
+      ...(guide.hauptfragen ?? []),
+      ...(guide.vertiefungsfragen ?? []),
+      ...(guide.kritische_fragen ?? []),
+    ];
+    return { active: all.filter((q) => q.active).length, total: all.length };
+  }, [guide]);
 
   if (!guide) {
     return (
@@ -235,9 +394,61 @@ export function LeitfadenEditor({
             <Textarea rows={3} value={guide.intro ?? ""} onChange={(e) => patch({ intro: e.target.value })} />
           </div>
 
-          <QuestionList label="Hauptfragen" items={guide.hauptfragen ?? []} onChange={(v) => patch({ hauptfragen: v })} />
-          <QuestionList label="Vertiefungsfragen" items={guide.vertiefungsfragen ?? []} onChange={(v) => patch({ vertiefungsfragen: v })} />
-          <QuestionList label="Kritische Fragen" items={guide.kritische_fragen ?? []} onChange={(v) => patch({ kritische_fragen: v })} />
+          {/* KI-gestützte Priorisierung */}
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Wand2 className="h-4 w-4 text-primary" />
+              <h4 className="font-medium text-sm">KI-gestützte Priorisierung</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Der Vorschlag ist ein Startpunkt. Toggle und Reihenfolge kannst du danach frei nachjustieren.
+              Nicht ausgewählte Fragen werden auf inaktiv gesetzt, aber nicht gelöscht.
+            </p>
+            <Textarea
+              rows={3}
+              placeholder="Beschreibe, worauf die KI beim Priorisieren/Ergänzen achten soll (z. B. Fokus auf X, wenige Nachfragen zu Y, kritische Frage zu Z ergänzen)…"
+              value={guide.ki_instruktionen ?? ""}
+              onChange={(e) => patch({ ki_instruktionen: e.target.value })}
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={prioritize}
+              disabled={prioritizing || !(guide.ki_instruktionen ?? "").trim()}
+            >
+              {prioritizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+              KI-Vorschlag anwenden
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between rounded-md border px-3 py-2">
+            <div className="flex items-center gap-3">
+              <Switch checked={showOnlyActive} onCheckedChange={setShowOnlyActive} id="only-active" />
+              <Label htmlFor="only-active" className="cursor-pointer text-sm">Nur übernommene Fragen anzeigen</Label>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {totals.active} / {totals.total} übernommen
+            </div>
+          </div>
+
+          <QuestionList
+            label="Hauptfragen"
+            items={guide.hauptfragen ?? []}
+            onChange={(v) => patch({ hauptfragen: v })}
+            showOnlyActive={showOnlyActive}
+          />
+          <QuestionList
+            label="Vertiefungsfragen"
+            items={guide.vertiefungsfragen ?? []}
+            onChange={(v) => patch({ vertiefungsfragen: v })}
+            showOnlyActive={showOnlyActive}
+          />
+          <QuestionList
+            label="Kritische Fragen"
+            items={guide.kritische_fragen ?? []}
+            onChange={(v) => patch({ kritische_fragen: v })}
+            showOnlyActive={showOnlyActive}
+          />
 
           <div className="space-y-2">
             <Label>Abschluss</Label>

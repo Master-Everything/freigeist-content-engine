@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen } from "lucide-react";
-import type { InterviewGuide } from "./LeitfadenEditor";
+import type { InterviewGuide, GuideQuestion } from "./LeitfadenEditor";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -12,14 +12,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function QuestionOl({ items }: { items: string[] | null }) {
-  if (!items || items.length === 0) {
+function QuestionOl({ items }: { items: GuideQuestion[] | null }) {
+  const active = (items ?? []).filter((q) => q && q.active && q.text?.trim());
+  if (active.length === 0) {
     return <p className="text-sm text-muted-foreground italic">— keine Angaben —</p>;
   }
   return (
     <ol className="space-y-2 list-decimal list-outside pl-5">
-      {items.map((q, i) => (
-        <li key={i} className="text-sm leading-relaxed">{q}</li>
+      {active.map((q) => (
+        <li key={q.id} className="text-sm leading-relaxed">{q.text}</li>
       ))}
     </ol>
   );
