@@ -1,73 +1,104 @@
-# Modul 3 — Speaker-UI Angleichung (final)
+## Modul 4 — Fragen-Übernahme & KI-gestützte Priorisierung
 
-Alle Änderungen ausschließlich in `src/pages/modules/Module3Profil.tsx`. Keine Backend-/RLS-/Edge-Function-Änderungen.
+### Ziel
+Interviewer wählt aus vorhandenen (und KI-ergänzten) Fragen gezielt aus und ordnet sie. Die drei Blöcke (Hauptfragen / Vertiefungsfragen / Kritische Fragen) bleiben als Interviewphasen erhalten.
 
-## 1. Speaker-freundliche Status-Labels
+---
 
-`StatusBadge` bekommt eine `role`-Variante. Für Speaker:
+### 1. Datenmodell & Migration
 
-| Interner Status        | Speaker-Label            | Farbe   |
-|------------------------|--------------------------|---------|
-| `redaktion_angefragt`  | „Angefragt"              | violett |
-| `in_bearbeitung`       | „Redaktion arbeitet"     | orange  |
-| `profil`               | „Redaktion arbeitet"     | orange  |
-| `profil_review`        | „Zur Freigabe"           | blau    |
+Fragen-Arrays wechseln von `string[]` auf Objekt-Array:
 
-Admin behält die aktuellen internen Labels (inkl. Smaragd „Profil-Entwurf" bei `profil`). Bewusste Divergenz — gleicher Status, zwei Farben je nach Rolle.
-
-## 2. Listen-Header (nur Wortlaut)
-
-Klick-/Aktions-Logik bleibt unverändert. Nur Textänderungen:
-
-- Speaker Card-Titel: „Meine Anfragen" → **„Meine Interviews in Vorbereitung"**
-- Speaker Card-Description: statt „Status: …" → **„Sobald dein Profil zur Freigabe bereitsteht, kannst du es hier prüfen."**
-- Speaker Muted-Fallback (Zeile 320): „Redaktion in Arbeit" → **„Redaktion arbeitet"**
-- Admin-Titel/Description bleiben.
-
-## 3. Kontext-Ansicht: vereinfachte Cards für Speaker
-
-Zwei Karten „Interview" / „Speaker" bleiben, aber für `role === 'speaker'`:
-- `post_id` / `speaker_id` (monospace-Debug-Zeilen) ausblenden
-- CardDescriptions („Aus Modul 1" / „Verknüpftes Profil") ausblenden
-
-## 4. Header-Badge (Kontext-Ansicht) — für beide Rollen dynamisch
-
-Aktuell hart codiert auf „Redaktion in Arbeit" (Zeile 149–151), unabhängig vom Post-Status. Wird ersetzt durch eine status-abhängige, rollen-differenzierte Ableitung:
-
-- `redaktion_angefragt` → „Redaktion angefragt" (Admin) / „Angefragt" (Speaker)
-- `in_bearbeitung` → „In Bearbeitung" (Admin) / „Redaktion arbeitet" (Speaker)
-- `profil` → „Profil-Entwurf" (Admin) / „Redaktion arbeitet" (Speaker)
-- `profil_review` → „Zur Freigabe" (beide)
-- Fallback: Rohstatus
-
-Behebt gleichzeitig den bestehenden Anzeigefehler in der Admin-Ansicht.
-
-## 5. Platzhalter-Text unterhalb der Cards (Speaker, kein `profil_review`)
-
-Statt „Profil-Entwurf liegt vor. …" / „Redaktion arbeitet am Profil-Entwurf.":
-- Wenn `profile` existiert: „Die Redaktion kuratiert dein Profil. Du bekommst es zur Freigabe, sobald es soweit ist."
-- Wenn kein `profile`: „Die Redaktion bereitet dein Profil vor."
-
-## 6. Zugriffs-verweigert / nicht gefunden — flicker-frei
-
-RLS liefert bei fremdem `post_id` `null` zurück und läuft aktuell in den missverständlichen „Redaktion arbeitet…"-Fallback.
-
-**Race-Condition-Guard:** Header rendert oberhalb des Loading-Blocks, `post` startet mit `null`. Prüfung MUSS lauten:
-
-```
-!loading && postId && post === null
+```ts
+type GuideQuestion = { id: string; text: string; active: boolean };
 ```
 
-Niemals nur `post === null`, sonst Flicker bei jedem Aufruf. Zusätzliches `postId`-Guard schützt den Fall, dass nur `speaker_id` in der URL steht (dann läuft gar keine Post-Abfrage).
+- Migration konvertiert Bestandsdaten in `interview_guides.hauptfragen / vertiefungsfragen / kritische_fragen` (Spaltentyp bleibt `jsonb`) via SQL: `["…"]` → `[{id: gen_random_uuid()::text, text: "…", active: true}, …]`.
+- Neue Spalte `interview_guides.ki_instruktionen text`.
+- Neuer Row in `knowledge_prompts` mit Key `leitfaden_priorisierer` **per Migration** (nicht per Insert-Tool — konsistent zum `leitfaden_generator`-Seed).
 
-Anzeige rollen-differenziert:
-- Speaker: „Dieses Interview gehört nicht zu deinem Account."
-- Admin: „Dieses Interview konnte nicht geladen werden. Möglicherweise wurde es gelöscht oder der Link ist ungültig."
+### 2. Edge Function: `generate-interview-guide` (bestehend, umbauen)
 
-Plus Button „Zurück zur Übersicht" → `/module/profil` (ohne Params).
+- Tool-Schema (`items: { type: "string" }`) → `items: { type: "object", properties: { text: { type: "string" } }, required: ["text"] }`.
+- **Kritisch** — `arr()`-Sanitizer (Zeile 168) muss mit umgebaut werden, sonst filtert er alle Objekte raus und der Leitfaden käme leer zurück:
 
-## Nicht Teil dieses Plans
+```ts
+const arr = (v: any) => Array.isArray(v)
+  ? v
+      .filter((x) => x && typeof x === "object" && typeof x.text === "string" && x.text.trim())
+      .map((x) => ({ id: crypto.randomUUID(), text: x.text.trim(), active: true }))
+  : [];
+```
 
-- Admin-Editor-Logik, Listen-Aktionen, Klick-Verhalten bleiben identisch.
-- Edge Functions, RLS, Datenbank: keine Änderungen.
-- `ProfilReadonly` bleibt unverändert.
+### 3. Edge Function: `prioritize-interview-guide` (neu)
+
+- Input: `guide_id`, `ki_instruktionen`.
+- Lädt Guide + Speaker/Post-Kontext (analog zum Generator), Admin-only (JWT + `has_role`).
+- Nutzt Prompt-Key `leitfaden_priorisierer` aus `knowledge_prompts`.
+
+**Prompt-Aufbau (für funktionierende Merge-Logik zwingend):**
+- Aktuelle Fragen werden **inklusive ihrer `id`** als strukturierte JSON-Liste pro Block in den User-Prompt eingebettet:
+  ```json
+  { "hauptfragen": [{"id": "…", "text": "…"}, …],
+    "vertiefungsfragen": [...],
+    "kritische_fragen": [...] }
+  ```
+- System-Prompt weist die KI explizit an: *„Verwende im `keep`-Array ausschließlich `id`-Werte aus der übergebenen Liste. Erfinde keine IDs."*
+
+**Tool-Call-Ergebnis pro Block:**
+- `keep`: `{id: string, active: boolean, order: number}[]` — nur Toggle/Reihenfolge, kein Textumschreiben bestehender Fragen.
+- `add`: `{text: string, active: boolean}[]` — neue Fragen im passenden Block.
+
+**Merge-Regeln (serverseitig, explizit):**
+1. Bestehende Frage mit `id` im `keep`: `active` und Position gemäß `order` übernehmen; `text` bleibt.
+2. **Bestehende Frage NICHT im `keep`: `active: false` setzen** und ans Ende des Blocks (nach `keep`-Einträgen, vor `add`) einsortieren. Nie löschen.
+3. `add`-Einträge bekommen neue `id` (`crypto.randomUUID()`), werden ans Blockende angehängt.
+4. Ungültige IDs im `keep` (nicht in Bestand): ignorieren, Merge läuft weiter.
+
+**Warnungs-Logging in `notes` — anhängen, nicht überschreiben** (analog `[Speaker-Feedback · …]`-Muster in `speaker_profiles.notes`):
+- Format: `[KI-Priorisierung · <ISO-Zeitstempel>] Ungültige IDs ignoriert: <id1>, <id2>`
+- Wird mit Trenn-Leerzeile an bestehenden `notes`-Text angehängt, niemals ersetzt.
+- **Kein Log-Eintrag, wenn keine ungültigen IDs auftraten** (kein Rauschen bei sauberen Läufen).
+
+### 4. Admin-UI (`LeitfadenEditor.tsx`)
+
+**Pro Frage-Zeile** in allen drei Blöcken:
+- `Textarea` bleibt (editierbar).
+- Neu: `Switch` „Übernehmen" gebunden an `active`.
+- Sortier-Controls: `ArrowUp` / `ArrowDown` (kein Drag & Drop, keine neue Dependency). Erste/letzte Position deaktivieren den passenden Pfeil.
+- Lösch-Icon (`X`) bleibt.
+
+**Oberhalb der Blöcke:**
+- Toggle „Nur übernommene Fragen anzeigen" (reiner UI-State). Zähler „sichtbar / gesamt".
+
+**Neuer Abschnitt „KI-gestützte Priorisierung":**
+- `Textarea` „KI-Instruktionen" gebunden an `guide.ki_instruktionen` — mit `save()` mitspeichern.
+- Button „KI-Vorschlag anwenden" → ruft `prioritize-interview-guide`, aktualisiert Guide im State.
+- Hinweistext: *„Der Vorschlag ist ein Startpunkt. Toggle und Reihenfolge kannst du danach frei nachjustieren. Nicht ausgewählte Fragen werden auf inaktiv gesetzt, aber nicht gelöscht."*
+
+**`QuestionList`-Komponente:** Umbau auf Objekt-Array. Neuer Eintrag über Input/Enter erzeugt `{ id: crypto.randomUUID(), text, active: true }`. Reihenfolge = Array-Reihenfolge.
+
+**Save-Payload:** drei Fragen-Arrays als `GuideQuestion[]` + `ki_instruktionen`. „Neu generieren" überschreibt vollständig (Bestandsverhalten).
+
+### 5. Speaker-UI (`LeitfadenReadonly.tsx`)
+- Nur `active: true` Fragen rendern, in Array-Reihenfolge.
+- Kein Toggle, keine Sortierung, keine KI-Instruktionen sichtbar.
+- Speaker-Select-Whitelist in `Module4Leitfaden.tsx` (Zeile 77) bleibt unverändert — `ki_instruktionen` und `redaktionelle_hinweise` bleiben serverseitig raus.
+
+### 6. Typ-Updates
+- `InterviewGuide.hauptfragen / vertiefungsfragen / kritische_fragen: GuideQuestion[] | null`
+- `ki_instruktionen: string | null`
+
+---
+
+### Umsetzungsreihenfolge
+1. Migration: Spaltenkonvertierung + `ki_instruktionen` + `leitfaden_priorisierer`-Prompt.
+2. `generate-interview-guide` umstellen (Schema **und** `arr()`).
+3. `prioritize-interview-guide` deployen (ID-Einbettung, Merge-Regeln, notes-Anhang mit Skip-bei-leer).
+4. Frontend: `LeitfadenEditor` (Objektmodell, Switch, Sortierung, Filter, KI-Abschnitt).
+5. Frontend: `LeitfadenReadonly` (Filter auf `active`).
+
+### Nicht Teil
+- Kein separater „Interviewer Fragen"-Block.
+- Keine blockübergreifende Reihenfolge.
+- Keine KI-Sperren — manuelle Nachbearbeitung bleibt immer möglich.
