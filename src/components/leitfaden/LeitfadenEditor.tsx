@@ -264,6 +264,7 @@ export function LeitfadenEditor({
   const [saving, setSaving] = useState(false);
   const [prioritizing, setPrioritizing] = useState(false);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
+  const [compact, setCompact] = useState(true);
 
   async function generate() {
     setGenerating(true);
