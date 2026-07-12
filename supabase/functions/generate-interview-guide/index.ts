@@ -174,7 +174,12 @@ Deno.serve(async (req) => {
     try { parsed = JSON.parse(call.function.arguments); }
     catch { return json({ error: "LLM-Antwort war kein gültiges JSON" }); }
 
-    const arr = (v: any) => Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()) : [];
+    const arr = (v: any) =>
+      Array.isArray(v)
+        ? v
+            .filter((x) => x && typeof x === "object" && typeof x.text === "string" && x.text.trim())
+            .map((x) => ({ id: crypto.randomUUID(), text: x.text.trim(), active: true }))
+        : [];
 
     const record = {
       post_id: postId,
