@@ -71,6 +71,7 @@ function QuestionList({
   placeholder?: string;
 }) {
   const [draft, setDraft] = useState("");
+  const [openNoteIds, setOpenNoteIds] = useState<Set<string>>(new Set());
   const activeCount = items.filter((q) => q.active).length;
 
   function update(idx: number, patch: Partial<GuideQuestion>) {
@@ -94,6 +95,14 @@ function QuestionList({
     onChange([...items, newQ(t)]);
     setDraft("");
   }
+  function toggleNote(id: string) {
+    setOpenNoteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-2">
@@ -106,54 +115,88 @@ function QuestionList({
       <div className="space-y-2">
         {items.map((q, i) => {
           if (showOnlyActive && !q.active) return null;
+          const hasNote = !!(q.interviewer_notiz && q.interviewer_notiz.trim());
+          const noteOpen = openNoteIds.has(q.id);
           return (
             <div
               key={q.id}
-              className={`flex gap-2 items-start rounded-md border p-2 ${
+              className={`rounded-md border p-2 ${
                 q.active ? "" : "opacity-60 bg-muted/30"
               }`}
             >
-              <div className="flex flex-col items-center gap-1 pt-1">
-                <span className="text-xs font-mono text-muted-foreground w-6 text-center">
-                  {i + 1}.
-                </span>
-                <Switch
-                  checked={q.active}
-                  onCheckedChange={(v) => update(i, { active: v })}
-                  aria-label="Übernehmen"
+              <div className="flex gap-2 items-start">
+                <div className="flex flex-col items-center gap-1 pt-1">
+                  <span className="text-xs font-mono text-muted-foreground w-6 text-center">
+                    {i + 1}.
+                  </span>
+                  <Switch
+                    checked={q.active}
+                    onCheckedChange={(v) => update(i, { active: v })}
+                    aria-label="Übernehmen"
+                  />
+                </div>
+                <Textarea
+                  rows={2}
+                  value={q.text}
+                  onChange={(e) => update(i, { text: e.target.value })}
+                  className="flex-1"
                 />
+                <div className="flex flex-col gap-1">
+                  <Button
+                    type="button" variant="ghost" size="icon"
+                    disabled={i === 0}
+                    onClick={() => move(i, -1)}
+                    aria-label="Nach oben"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button" variant="ghost" size="icon"
+                    disabled={i === items.length - 1}
+                    onClick={() => move(i, 1)}
+                    aria-label="Nach unten"
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleNote(q.id)}
+                    aria-label={hasNote ? "Interviewer-Notiz bearbeiten" : "Interviewer-Notiz hinzufügen"}
+                    aria-pressed={noteOpen}
+                    className={`relative ${hasNote ? "text-primary" : "text-muted-foreground"}`}
+                  >
+                    <StickyNote className="h-4 w-4" />
+                    {hasNote && (
+                      <span
+                        aria-hidden
+                        className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"
+                      />
+                    )}
+                  </Button>
+                  <Button
+                    type="button" variant="ghost" size="icon"
+                    onClick={() => remove(i)}
+                    aria-label="Entfernen"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <Textarea
-                rows={2}
-                value={q.text}
-                onChange={(e) => update(i, { text: e.target.value })}
-                className="flex-1"
-              />
-              <div className="flex flex-col gap-1">
-                <Button
-                  type="button" variant="ghost" size="icon"
-                  disabled={i === 0}
-                  onClick={() => move(i, -1)}
-                  aria-label="Nach oben"
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button" variant="ghost" size="icon"
-                  disabled={i === items.length - 1}
-                  onClick={() => move(i, 1)}
-                  aria-label="Nach unten"
-                >
-                  <ArrowDown className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button" variant="ghost" size="icon"
-                  onClick={() => remove(i)}
-                  aria-label="Entfernen"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              {noteOpen && (
+                <div className="mt-2 pl-10 pr-12 space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    Interviewer-Notiz (intern, nur Admin)
+                  </Label>
+                  <Textarea
+                    rows={2}
+                    value={q.interviewer_notiz ?? ""}
+                    onChange={(e) => update(i, { interviewer_notiz: e.target.value })}
+                    placeholder="Was möchtest du im Vorgespräch dazu klären?"
+                  />
+                </div>
+              )}
             </div>
           );
         })}
