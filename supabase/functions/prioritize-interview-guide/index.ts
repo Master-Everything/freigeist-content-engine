@@ -235,13 +235,13 @@ Deno.serve(async (req) => {
         if (usedIds.has(k.id)) continue;
         usedIds.add(k.id);
         const orig = byId.get(k.id)!;
-        merged[block].push({ id: orig.id, text: orig.text, active: !!k.active });
+        merged[block].push({ id: orig.id, text: orig.text, active: !!k.active, interviewer_notiz: orig.interviewer_notiz ?? null });
       }
 
       // 2. Nicht erwähnte Fragen: active=false, ans Ende (vor add)
       for (const q of current) {
         if (usedIds.has(q.id)) continue;
-        merged[block].push({ id: q.id, text: q.text, active: false });
+        merged[block].push({ id: q.id, text: q.text, active: false, interviewer_notiz: q.interviewer_notiz ?? null });
       }
 
       // 3. add am Ende
