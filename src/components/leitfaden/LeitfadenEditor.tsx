@@ -49,6 +49,7 @@ function toQArray(v: unknown): GuideQuestion[] {
           id: typeof x.id === "string" && x.id ? x.id : crypto.randomUUID(),
           text: x.text.trim(),
           active: typeof x.active === "boolean" ? x.active : true,
+          interviewer_notiz: typeof x.interviewer_notiz === "string" ? x.interviewer_notiz : null,
         };
       }
       return null;
