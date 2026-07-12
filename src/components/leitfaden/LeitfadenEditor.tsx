@@ -62,14 +62,33 @@ function QuestionList({
   items,
   onChange,
   showOnlyActive,
+  compact,
   placeholder,
 }: {
   label: string;
   items: GuideQuestion[];
   onChange: (next: GuideQuestion[]) => void;
   showOnlyActive: boolean;
+  compact: boolean;
   placeholder?: string;
 }) {
+  const cls = compact
+    ? {
+        listWrap: "space-y-1.5",
+        card: "px-2 py-1.5",
+        textareaRows: 1,
+        textareaClass: "flex-1 min-h-0",
+        iconBtn: "h-7 w-7",
+        noteWrap: "mt-1.5 pl-12 pr-2 space-y-1",
+      }
+    : {
+        listWrap: "space-y-2",
+        card: "p-3",
+        textareaRows: 2,
+        textareaClass: "flex-1",
+        iconBtn: "",
+        noteWrap: "mt-2 pl-12 pr-2 space-y-1",
+      };
   const [draft, setDraft] = useState("");
   const [openNoteIds, setOpenNoteIds] = useState<Set<string>>(new Set());
   const activeCount = items.filter((q) => q.active).length;
@@ -112,7 +131,7 @@ function QuestionList({
           ({activeCount} übernommen / {items.length} gesamt)
         </span>
       </Label>
-      <div className="space-y-1.5">
+      <div className={cls.listWrap}>
         {items.map((q, i) => {
           if (showOnlyActive && !q.active) return null;
           const hasNote = !!(q.interviewer_notiz && q.interviewer_notiz.trim());
@@ -120,7 +139,7 @@ function QuestionList({
           return (
             <div
               key={q.id}
-              className={`rounded-md border px-2 py-1.5 ${
+              className={`rounded-md border ${cls.card} ${
                 q.active ? "" : "opacity-60 bg-muted/30"
               }`}
             >
@@ -141,7 +160,7 @@ function QuestionList({
                     onClick={() => toggleNote(q.id)}
                     aria-label={hasNote ? "Interviewer-Notiz bearbeiten" : "Interviewer-Notiz hinzufügen"}
                     aria-pressed={noteOpen}
-                    className={`relative h-7 w-7 ${hasNote ? "text-primary" : "text-muted-foreground"}`}
+                    className={`relative ${cls.iconBtn} ${hasNote ? "text-primary" : "text-muted-foreground"}`}
                   >
                     <StickyNote className="h-4 w-4" />
                     {hasNote && (
@@ -153,14 +172,14 @@ function QuestionList({
                   </Button>
                 </div>
                 <Textarea
-                  rows={1}
+                  rows={cls.textareaRows}
                   value={q.text}
                   onChange={(e) => update(i, { text: e.target.value })}
-                  className="flex-1 min-h-0"
+                  className={cls.textareaClass}
                 />
                 <div className="flex flex-col gap-1">
                   <Button
-                    type="button" variant="ghost" size="icon" className="h-7 w-7"
+                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
                     disabled={i === 0}
                     onClick={() => move(i, -1)}
                     aria-label="Nach oben"
@@ -168,7 +187,7 @@ function QuestionList({
                     <ArrowUp className="h-4 w-4" />
                   </Button>
                   <Button
-                    type="button" variant="ghost" size="icon" className="h-7 w-7"
+                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
                     disabled={i === items.length - 1}
                     onClick={() => move(i, 1)}
                     aria-label="Nach unten"
@@ -176,7 +195,7 @@ function QuestionList({
                     <ArrowDown className="h-4 w-4" />
                   </Button>
                   <Button
-                    type="button" variant="ghost" size="icon" className="h-7 w-7"
+                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
                     onClick={() => remove(i)}
                     aria-label="Entfernen"
                   >
@@ -185,7 +204,7 @@ function QuestionList({
                 </div>
               </div>
               {noteOpen && (
-                <div className="mt-1.5 pl-12 pr-2 space-y-1">
+                <div className={cls.noteWrap}>
                   <Label className="text-xs text-muted-foreground">
                     Interviewer-Notiz (intern, nur Admin)
                   </Label>
@@ -245,6 +264,7 @@ export function LeitfadenEditor({
   const [saving, setSaving] = useState(false);
   const [prioritizing, setPrioritizing] = useState(false);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
+  const [compact, setCompact] = useState(true);
 
   async function generate() {
     setGenerating(true);
@@ -467,9 +487,15 @@ export function LeitfadenEditor({
           </div>
 
           <div className="flex items-center justify-between rounded-md border px-3 py-2">
-            <div className="flex items-center gap-3">
-              <Switch checked={showOnlyActive} onCheckedChange={setShowOnlyActive} id="only-active" />
-              <Label htmlFor="only-active" className="cursor-pointer text-sm">Nur übernommene Fragen anzeigen</Label>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <div className="flex items-center gap-3">
+                <Switch checked={showOnlyActive} onCheckedChange={setShowOnlyActive} id="only-active" />
+                <Label htmlFor="only-active" className="cursor-pointer text-sm">Nur übernommene Fragen anzeigen</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={compact} onCheckedChange={setCompact} id="compact-view" />
+                <Label htmlFor="compact-view" className="cursor-pointer text-sm">Kompakte Ansicht</Label>
+              </div>
             </div>
             <div className="text-xs text-muted-foreground">
               {totals.active} / {totals.total} übernommen
@@ -481,18 +507,21 @@ export function LeitfadenEditor({
             items={guide.hauptfragen ?? []}
             onChange={(v) => patch({ hauptfragen: v })}
             showOnlyActive={showOnlyActive}
+            compact={compact}
           />
           <QuestionList
             label="Vertiefungsfragen"
             items={guide.vertiefungsfragen ?? []}
             onChange={(v) => patch({ vertiefungsfragen: v })}
             showOnlyActive={showOnlyActive}
+            compact={compact}
           />
           <QuestionList
             label="Kritische Fragen"
             items={guide.kritische_fragen ?? []}
             onChange={(v) => patch({ kritische_fragen: v })}
             showOnlyActive={showOnlyActive}
+            compact={compact}
           />
 
           <div className="space-y-2">
