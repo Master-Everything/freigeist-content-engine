@@ -64,6 +64,7 @@ export type Database = {
           hauptfragen: Json
           id: string
           intro: string | null
+          ki_instruktionen: string | null
           kritische_fragen: Json
           model_used: string | null
           notes: string | null
@@ -85,6 +86,7 @@ export type Database = {
           hauptfragen?: Json
           id?: string
           intro?: string | null
+          ki_instruktionen?: string | null
           kritische_fragen?: Json
           model_used?: string | null
           notes?: string | null
@@ -106,6 +108,7 @@ export type Database = {
           hauptfragen?: Json
           id?: string
           intro?: string | null
+          ki_instruktionen?: string | null
           kritische_fragen?: Json
           model_used?: string | null
           notes?: string | null
