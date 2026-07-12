@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Sparkles } from "lucide-react";
 
 type ComplianceRule = {
   code: string;
