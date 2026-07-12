@@ -190,7 +190,8 @@ function QuestionList({
                     Interviewer-Notiz (intern, nur Admin)
                   </Label>
                   <Textarea
-                    rows={2}
+                    rows={1}
+                    className="min-h-0"
                     value={q.interviewer_notiz ?? ""}
                     onChange={(e) => update(i, { interviewer_notiz: e.target.value })}
                     placeholder="Was möchtest du im Vorgespräch dazu klären?"
