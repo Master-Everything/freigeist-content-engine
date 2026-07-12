@@ -33,7 +33,10 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
   const { data: userData, error: userErr } = await admin.auth.getUser(jwt);
-  if (userErr || !userData?.user) return json({ error: "Ungültige Session" });
+  if (userErr || !userData?.user) {
+    console.error("getUser failed", { msg: userErr?.message, jwtLen: jwt.length, jwtPrefix: jwt.slice(0, 12) });
+    return json({ error: "Ungültige Session: " + (userErr?.message ?? "kein User") });
+  }
   const userId = userData.user.id;
 
   const { data: roleRows } = await admin
