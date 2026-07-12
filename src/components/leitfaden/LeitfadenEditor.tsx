@@ -112,7 +112,7 @@ function QuestionList({
           ({activeCount} übernommen / {items.length} gesamt)
         </span>
       </Label>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {items.map((q, i) => {
           if (showOnlyActive && !q.active) return null;
           const hasNote = !!(q.interviewer_notiz && q.interviewer_notiz.trim());
@@ -120,12 +120,12 @@ function QuestionList({
           return (
             <div
               key={q.id}
-              className={`rounded-md border p-2 ${
+              className={`rounded-md border px-2 py-1.5 ${
                 q.active ? "" : "opacity-60 bg-muted/30"
               }`}
             >
-              <div className="flex gap-2 items-start">
-                <div className="flex flex-col items-center gap-1 pt-1">
+              <div className="flex gap-1.5 items-start">
+                <div className="flex w-10 shrink-0 flex-col items-center gap-1 pt-1">
                   <span className="text-xs font-mono text-muted-foreground w-6 text-center">
                     {i + 1}.
                   </span>
@@ -134,30 +134,6 @@ function QuestionList({
                     onCheckedChange={(v) => update(i, { active: v })}
                     aria-label="Übernehmen"
                   />
-                </div>
-                <Textarea
-                  rows={2}
-                  value={q.text}
-                  onChange={(e) => update(i, { text: e.target.value })}
-                  className="flex-1"
-                />
-                <div className="flex flex-col gap-1">
-                  <Button
-                    type="button" variant="ghost" size="icon"
-                    disabled={i === 0}
-                    onClick={() => move(i, -1)}
-                    aria-label="Nach oben"
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button" variant="ghost" size="icon"
-                    disabled={i === items.length - 1}
-                    onClick={() => move(i, 1)}
-                    aria-label="Nach unten"
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -165,7 +141,7 @@ function QuestionList({
                     onClick={() => toggleNote(q.id)}
                     aria-label={hasNote ? "Interviewer-Notiz bearbeiten" : "Interviewer-Notiz hinzufügen"}
                     aria-pressed={noteOpen}
-                    className={`relative ${hasNote ? "text-primary" : "text-muted-foreground"}`}
+                    className={`relative h-7 w-7 ${hasNote ? "text-primary" : "text-muted-foreground"}`}
                   >
                     <StickyNote className="h-4 w-4" />
                     {hasNote && (
@@ -175,8 +151,32 @@ function QuestionList({
                       />
                     )}
                   </Button>
+                </div>
+                <Textarea
+                  rows={1}
+                  value={q.text}
+                  onChange={(e) => update(i, { text: e.target.value })}
+                  className="flex-1 min-h-0"
+                />
+                <div className="flex flex-col gap-1">
                   <Button
-                    type="button" variant="ghost" size="icon"
+                    type="button" variant="ghost" size="icon" className="h-7 w-7"
+                    disabled={i === 0}
+                    onClick={() => move(i, -1)}
+                    aria-label="Nach oben"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button" variant="ghost" size="icon" className="h-7 w-7"
+                    disabled={i === items.length - 1}
+                    onClick={() => move(i, 1)}
+                    aria-label="Nach unten"
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button" variant="ghost" size="icon" className="h-7 w-7"
                     onClick={() => remove(i)}
                     aria-label="Entfernen"
                   >
@@ -185,7 +185,7 @@ function QuestionList({
                 </div>
               </div>
               {noteOpen && (
-                <div className="mt-2 pl-10 pr-12 space-y-1">
+                <div className="mt-1.5 pl-12 pr-2 space-y-1">
                   <Label className="text-xs text-muted-foreground">
                     Interviewer-Notiz (intern, nur Admin)
                   </Label>
