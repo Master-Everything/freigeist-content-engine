@@ -21,7 +21,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-type Q = { id: string; text: string; active: boolean };
+type Q = { id: string; text: string; active: boolean; interviewer_notiz?: string | null };
 const BLOCKS = ["hauptfragen", "vertiefungsfragen", "kritische_fragen"] as const;
 type BlockKey = typeof BLOCKS[number];
 
@@ -33,6 +33,7 @@ function normalize(v: any): Q[] {
       id: typeof x.id === "string" && x.id ? x.id : crypto.randomUUID(),
       text: x.text.trim(),
       active: typeof x.active === "boolean" ? x.active : true,
+      interviewer_notiz: typeof x.interviewer_notiz === "string" ? x.interviewer_notiz : null,
     }));
 }
 
