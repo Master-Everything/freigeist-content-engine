@@ -487,9 +487,15 @@ export function LeitfadenEditor({
           </div>
 
           <div className="flex items-center justify-between rounded-md border px-3 py-2">
-            <div className="flex items-center gap-3">
-              <Switch checked={showOnlyActive} onCheckedChange={setShowOnlyActive} id="only-active" />
-              <Label htmlFor="only-active" className="cursor-pointer text-sm">Nur übernommene Fragen anzeigen</Label>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <div className="flex items-center gap-3">
+                <Switch checked={showOnlyActive} onCheckedChange={setShowOnlyActive} id="only-active" />
+                <Label htmlFor="only-active" className="cursor-pointer text-sm">Nur übernommene Fragen anzeigen</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={compact} onCheckedChange={setCompact} id="compact-view" />
+                <Label htmlFor="compact-view" className="cursor-pointer text-sm">Kompakte Ansicht</Label>
+              </div>
             </div>
             <div className="text-xs text-muted-foreground">
               {totals.active} / {totals.total} übernommen
@@ -501,18 +507,21 @@ export function LeitfadenEditor({
             items={guide.hauptfragen ?? []}
             onChange={(v) => patch({ hauptfragen: v })}
             showOnlyActive={showOnlyActive}
+            compact={compact}
           />
           <QuestionList
             label="Vertiefungsfragen"
             items={guide.vertiefungsfragen ?? []}
             onChange={(v) => patch({ vertiefungsfragen: v })}
             showOnlyActive={showOnlyActive}
+            compact={compact}
           />
           <QuestionList
             label="Kritische Fragen"
             items={guide.kritische_fragen ?? []}
             onChange={(v) => patch({ kritische_fragen: v })}
             showOnlyActive={showOnlyActive}
+            compact={compact}
           />
 
           <div className="space-y-2">
