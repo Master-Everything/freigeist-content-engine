@@ -112,6 +112,15 @@ Deno.serve(async (req) => {
       instruction: "Rufe das Tool 'emit_interview_guide' EINMAL mit dem strukturierten Leitfaden auf.",
     };
 
+    const questionArraySchema = {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { text: { type: "string" } },
+        required: ["text"],
+        additionalProperties: false,
+      },
+    };
     const tool = {
       type: "function",
       function: {
@@ -121,9 +130,9 @@ Deno.serve(async (req) => {
           type: "object",
           properties: {
             intro: { type: "string" },
-            hauptfragen: { type: "array", items: { type: "string" } },
-            vertiefungsfragen: { type: "array", items: { type: "string" } },
-            kritische_fragen: { type: "array", items: { type: "string" } },
+            hauptfragen: questionArraySchema,
+            vertiefungsfragen: questionArraySchema,
+            kritische_fragen: questionArraySchema,
             abschluss: { type: "string" },
             redaktionelle_hinweise: { type: "string" },
           },
