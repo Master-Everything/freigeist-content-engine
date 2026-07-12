@@ -13,6 +13,7 @@ import {
   LogOut,
   User as UserIcon,
   Database,
+  Sparkles,
 } from "lucide-react";
 import { useKnowledgeCounts } from "@/hooks/useKnowledgeCounts";
 import {
