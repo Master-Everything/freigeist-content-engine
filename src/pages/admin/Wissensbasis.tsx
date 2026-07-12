@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Sparkles } from "lucide-react";
 
 type ComplianceRule = {
   code: string;
@@ -123,13 +124,24 @@ export default function Wissensbasis() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Wissensbasis</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Read-only Übersicht der geseedeten GEM-Daten (Compliance-Regeln, BannedWords,
-          Master-Prompts, E-Mail-Vorlagen, Moderations-Tipps). Änderungen aktuell nur per
-          Migration.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Wissensbasis</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Read-only Übersicht der geseedeten GEM-Daten (Compliance-Regeln, BannedWords,
+            Master-Prompts, E-Mail-Vorlagen, Moderations-Tipps). Änderungen aktuell nur per
+            Migration.
+          </p>
+        </div>
+        <div
+          className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-gradient-to-r from-primary/10 to-transparent px-3 py-1 text-xs text-muted-foreground shadow-[0_0_0_0_transparent] transition-shadow hover:shadow-[0_0_16px_-2px_hsl(var(--primary)/0.5)]"
+          title="Powered by Martina Hautau"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <span>
+            Powered by <span className="font-medium text-foreground">Martina Hautau</span>
+          </span>
+        </div>
       </div>
 
       <Tabs defaultValue="rules">
