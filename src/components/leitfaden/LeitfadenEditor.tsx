@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   Loader2, Plus, X, Sparkles, Save, CheckCircle2, RotateCcw,
-  ArrowUp, ArrowDown, Wand2,
+  ArrowUp, ArrowDown, Wand2, StickyNote,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-export type GuideQuestion = { id: string; text: string; active: boolean };
+export type GuideQuestion = { id: string; text: string; active: boolean; interviewer_notiz?: string | null };
 
 export type InterviewGuide = {
   id: string;
