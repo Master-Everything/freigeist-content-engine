@@ -458,7 +458,7 @@ export default function DashboardHome() {
               </div>
             )
           }
-          details={[...agg.m6.laeuft, ...agg.m6.pausiert, ...agg.m6.nicht_gestartet].slice(0, 8).map((r) => {
+          details={[...agg.m6.laeuft, ...agg.m6.pausiert, ...agg.m6.nicht_gestartet, ...agg.m6.beendet].slice(0, 8).map((r) => {
             const p = postById.get(r.post_id);
             return {
               id: r.id,
