@@ -196,9 +196,22 @@ export default function Module6Aufzeichnung() {
         // Fallback: wenn question_order leer, aus Guide ableiten (read-only Anzeige)
         if (!Array.isArray(sess.question_order) || sess.question_order.length === 0) {
           sess.question_order = collectOrderedQuestions(g);
+        } else {
+          // Notizen aus aktuellem Leitfaden nachziehen (Snapshot könnte veraltet sein)
+          const latest = collectOrderedQuestions(g);
+          const noteMap = new Map(latest.map((q) => [q.id, q.interviewer_notiz]));
+          sess.question_order = (sess.question_order as OrderedQuestion[]).map((q) => ({
+            ...q,
+            interviewer_notiz: noteMap.get(q.id) ?? q.interviewer_notiz ?? null,
+          }));
         }
         // Speaker darf interviewer_notiz nicht sehen
-        if (role === "speaker") sess.interviewer_notiz = null;
+        if (role === "speaker") {
+          sess.interviewer_notiz = null;
+          sess.question_order = (sess.question_order as OrderedQuestion[]).map((q) => ({
+            ...q, interviewer_notiz: null,
+          }));
+        }
         setSession(sess as Session);
         setInterviewerNotiz(sess.interviewer_notiz ?? "");
         setMarkers(Array.isArray(sess.recording_markers) ? sess.recording_markers : []);
