@@ -554,7 +554,7 @@ export default function Module6Aufzeichnung() {
                   <Input
                     value={newMarkerComment}
                     onChange={(e) => setNewMarkerComment(e.target.value)}
-                    placeholder="Kommentar (optional) — z. B. „Kernaussage", „Schnitt hier", „Rückfrage"…"
+                    placeholder='Kommentar (optional) — z. B. „Kernaussage", „Schnitt hier", „Rückfrage" …'
                     className="flex-1 min-w-[200px]"
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMarker(); } }}
                   />
