@@ -576,23 +576,49 @@ export default function Module5Vorgespraech() {
 
           {/* Ablauf-Hinweise */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Ablauf & Aufbau des Interviews</CardTitle>
-              <CardDescription>
-                Was mit dem Speaker zum Ablauf besprochen wurde — auch später verfügbar.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+              <div>
+                <CardTitle className="text-base">Ablauf & Aufbau des Interviews</CardTitle>
+                <CardDescription>
+                  Was mit dem Speaker zum Ablauf besprochen wurde — auch später verfügbar.
+                </CardDescription>
+              </div>
+              {isAdmin && (
+                <div className="flex rounded-md border overflow-hidden text-xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setFlowNotesMode("edit")}
+                    className={`px-2 py-1 ${flowNotesMode === "edit" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground"}`}
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFlowNotesMode("preview")}
+                    className={`px-2 py-1 ${flowNotesMode === "preview" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground"}`}
+                  >
+                    Vorschau
+                  </button>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {isAdmin ? (
-                <Textarea
-                  ref={flowRef} value={flowNotes} onChange={(e) => setFlowNotes(e.target.value)}
-                  placeholder="Reihenfolge der Themen, Schwerpunkte, Wünsche des Speakers …"
-                  rows={3}
-                />
+                flowNotesMode === "edit" ? (
+                  <Textarea
+                    ref={flowRef} value={flowNotes} onChange={(e) => setFlowNotes(e.target.value)}
+                    placeholder="Reihenfolge der Themen, Schwerpunkte, Wünsche des Speakers …"
+                    rows={3}
+                  />
+                ) : (
+                  flowNotes.trim()
+                    ? <SimpleMarkdown text={flowNotes} />
+                    : <div className="text-sm italic text-muted-foreground">Noch keine Hinweise hinterlegt.</div>
+                )
               ) : (
-                <div className="text-sm whitespace-pre-wrap">
-                  {flowNotes || <span className="italic text-muted-foreground">Noch keine Hinweise hinterlegt.</span>}
-                </div>
+                flowNotes.trim()
+                  ? <SimpleMarkdown text={flowNotes} />
+                  : <div className="text-sm italic text-muted-foreground">Noch keine Hinweise hinterlegt.</div>
               )}
             </CardContent>
           </Card>
