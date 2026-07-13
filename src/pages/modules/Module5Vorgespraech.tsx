@@ -524,10 +524,6 @@ export default function Module5Vorgespraech() {
               </div>
               {isAdmin && (
                 <div className="flex items-center gap-3 shrink-0">
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Checkbox checked={onlyOpen} onCheckedChange={(v) => setOnlyOpen(!!v)} />
-                    Nur offene
-                  </label>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="outline" size="sm">
@@ -553,30 +549,74 @@ export default function Module5Vorgespraech() {
               )}
             </CardHeader>
             <CardContent className="space-y-3">
-              {visibleClarifications.length === 0 ? (
+              {clarifications.length === 0 ? (
                 <div className="py-6 text-center text-sm text-muted-foreground italic">
-                  {clarifications.length === 0
-                    ? "Keine offenen Klärungspunkte — im Leitfaden sind keine Interviewer-Notizen hinterlegt."
-                    : "Alle Klärungspunkte sind erledigt. ✔"}
+                  Keine Klärungspunkte — im Leitfaden sind keine Interviewer-Notizen hinterlegt.
                 </div>
               ) : (
-                visibleClarifications.map((c) => {
-                  const idx = clarifications.findIndex((x) => x.question_id === c.question_id);
-                  return (
-                    <ClarificationRow
-                      key={c.question_id}
-                      item={c}
-                      isAdmin={isAdmin}
-                      onChange={(patch) => {
-                        setClarifications((prev) => {
-                          const next = [...prev];
-                          next[idx] = { ...next[idx], ...patch };
-                          return next;
-                        });
-                      }}
-                    />
-                  );
-                })
+                <>
+                  {openClarifications.length === 0 ? (
+                    <div className="py-4 text-center text-sm text-muted-foreground italic">
+                      Alle Klärungspunkte sind erledigt. ✔
+                    </div>
+                  ) : (
+                    openClarifications.map((c) => {
+                      const idx = clarifications.findIndex((x) => x.question_id === c.question_id);
+                      return (
+                        <ClarificationRow
+                          key={c.question_id}
+                          item={c}
+                          isAdmin={isAdmin}
+                          onChange={(patch) => {
+                            setClarifications((prev) => {
+                              const next = [...prev];
+                              next[idx] = { ...next[idx], ...patch };
+                              return next;
+                            });
+                          }}
+                        />
+                      );
+                    })
+                  )}
+
+                  {clarifiedCount > 0 && (
+                    <Collapsible open={showClarified} onOpenChange={setShowClarified} className="pt-2">
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            Bereits geklärt ({clarifiedCount})
+                          </span>
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform ${showClarified ? "rotate-180" : ""}`}
+                          />
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-3 pt-3">
+                        {clarifiedClarifications.map((c) => {
+                          const idx = clarifications.findIndex((x) => x.question_id === c.question_id);
+                          return (
+                            <ClarificationRow
+                              key={c.question_id}
+                              item={c}
+                              isAdmin={isAdmin}
+                              onChange={(patch) => {
+                                setClarifications((prev) => {
+                                  const next = [...prev];
+                                  next[idx] = { ...next[idx], ...patch };
+                                  return next;
+                                });
+                              }}
+                            />
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
