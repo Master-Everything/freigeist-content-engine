@@ -584,7 +584,7 @@ export function LeitfadenEditor({
 
           <div className="space-y-2">
             <Label>Abschluss</Label>
-            <Textarea rows={3} value={guide.abschluss ?? ""} onChange={(e) => patch({ abschluss: e.target.value })} />
+            <Textarea ref={abschlussRef} rows={3} className="resize-none" value={guide.abschluss ?? ""} onChange={(e) => patch({ abschluss: e.target.value })} />
           </div>
 
           <div className="space-y-2">
