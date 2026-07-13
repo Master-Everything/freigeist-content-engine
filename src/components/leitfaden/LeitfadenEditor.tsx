@@ -592,7 +592,7 @@ export function LeitfadenEditor({
               Redaktionelle Hinweise
               <span className="ml-2 text-xs text-muted-foreground">(intern — Speaker sieht das NICHT)</span>
             </Label>
-            <Textarea rows={4} value={guide.redaktionelle_hinweise ?? ""} onChange={(e) => patch({ redaktionelle_hinweise: e.target.value })} />
+            <Textarea ref={hinweiseRef} rows={4} className="resize-none" value={guide.redaktionelle_hinweise ?? ""} onChange={(e) => patch({ redaktionelle_hinweise: e.target.value })} />
           </div>
 
           <div className="space-y-2">
