@@ -351,6 +351,29 @@ export default function Module6Aufzeichnung() {
     await patchSession({ status: "nicht_gestartet", accumulated_seconds: 0, resumed_at: null } as any);
   }
 
+  async function saveSendeplanung() {
+    if (!session) return;
+    setSendeSaving(true);
+    await patchSession({
+      scheduled_at: localInputToIso(scheduledAt),
+      stream_url: streamUrl.trim() || null,
+      stream_platform: streamPlatform.trim() || null,
+    } as any);
+    setSendeSaving(false);
+    toast({ title: "Sendeplanung gespeichert" });
+  }
+
+  async function copyStreamUrl() {
+    if (!streamUrl) return;
+    try {
+      await navigator.clipboard.writeText(streamUrl);
+      toast({ title: "Link kopiert" });
+    } catch {
+      toast({ title: "Kopieren fehlgeschlagen", variant: "destructive" });
+    }
+  }
+
+
   async function addMarker() {
     if (!session) return;
     const ts = currentSeconds;
