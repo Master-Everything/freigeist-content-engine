@@ -135,90 +135,19 @@ function QuestionList({
       <div className={cls.listWrap}>
         {items.map((q, i) => {
           if (showOnlyActive && !q.active) return null;
-          const hasNote = !!(q.interviewer_notiz && q.interviewer_notiz.trim());
-          const noteOpen = openNoteIds.has(q.id);
           return (
-            <div
+            <QuestionRow
               key={q.id}
-              className={`rounded-md border ${cls.card} ${
-                q.active ? "" : "opacity-60 bg-muted/30"
-              }`}
-            >
-              <div className="flex gap-1.5 items-start">
-                <div className="flex w-10 shrink-0 flex-col items-center gap-1 pt-1">
-                  <span className="text-xs font-mono text-muted-foreground w-6 text-center">
-                    {i + 1}.
-                  </span>
-                  <Switch
-                    checked={q.active}
-                    onCheckedChange={(v) => update(i, { active: v })}
-                    aria-label="Übernehmen"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleNote(q.id)}
-                    aria-label={hasNote ? "Interviewer-Notiz bearbeiten" : "Interviewer-Notiz hinzufügen"}
-                    aria-pressed={noteOpen}
-                    className={`relative ${cls.iconBtn} ${hasNote ? "text-primary" : "text-muted-foreground"}`}
-                  >
-                    <StickyNote className="h-4 w-4" />
-                    {hasNote && (
-                      <span
-                        aria-hidden
-                        className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"
-                      />
-                    )}
-                  </Button>
-                </div>
-                <Textarea
-                  rows={cls.textareaRows}
-                  value={q.text}
-                  onChange={(e) => update(i, { text: e.target.value })}
-                  className={cls.textareaClass}
-                />
-                <div className="flex flex-col gap-1">
-                  <Button
-                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
-                    disabled={i === 0}
-                    onClick={() => move(i, -1)}
-                    aria-label="Nach oben"
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
-                    disabled={i === items.length - 1}
-                    onClick={() => move(i, 1)}
-                    aria-label="Nach unten"
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
-                    onClick={() => remove(i)}
-                    aria-label="Entfernen"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              {noteOpen && (
-                <div className={cls.noteWrap}>
-                  <Label className="text-xs text-muted-foreground">
-                    Interviewer-Notiz (intern, nur Admin)
-                  </Label>
-                  <Textarea
-                    rows={1}
-                    className="min-h-0"
-                    value={q.interviewer_notiz ?? ""}
-                    onChange={(e) => update(i, { interviewer_notiz: e.target.value })}
-                    placeholder="Was möchtest du im Vorgespräch dazu klären?"
-                  />
-                </div>
-              )}
-            </div>
+              q={q}
+              index={i}
+              total={items.length}
+              cls={cls}
+              noteOpen={openNoteIds.has(q.id)}
+              onToggleNote={() => toggleNote(q.id)}
+              onUpdate={(patch) => update(i, patch)}
+              onMove={(dir) => move(i, dir)}
+              onRemove={() => remove(i)}
+            />
           );
         })}
       </div>
