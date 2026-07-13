@@ -3,7 +3,9 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   MessagesSquare, Loader2, ArrowRight, CalendarClock, CheckCircle2,
   Sparkles, BookOpen, StickyNote, Save, RotateCcw, ExternalLink, BookOpenCheck,
+  ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
