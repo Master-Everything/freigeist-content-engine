@@ -314,6 +314,14 @@ export function LeitfadenEditor({
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [compact, setCompact] = useState(true);
 
+  // Auto-Grow für alle freien Textareas — MUSS vor dem `if (!guide)` Return stehen,
+  // damit die Hook-Reihenfolge über beide Render-Pfade stabil bleibt.
+  const introRef = useAutoGrow(guide?.intro ?? "");
+  const kiRef = useAutoGrow(guide?.ki_instruktionen ?? "");
+  const abschlussRef = useAutoGrow(guide?.abschluss ?? "");
+  const hinweiseRef = useAutoGrow(guide?.redaktionelle_hinweise ?? "");
+  const notesRef = useAutoGrow(guide?.notes ?? "");
+
   async function generate() {
     setGenerating(true);
     const { data, error } = await supabase.functions.invoke("generate-interview-guide", {
