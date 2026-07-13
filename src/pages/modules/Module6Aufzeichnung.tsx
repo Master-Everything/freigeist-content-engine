@@ -64,6 +64,43 @@ function fmtMMSS(total: number) {
   return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
 }
 
+function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function localInputToIso(local: string): string | null {
+  if (!local) return null;
+  const d = new Date(local);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function fmtScheduled(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("de-DE", {
+    weekday: "short", day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+function relativeChip(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const diffMs = d.getTime() - Date.now();
+  const rtf = new Intl.RelativeTimeFormat("de-DE", { numeric: "auto" });
+  const abs = Math.abs(diffMs);
+  const min = 60_000, hr = 60 * min, day = 24 * hr;
+  if (abs < hr) return rtf.format(Math.round(diffMs / min), "minute");
+  if (abs < day) return rtf.format(Math.round(diffMs / hr), "hour");
+  return rtf.format(Math.round(diffMs / day), "day");
+}
+
 function StatusBadge({ postStatus, sessionStatus }: { postStatus?: string; sessionStatus?: string }) {
   if (postStatus === "aufzeichnung_done")
     return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">Aufzeichnung abgeschlossen</Badge>;
