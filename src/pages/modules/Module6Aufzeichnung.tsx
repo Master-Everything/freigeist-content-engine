@@ -560,6 +560,8 @@ export default function Module6Aufzeichnung() {
                 readOnly={!isAdmin || isDone}
                 onToggle={toggleAsked}
                 showNotes={isAdmin}
+                clarifications={clarifications}
+                showClarifications
               />
             </CardContent>
           </Card>
