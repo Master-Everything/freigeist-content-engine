@@ -255,13 +255,25 @@ export default function Module4Leitfaden() {
                       <StatusBadge status={row.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant={isAdmin ? "default" : "outline"}
-                        onClick={() => navigate(`/module/leitfaden?post_id=${row.id}`)}
-                      >
-                        {isAdmin ? "Öffnen" : "Ansehen"} <ArrowRight className="ml-1 h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant={isAdmin ? "default" : "outline"}
+                          onClick={() => navigate(`/module/leitfaden?post_id=${row.id}`)}
+                        >
+                          {isAdmin ? "Öffnen" : "Ansehen"} <ArrowRight className="ml-1 h-4 w-4" />
+                        </Button>
+                        {isAdmin && row.status === "leitfaden_final" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/module/vorgespraech?post_id=${row.id}`)}
+                            title="Vorgespräch planen"
+                          >
+                            Vorgespräch
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
