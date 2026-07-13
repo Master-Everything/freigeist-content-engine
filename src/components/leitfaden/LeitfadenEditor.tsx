@@ -657,7 +657,7 @@ export function LeitfadenEditor({
             {hinweiseMode === "edit" ? (
               <Textarea ref={hinweiseRef} rows={4} className="resize-none" value={guide.redaktionelle_hinweise ?? ""} onChange={(e) => patch({ redaktionelle_hinweise: e.target.value })} />
             ) : (
-              <div className="rounded-md border bg-muted/30 px-3 py-2 min-h-[6rem]">
+              <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 min-h-[6rem] text-red-900 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-100">
                 <SimpleMarkdown text={guide.redaktionelle_hinweise ?? ""} />
               </div>
             )}
