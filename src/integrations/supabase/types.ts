@@ -257,6 +257,42 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_guides: {
+        Row: {
+          active: boolean
+          body_md: string
+          created_at: string
+          id: string
+          key: string
+          quick_tips: Json
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          body_md: string
+          created_at?: string
+          id?: string
+          key: string
+          quick_tips?: Json
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          body_md?: string
+          created_at?: string
+          id?: string
+          key?: string
+          quick_tips?: Json
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       knowledge_moderation_tips: {
         Row: {
           active: boolean
@@ -491,6 +527,53 @@ export type Database = {
             columns: ["speaker_id"]
             isOneToOne: false
             referencedRelation: "speakers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pre_interview_calls: {
+        Row: {
+          clarifications: Json
+          created_at: string
+          flow_notes: string | null
+          id: string
+          internal_notes: string | null
+          meeting_link: string | null
+          post_id: string
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clarifications?: Json
+          created_at?: string
+          flow_notes?: string | null
+          id?: string
+          internal_notes?: string | null
+          meeting_link?: string | null
+          post_id: string
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clarifications?: Json
+          created_at?: string
+          flow_notes?: string | null
+          id?: string
+          internal_notes?: string | null
+          meeting_link?: string | null
+          post_id?: string
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_interview_calls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
