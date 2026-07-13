@@ -248,11 +248,16 @@ export default function Module5Vorgespraech() {
     })();
   }, [postId, hasContext, role]);
 
-  const openCount = clarifications.filter((c) => !c.clarified).length;
-  const visibleClarifications = useMemo(
-    () => (onlyOpen ? clarifications.filter((c) => !c.clarified) : clarifications),
-    [clarifications, onlyOpen]
+  const openClarifications = useMemo(
+    () => clarifications.filter((c) => !c.clarified),
+    [clarifications]
   );
+  const clarifiedClarifications = useMemo(
+    () => clarifications.filter((c) => c.clarified),
+    [clarifications]
+  );
+  const openCount = openClarifications.length;
+  const clarifiedCount = clarifiedClarifications.length;
 
   async function saveAll() {
     if (!call) return;
