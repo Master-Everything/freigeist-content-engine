@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useAutoGrow } from "@/hooks/use-auto-grow";
+import { SimpleMarkdown } from "@/lib/simple-markdown";
 import { GuideQuestionsCompact } from "@/components/vorgespraech/GuideQuestionsCompact";
 import { GuideViewer } from "@/components/vorgespraech/GuideViewer";
 import type { GuideQuestion } from "@/components/leitfaden/LeitfadenEditor";
