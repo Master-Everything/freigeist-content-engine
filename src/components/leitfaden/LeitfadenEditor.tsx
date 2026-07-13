@@ -512,7 +512,7 @@ export function LeitfadenEditor({
         <fieldset disabled={isFinal} className="space-y-5 disabled:opacity-70">
           <div className="space-y-2">
             <Label>Einstieg / Begrüßung</Label>
-            <Textarea rows={3} value={guide.intro ?? ""} onChange={(e) => patch({ intro: e.target.value })} />
+            <Textarea ref={introRef} rows={3} className="resize-none" value={guide.intro ?? ""} onChange={(e) => patch({ intro: e.target.value })} />
           </div>
 
           {/* KI-gestützte Priorisierung */}
