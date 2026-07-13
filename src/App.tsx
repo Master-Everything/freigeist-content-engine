@@ -107,7 +107,7 @@ const App = () => (
               <Route
                 path="/module/aufzeichnung"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute>
                     <Module6Aufzeichnung />
                   </ProtectedRoute>
                 }

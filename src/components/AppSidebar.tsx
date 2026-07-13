@@ -83,7 +83,7 @@ const adminModules: Module[] = [
   { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
   { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "in-progress" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "active" },
-  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "planned" },
+  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "in-progress" },
   { num: 7, title: "Interview-Beiträge", url: "/module/interview-beitraege", icon: FileText, status: "active" },
   { num: 8, title: "News-Plattform", url: "/module/news", icon: Newspaper, status: "active" },
 ];
@@ -114,7 +114,7 @@ const speakerModules: Module[] = [
   { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
   { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "in-progress" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "active" },
-  { num: 6, title: "Aufzeichnung / Live", url: "/speaker/modul/6", icon: Video, status: "planned" },
+  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "in-progress" },
   { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "planned" },
   { num: 8, title: "News-Plattform", url: "/speaker/modul/8", icon: Newspaper, status: "active" },
 ];
