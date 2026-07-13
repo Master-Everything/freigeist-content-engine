@@ -33,10 +33,12 @@ type Props = {
   readOnly?: boolean;
   onToggle?: (id: string, asked: boolean) => void;
   showNotes?: boolean;
+  clarifications?: Record<string, { answer: string; clarified: boolean }>;
+  showClarifications?: boolean;
 };
 
 export function GuideQuestionsChecklist({
-  questions, askedIds, readOnly, onToggle, showNotes,
+  questions, askedIds, readOnly, onToggle, showNotes, clarifications, showClarifications,
 }: Props) {
   if (questions.length === 0) {
     return (
