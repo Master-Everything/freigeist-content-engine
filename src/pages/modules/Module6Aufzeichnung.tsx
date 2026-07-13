@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useAutoGrow } from "@/hooks/use-auto-grow";
 import { SimpleMarkdown } from "@/lib/simple-markdown";
+import { relativeChip } from "@/lib/relative-time";
 import { GuideViewer } from "@/components/vorgespraech/GuideViewer";
 import {
   GuideQuestionsChecklist,
