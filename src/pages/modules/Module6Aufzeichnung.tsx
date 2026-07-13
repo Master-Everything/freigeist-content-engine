@@ -247,10 +247,10 @@ export default function Module6Aufzeichnung() {
         });
       }
 
-      // Klärungsantworten aus Vorgespräch (für Admin und Speaker)
+      // Klärungsantworten + Ablauf-Notizen aus Vorgespräch (für Admin und Speaker)
       const { data: pc } = await (supabase as any)
         .from("pre_interview_calls")
-        .select("clarifications")
+        .select("clarifications, flow_notes")
         .eq("post_id", postId!)
         .maybeSingle();
       if (pc?.clarifications && Array.isArray(pc.clarifications)) {
@@ -264,6 +264,7 @@ export default function Module6Aufzeichnung() {
       } else {
         setClarifications({});
       }
+      setFlowNotes(pc?.flow_notes ?? "");
 
 
 
