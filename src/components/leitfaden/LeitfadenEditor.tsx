@@ -10,6 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAutoGrow } from "@/hooks/use-auto-grow";
@@ -500,9 +511,25 @@ export function LeitfadenEditor({
               {guide.generated_at && <span className="ml-3 text-xs">generiert: {new Date(guide.generated_at).toLocaleString("de-DE")}</span>}
             </CardDescription>
           </div>
-          <Button size="sm" variant="outline" onClick={generate} disabled={generating}>
-            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="mr-2 h-4 w-4" />Neu generieren</>}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline" disabled={generating}>
+                {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="mr-2 h-4 w-4" />Neu generieren</>}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Leitfaden neu generieren?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Der bestehende Entwurf inkl. aller Fragen, Toggle-Zustände, Interviewer-Notizen und redaktioneller Hinweise wird vollständig durch einen neuen KI-Vorschlag ersetzt. Diese Aktion kann nicht rückgängig gemacht werden.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction onClick={generate}>Neu generieren</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -535,15 +562,30 @@ export function LeitfadenEditor({
               value={guide.ki_instruktionen ?? ""}
               onChange={(e) => patch({ ki_instruktionen: e.target.value })}
             />
-            <Button
-              type="button"
-              size="sm"
-              onClick={prioritize}
-              disabled={prioritizing || !(guide.ki_instruktionen ?? "").trim()}
-            >
-              {prioritizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-              KI-Vorschlag anwenden
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={prioritizing || !(guide.ki_instruktionen ?? "").trim()}
+                >
+                  {prioritizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                  KI-Vorschlag anwenden
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>KI-Vorschlag anwenden?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Die KI passt Reihenfolge und Toggle-Status aller bestehenden Fragen an und kann neue Fragen ergänzen. Deine bisherige manuelle Sortierung sowie die Übernommen-/Verworfen-Auswahl werden dabei überschrieben. Interviewer-Notizen bleiben an ihrer jeweiligen Frage erhalten.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={prioritize}>Anwenden</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           <div className="flex items-center justify-between rounded-md border px-3 py-2">
