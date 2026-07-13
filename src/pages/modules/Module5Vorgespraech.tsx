@@ -789,7 +789,7 @@ function ClarificationRow({
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
               {BLOCK_LABEL[item.block]}
             </Badge>
-            <div className={`text-sm font-medium ${item.clarified ? "line-through text-muted-foreground" : ""}`}>
+            <div className={`text-sm font-medium ${item.clarified ? "text-muted-foreground" : ""}`}>
               {item.question_text}
             </div>
           </div>
