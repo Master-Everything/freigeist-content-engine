@@ -114,6 +114,7 @@ export default function Module6Aufzeichnung() {
   const [flowNotes, setFlowNotes] = useState<string>("");
 
   const [interviewerNotiz, setInterviewerNotiz] = useState("");
+  const [notizMode, setNotizMode] = useState<"edit" | "preview">("edit");
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [newMarkerComment, setNewMarkerComment] = useState("");
   const [saving, setSaving] = useState(false);
@@ -137,7 +138,7 @@ export default function Module6Aufzeichnung() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, tick]);
 
-  const notizRef = useAutoGrow(interviewerNotiz);
+  const notizRef = useAutoGrow(interviewerNotiz, notizMode);
 
   useEffect(() => {
     if (!hasContext || !role) return;
@@ -520,7 +521,8 @@ export default function Module6Aufzeichnung() {
                 <div className="flex flex-wrap gap-2">
                   {session.status !== "laeuft" ? (
                     <Button onClick={timerStart}>
-                      <Play className="mr-1.5 h-4 w-4" /> Start
+                      <Play className="mr-1.5 h-4 w-4" />{" "}
+                      {session.status === "pausiert" ? "Fortsetzen" : "Start"}
                     </Button>
                   ) : (
                     <Button variant="outline" onClick={timerPause}>
@@ -672,19 +674,51 @@ export default function Module6Aufzeichnung() {
                     Nur für die Redaktion sichtbar — Beobachtungen, Follow-ups, Auffälligkeiten.
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={saveNotiz} disabled={saving}>
-                  {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-                  Speichern
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex rounded-md border p-0.5">
+                    <Button
+                      type="button"
+                      variant={notizMode === "edit" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setNotizMode("edit")}
+                    >
+                      Bearbeiten
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={notizMode === "preview" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setNotizMode("preview")}
+                    >
+                      Vorschau
+                    </Button>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={saveNotiz} disabled={saving}>
+                    {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                    Speichern
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <Textarea
-                  ref={notizRef}
-                  value={interviewerNotiz}
-                  onChange={(e) => setInterviewerNotiz(e.target.value)}
-                  placeholder="Notizen zur Aufzeichnung …"
-                  rows={2}
-                />
+                {notizMode === "edit" ? (
+                  <Textarea
+                    ref={notizRef}
+                    value={interviewerNotiz}
+                    onChange={(e) => setInterviewerNotiz(e.target.value)}
+                    placeholder="Notizen zur Aufzeichnung …"
+                    rows={2}
+                  />
+                ) : (
+                  <div className="rounded-md border bg-muted/30 p-3 min-h-[3rem] text-sm">
+                    {interviewerNotiz.trim() ? (
+                      <SimpleMarkdown text={interviewerNotiz} />
+                    ) : (
+                      <span className="text-muted-foreground italic">Noch keine Notizen erfasst.</span>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
