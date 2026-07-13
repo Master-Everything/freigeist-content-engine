@@ -148,7 +148,7 @@ export default function Module5Vorgespraech() {
   const [flowNotes, setFlowNotes] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
   const [clarifications, setClarifications] = useState<Clarification[]>([]);
-  const [onlyOpen, setOnlyOpen] = useState(true);
+  const [showClarified, setShowClarified] = useState(false);
   const [saving, setSaving] = useState(false);
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [flowNotesMode, setFlowNotesMode] = useState<"edit" | "preview">("preview");
