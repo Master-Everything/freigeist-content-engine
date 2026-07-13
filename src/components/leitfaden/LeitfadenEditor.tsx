@@ -562,15 +562,30 @@ export function LeitfadenEditor({
               value={guide.ki_instruktionen ?? ""}
               onChange={(e) => patch({ ki_instruktionen: e.target.value })}
             />
-            <Button
-              type="button"
-              size="sm"
-              onClick={prioritize}
-              disabled={prioritizing || !(guide.ki_instruktionen ?? "").trim()}
-            >
-              {prioritizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-              KI-Vorschlag anwenden
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={prioritizing || !(guide.ki_instruktionen ?? "").trim()}
+                >
+                  {prioritizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                  KI-Vorschlag anwenden
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>KI-Vorschlag anwenden?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Die KI passt Reihenfolge und Toggle-Status aller bestehenden Fragen an und kann neue Fragen ergänzen. Deine bisherige manuelle Sortierung sowie die Übernommen-/Verworfen-Auswahl werden dabei überschrieben. Interviewer-Notizen bleiben an ihrer jeweiligen Frage erhalten.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={prioritize}>Anwenden</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           <div className="flex items-center justify-between rounded-md border px-3 py-2">
