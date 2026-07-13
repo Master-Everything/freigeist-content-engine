@@ -1,69 +1,40 @@
-## Modul 4 — Auto-Grow für alle Textareas im Leitfaden-Editor
+## Modul 4 — Sicherheitsabfragen für destruktive KI-Aktionen
 
-Zentraler `useAutoGrow`-Hook + Anwendung auf alle sieben Textareas in `LeitfadenEditor.tsx`.
+Ziel: Ein versehentlicher Klick auf „Neu generieren" oder „KI-Vorschlag anwenden" darf bestehende Inhalte nicht ungefragt überschreiben.
 
-### 1. Neuer Hook `src/hooks/use-auto-grow.ts`
+### Umsetzung
 
-```ts
-import { useEffect, useRef } from "react";
+Beide Buttons in `src/components/leitfaden/LeitfadenEditor.tsx` werden in einen shadcn `AlertDialog` eingebettet (bereits im Projekt etabliert, z. B. `SourceDataEditor.tsx`, `EditPost.tsx` — keine neue Abhängigkeit).
 
-export function useAutoGrow(value: string, resetKey?: unknown) {
-  const ref = useRef<HTMLTextAreaElement | null>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [value, resetKey]);
-  return ref;
-}
-```
+#### 1. „Neu generieren" (Header-Button)
 
-`resetKey` triggert Neuberechnung auch bei leeren Feldern (Density-Toggle).
+- Nur der Header-Button (rechts oben, sichtbar wenn bereits ein Guide existiert) bekommt die Abfrage. Der Button im leeren Zustand („Leitfaden generieren", kein Guide vorhanden) bleibt ohne Rückfrage — dort gibt's nichts zu überschreiben.
+- Dialog:
+  - Titel: „Leitfaden neu generieren?"
+  - Beschreibung: bestehender Entwurf inkl. Fragen, Toggle-Zustände, Interviewer-Notizen und redaktioneller Hinweise wird vollständig durch einen neuen KI-Vorschlag ersetzt, nicht rückgängig zu machen.
+  - Aktionen: „Abbrechen" / „Neu generieren" → ruft die bestehende `generate()`-Funktion.
 
-### 2. QuestionList — Extraktion in `<QuestionRow>` (Pflicht)
+#### 2. „KI-Vorschlag anwenden" (Priorisierungs-Block)
 
-Direkt im `.map()`-Callback lässt sich kein Hook aufrufen (Rules of Hooks). Deshalb echter Umbau:
+- Dialog:
+  - Titel: „KI-Vorschlag anwenden?"
+  - Beschreibung: KI passt Reihenfolge und Toggle-Status aller bestehenden Fragen an und kann neue Fragen ergänzen. Bestehende manuelle Sortierung und deine Übernommen-/Verworfen-Auswahl werden dabei überschrieben. Interviewer-Notizen bleiben an ihrer Frage erhalten.
+  - Aktionen: „Abbrechen" / „Anwenden" → ruft die bestehende `prioritize()`-Funktion.
+- Vorhandene Disable-Bedingung (`prioritizing || !(ki_instruktionen ?? "").trim()`) bleibt am Trigger-Button; leere KI-Instruktionen führen also gar nicht erst zum Dialog.
+- Während der Ausführung: Trigger disabled wie bisher (`prioritizing`- bzw. `generating`-State).
 
-- Neue interne Komponente `QuestionRow` (in derselben Datei).
-- `QuestionList.map` rendert `<QuestionRow key={q.id} … />`, der Row-Body zieht dorthin um.
-- In `QuestionRow`:
-  - `const textRef = useAutoGrow(q.text, cls.textareaRows)`
-  - `const notizRef = useAutoGrow(q.interviewer_notiz ?? "", cls.textareaRows)`
-- `ref={textRef}` / `ref={notizRef}` an die beiden Textareas, `className` um `resize-none` ergänzt (bestehende `flex-1 / min-h-0` bleiben).
+#### Button-Optik der Bestätigung
 
-**Props für `QuestionRow`**: `q`, `index`, `total`, `cls`, `noteOpen`, `onToggleNote`, `onUpdate(patch)`, `onMove(dir)`, `onRemove()`. `hasNote` wird intern aus `q.interviewer_notiz` abgeleitet.
+Konsistent mit den bestehenden „Überschreiben"-Dialogen im Projekt (`SourceDataEditor.tsx`, `EditPost.tsx`): `AlertDialogAction` bleibt in der Standard-Variante, **kein** roter destructive-Style. Die Warnung transportiert der Dialog-Text.
 
-`items.length`, `openNoteIds`, `update`, `move`, `remove`, `toggleNote` bleiben in `QuestionList` und werden pro Row als Callback/Prop reingegeben.
+### Nicht Teil der Änderung
 
-### 3. Anwendung in `LeitfadenEditor` (äußere Komponente)
+- Keine Logik-Änderung an `generate()`, `prioritize()`, den Edge Functions oder am Datenmodell.
+- „Speichern", „Als final markieren", „Zurück zu Entwurf" bleiben ohne Rückfrage — sie zerstören keine Inhalte.
+- Kein Undo/History-Feature.
 
-Fünf freie Textareas — Hooks **vor** dem `if (!guide)` Early-Return aufrufen, damit die Hook-Regeln stabil bleiben:
+### Technische Details
 
-```ts
-const introRef      = useAutoGrow(guide?.intro ?? "");
-const kiRef         = useAutoGrow(guide?.ki_instruktionen ?? "");
-const abschlussRef  = useAutoGrow(guide?.abschluss ?? "");
-const hinweiseRef   = useAutoGrow(guide?.redaktionelle_hinweise ?? "");
-const notesRef      = useAutoGrow(guide?.notes ?? "");
-```
-
-Jede der fünf Textareas: `ref={xRef}` + `className="resize-none"` an bestehende Klassen angehängt. `rows`-Werte bleiben als Starthöhe.
-
-### 4. Betroffene Textareas
-
-| Feld | Zeile | Startgröße (rows) |
-|---|---|---|
-| Frage-Text (QuestionList) | 174 | 1 kompakt / 2 standard |
-| Interviewer-Notiz (QuestionList) | 211 | 1 |
-| Einstieg / Begrüßung (`intro`) | 459 | 3 |
-| KI-Instruktionen (`ki_instruktionen`) | 472 | 3 |
-| Abschluss (`abschluss`) | 529 | 3 |
-| Redaktionelle Hinweise (`redaktionelle_hinweise`) | 537 | 4 |
-| Notizen (`notes`) | 542 | 2 |
-
-### 5. Nicht enthalten
-
-- Keine Änderung an `ProfilEditor.tsx` oder anderen Editoren (kann als eigener Folgeschritt nachgezogen werden).
-- Keine Änderung an Datenmodell, Save-Logik, Edge Functions, Density-Toggle-Verhalten.
-- Keine Persistierung von Höhen — rein visuell pro Session.
+- Import aus `@/components/ui/alert-dialog`: `AlertDialog`, `AlertDialogTrigger`, `AlertDialogContent`, `AlertDialogHeader`, `AlertDialogTitle`, `AlertDialogDescription`, `AlertDialogFooter`, `AlertDialogAction`, `AlertDialogCancel`.
+- `AlertDialogTrigger asChild` umschließt den bestehenden Button, damit Styles, Icon und Loader-Verhalten unverändert bleiben.
+- `AlertDialogAction` erhält `onClick={generate}` bzw. `onClick={prioritize}`, ohne className-Override.
