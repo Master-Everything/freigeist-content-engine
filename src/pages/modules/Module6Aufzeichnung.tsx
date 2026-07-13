@@ -123,6 +123,10 @@ export default function Module6Aufzeichnung() {
   const [newMarkerComment, setNewMarkerComment] = useState("");
   const [saving, setSaving] = useState(false);
   const [decisionBusy, setDecisionBusy] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string>("");
+  const [streamUrl, setStreamUrl] = useState<string>("");
+  const [streamPlatform, setStreamPlatform] = useState<string>("");
+  const [sendeSaving, setSendeSaving] = useState(false);
 
   // Live-Timer (nur Anzeige)
   const [tick, setTick] = useState(0);
