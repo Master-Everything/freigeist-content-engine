@@ -33,10 +33,12 @@ type Props = {
   readOnly?: boolean;
   onToggle?: (id: string, asked: boolean) => void;
   showNotes?: boolean;
+  clarifications?: Record<string, { answer: string; clarified: boolean }>;
+  showClarifications?: boolean;
 };
 
 export function GuideQuestionsChecklist({
-  questions, askedIds, readOnly, onToggle, showNotes,
+  questions, askedIds, readOnly, onToggle, showNotes, clarifications, showClarifications,
 }: Props) {
   if (questions.length === 0) {
     return (
@@ -79,6 +81,17 @@ export function GuideQuestionsChecklist({
               {showNotes && q.interviewer_notiz && (
                 <div className="rounded-sm border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
                   <span className="font-semibold">Notiz: </span>{q.interviewer_notiz}
+                </div>
+              )}
+              {showClarifications && clarifications?.[q.id]?.answer && (
+                <div className="rounded-sm border border-teal-300 bg-teal-50 px-2 py-1 text-xs text-teal-900 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="font-semibold">Geklärt im Vorgespräch</span>
+                    {clarifications[q.id].clarified && (
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-teal-400 text-teal-800 dark:text-teal-200">✓</Badge>
+                    )}
+                  </div>
+                  <div className="whitespace-pre-wrap">{clarifications[q.id].answer}</div>
                 </div>
               )}
             </div>
