@@ -111,6 +111,7 @@ export default function Module6Aufzeichnung() {
   const [session, setSession] = useState<Session | null>(null);
   const [medienguide, setMedienguide] = useState<{ title: string; body_md: string; quick_tips: string[] } | null>(null);
   const [clarifications, setClarifications] = useState<Record<string, { answer: string; clarified: boolean }>>({});
+  const [flowNotes, setFlowNotes] = useState<string>("");
 
   const [interviewerNotiz, setInterviewerNotiz] = useState("");
   const [markers, setMarkers] = useState<Marker[]>([]);
