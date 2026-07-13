@@ -332,7 +332,7 @@ export function LeitfadenEditor({
   const introRef = useAutoGrow(guide?.intro ?? "");
   const kiRef = useAutoGrow(guide?.ki_instruktionen ?? "");
   const abschlussRef = useAutoGrow(guide?.abschluss ?? "");
-  const hinweiseRef = useAutoGrow(guide?.redaktionelle_hinweise ?? "");
+  const hinweiseRef = useAutoGrow(guide?.redaktionelle_hinweise ?? "", hinweiseMode);
   const notesRef = useAutoGrow(guide?.notes ?? "");
 
   async function generate() {
