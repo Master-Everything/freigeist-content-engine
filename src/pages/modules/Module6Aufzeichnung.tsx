@@ -178,9 +178,12 @@ export default function Module6Aufzeichnung() {
 
 
       // Session laden oder anlegen (Admin only)
+      const sessionSelect = role === "admin"
+        ? "*"
+        : "id, post_id, status, accumulated_seconds, resumed_at, question_order, asked_question_ids";
       let { data: sess } = await (supabase as any)
         .from("recording_sessions")
-        .select("*")
+        .select(sessionSelect)
         .eq("post_id", postId!)
         .maybeSingle();
 
