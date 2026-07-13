@@ -325,7 +325,7 @@ export function LeitfadenEditor({
   const [prioritizing, setPrioritizing] = useState(false);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [compact, setCompact] = useState(true);
-  const [hinweiseMode, setHinweiseMode] = useState<"edit" | "preview">("edit");
+  const [hinweiseMode, setHinweiseMode] = useState<"edit" | "preview">("preview");
 
   // Auto-Grow für alle freien Textareas — MUSS vor dem `if (!guide)` Return stehen,
   // damit die Hook-Reihenfolge über beide Render-Pfade stabil bleibt.
