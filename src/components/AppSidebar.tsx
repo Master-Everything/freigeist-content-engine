@@ -73,20 +73,21 @@ type Module = {
   title: string;
   url: string;
   icon: any;
-  status: "active" | "in-progress" | "planned";
+  status: "active" | "in-progress" | "planned" | "update";
   items?: SubItem[];
 };
 
 const adminModules: Module[] = [
   { num: 1, title: "Erfassung", url: "/module/erfassung", icon: ClipboardList, status: "active" },
   { num: 2, title: "Vorab-Scan", url: "/module/vorab-scan", icon: ScanSearch, status: "active" },
-  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
-  { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "in-progress" },
+  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "active" },
+  { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "active" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "active" },
-  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "in-progress" },
-  { num: 7, title: "Interview-Beiträge", url: "/module/interview-beitraege", icon: FileText, status: "active" },
+  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "active" },
+  { num: 7, title: "Interview-Beiträge", url: "/module/interview-beitraege", icon: FileText, status: "update" },
   { num: 8, title: "News-Plattform", url: "/module/news", icon: Newspaper, status: "active" },
 ];
+
 
 const speakerModules: Module[] = [
   {
@@ -111,11 +112,11 @@ const speakerModules: Module[] = [
       { title: "Eingereichte Interviews", url: "/module/vorab-scan/eingereicht" },
     ],
   },
-  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
-  { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "in-progress" },
+  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "active" },
+  { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "active" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "active" },
-  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "in-progress" },
-  { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "planned" },
+  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "active" },
+  { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "update" },
   { num: 8, title: "News-Plattform", url: "/speaker/modul/8", icon: Newspaper, status: "active" },
 ];
 
@@ -180,6 +181,8 @@ export function AppSidebar() {
                                   ? "border-primary/40 text-primary"
                                   : m.status === "in-progress"
                                   ? "border-amber-500/40 text-amber-500"
+                                  : m.status === "update"
+                                  ? "border-blue-500/40 text-blue-500"
                                   : "text-muted-foreground"
                               )}
                             >
@@ -187,6 +190,8 @@ export function AppSidebar() {
                                 ? "Aktiv"
                                 : m.status === "in-progress"
                                 ? "Umsetzung"
+                                : m.status === "update"
+                                ? "Update"
                                 : "Geplant"}
                             </Badge>
                           </>
