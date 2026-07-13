@@ -171,6 +171,124 @@ function QuestionList({
   );
 }
 
+type RowCls = {
+  listWrap: string;
+  card: string;
+  textareaRows: number;
+  textareaClass: string;
+  iconBtn: string;
+  noteWrap: string;
+};
+
+function QuestionRow({
+  q,
+  index,
+  total,
+  cls,
+  noteOpen,
+  onToggleNote,
+  onUpdate,
+  onMove,
+  onRemove,
+}: {
+  q: GuideQuestion;
+  index: number;
+  total: number;
+  cls: RowCls;
+  noteOpen: boolean;
+  onToggleNote: () => void;
+  onUpdate: (patch: Partial<GuideQuestion>) => void;
+  onMove: (dir: -1 | 1) => void;
+  onRemove: () => void;
+}) {
+  const hasNote = !!(q.interviewer_notiz && q.interviewer_notiz.trim());
+  const textRef = useAutoGrow(q.text, cls.textareaRows);
+  const notizRef = useAutoGrow(q.interviewer_notiz ?? "", cls.textareaRows);
+  return (
+    <div
+      className={`rounded-md border ${cls.card} ${q.active ? "" : "opacity-60 bg-muted/30"}`}
+    >
+      <div className="flex gap-1.5 items-start">
+        <div className="flex w-10 shrink-0 flex-col items-center gap-1 pt-1">
+          <span className="text-xs font-mono text-muted-foreground w-6 text-center">
+            {index + 1}.
+          </span>
+          <Switch
+            checked={q.active}
+            onCheckedChange={(v) => onUpdate({ active: v })}
+            aria-label="Übernehmen"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onToggleNote}
+            aria-label={hasNote ? "Interviewer-Notiz bearbeiten" : "Interviewer-Notiz hinzufügen"}
+            aria-pressed={noteOpen}
+            className={`relative ${cls.iconBtn} ${hasNote ? "text-primary" : "text-muted-foreground"}`}
+          >
+            <StickyNote className="h-4 w-4" />
+            {hasNote && (
+              <span
+                aria-hidden
+                className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"
+              />
+            )}
+          </Button>
+        </div>
+        <Textarea
+          ref={textRef}
+          rows={cls.textareaRows}
+          value={q.text}
+          onChange={(e) => onUpdate({ text: e.target.value })}
+          className={`${cls.textareaClass} resize-none`}
+        />
+        <div className="flex flex-col gap-1">
+          <Button
+            type="button" variant="ghost" size="icon" className={cls.iconBtn}
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            aria-label="Nach oben"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button" variant="ghost" size="icon" className={cls.iconBtn}
+            disabled={index === total - 1}
+            onClick={() => onMove(1)}
+            aria-label="Nach unten"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button" variant="ghost" size="icon" className={cls.iconBtn}
+            onClick={onRemove}
+            aria-label="Entfernen"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      {noteOpen && (
+        <div className={cls.noteWrap}>
+          <Label className="text-xs text-muted-foreground">
+            Interviewer-Notiz (intern, nur Admin)
+          </Label>
+          <Textarea
+            ref={notizRef}
+            rows={1}
+            className="min-h-0 resize-none"
+            value={q.interviewer_notiz ?? ""}
+            onChange={(e) => onUpdate({ interviewer_notiz: e.target.value })}
+            placeholder="Was möchtest du im Vorgespräch dazu klären?"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export function LeitfadenEditor({
   postId,
   initial,
