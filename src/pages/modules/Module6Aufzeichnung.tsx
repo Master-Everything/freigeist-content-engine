@@ -167,6 +167,16 @@ export default function Module6Aufzeichnung() {
         .eq("post_id", postId!)
         .maybeSingle();
 
+      if (g && role === "speaker") {
+        const strip = (arr: any[] | null) =>
+          Array.isArray(arr) ? arr.map(({ interviewer_notiz, ...rest }) => rest) : arr;
+        g.hauptfragen = strip(g.hauptfragen);
+        g.vertiefungsfragen = strip(g.vertiefungsfragen);
+        g.kritische_fragen = strip(g.kritische_fragen);
+      }
+
+
+
       // Session laden oder anlegen (Admin only)
       let { data: sess } = await (supabase as any)
         .from("recording_sessions")
