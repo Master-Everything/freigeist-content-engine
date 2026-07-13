@@ -42,6 +42,9 @@ type Session = {
   asked_question_ids: string[];
   interviewer_notiz: string | null;
   recording_markers: Marker[];
+  scheduled_at: string | null;
+  stream_url: string | null;
+  stream_platform: string | null;
 };
 
 type QueueRow = {
