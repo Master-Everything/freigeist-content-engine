@@ -112,11 +112,11 @@ const speakerModules: Module[] = [
       { title: "Eingereichte Interviews", url: "/module/vorab-scan/eingereicht" },
     ],
   },
-  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "in-progress" },
-  { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "in-progress" },
+  { num: 3, title: "Profil & Sprechermappe", url: "/module/profil", icon: UserCheck, status: "active" },
+  { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "active" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "active" },
-  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "in-progress" },
-  { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "planned" },
+  { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "active" },
+  { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "update" },
   { num: 8, title: "News-Plattform", url: "/speaker/modul/8", icon: Newspaper, status: "active" },
 ];
 
