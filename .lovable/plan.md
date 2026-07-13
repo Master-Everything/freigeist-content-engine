@@ -1,36 +1,69 @@
-## Modul 4 — Umschaltbare Dichte (Kompakt/Standard) für die Fragenliste
+## Modul 4 — Auto-Grow für alle Textareas im Leitfaden-Editor
 
-Neuer Session-Toggle im `LeitfadenEditor`, der die Fragenliste zwischen der aktuellen Kompakt-Variante und einem luftigeren Standard-Layout umschaltet. Analog zum bestehenden `showOnlyActive`-Muster.
+Zentraler `useAutoGrow`-Hook + Anwendung auf alle sieben Textareas in `LeitfadenEditor.tsx`.
 
-### 1. Editor-State
-- Neben `showOnlyActive` neuer State: `const [compact, setCompact] = useState(true)` — Default = aktueller Kompakt-Stand, damit sich für bestehende Nutzer nichts ändert.
+### 1. Neuer Hook `src/hooks/use-auto-grow.ts`
 
-### 2. UI-Toggle
-- Direkt neben dem „Nur übernommene Fragen anzeigen"-Switch ein zweiter Switch + Label „Kompakte Ansicht", gleicher visueller Stil (gleiche Zeile, gleiches Border-Wrapper-Layout).
-- Kein Speaker-Pendant, kein localStorage.
+```ts
+import { useEffect, useRef } from "react";
 
-### 3. Prop-Durchreichung an `QuestionList`
-- `QuestionList`-Props um `compact: boolean` erweitern (analog `showOnlyActive`).
-- Bei allen drei Aufrufen (Hauptfragen, Vertiefungsfragen, Kritische Fragen) durchreichen.
+export function useAutoGrow(value: string, resetKey?: unknown) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value, resetKey]);
+  return ref;
+}
+```
 
-### 4. Klassen-Sets in `QuestionList`
-Statt Ternaries pro Stelle zwei kleine Sets am Komponentenanfang definieren und konsequent verwenden:
+`resetKey` triggert Neuberechnung auch bei leeren Feldern (Density-Toggle).
 
-| Element | compact (aktuell) | standard |
+### 2. QuestionList — Extraktion in `<QuestionRow>` (Pflicht)
+
+Direkt im `.map()`-Callback lässt sich kein Hook aufrufen (Rules of Hooks). Deshalb echter Umbau:
+
+- Neue interne Komponente `QuestionRow` (in derselben Datei).
+- `QuestionList.map` rendert `<QuestionRow key={q.id} … />`, der Row-Body zieht dorthin um.
+- In `QuestionRow`:
+  - `const textRef = useAutoGrow(q.text, cls.textareaRows)`
+  - `const notizRef = useAutoGrow(q.interviewer_notiz ?? "", cls.textareaRows)`
+- `ref={textRef}` / `ref={notizRef}` an die beiden Textareas, `className` um `resize-none` ergänzt (bestehende `flex-1 / min-h-0` bleiben).
+
+**Props für `QuestionRow`**: `q`, `index`, `total`, `cls`, `noteOpen`, `onToggleNote`, `onUpdate(patch)`, `onMove(dir)`, `onRemove()`. `hasNote` wird intern aus `q.interviewer_notiz` abgeleitet.
+
+`items.length`, `openNoteIds`, `update`, `move`, `remove`, `toggleNote` bleiben in `QuestionList` und werden pro Row als Callback/Prop reingegeben.
+
+### 3. Anwendung in `LeitfadenEditor` (äußere Komponente)
+
+Fünf freie Textareas — Hooks **vor** dem `if (!guide)` Early-Return aufrufen, damit die Hook-Regeln stabil bleiben:
+
+```ts
+const introRef      = useAutoGrow(guide?.intro ?? "");
+const kiRef         = useAutoGrow(guide?.ki_instruktionen ?? "");
+const abschlussRef  = useAutoGrow(guide?.abschluss ?? "");
+const hinweiseRef   = useAutoGrow(guide?.redaktionelle_hinweise ?? "");
+const notesRef      = useAutoGrow(guide?.notes ?? "");
+```
+
+Jede der fünf Textareas: `ref={xRef}` + `className="resize-none"` an bestehende Klassen angehängt. `rows`-Werte bleiben als Starthöhe.
+
+### 4. Betroffene Textareas
+
+| Feld | Zeile | Startgröße (rows) |
 |---|---|---|
-| Wrapper Fragen-Liste | `space-y-1.5` | `space-y-2` |
-| Fragen-Karte | `px-2 py-1.5` | `p-3` |
-| Frage-Textarea rows | `rows={1}` | `rows={2}` |
-| Frage-Textarea className | `flex-1 min-h-0` | `flex-1` (kein `min-h-0`) |
-| Sortier-/Entfernen-Buttons | `h-7 w-7` | Standard (`size="icon"` ohne Override) |
-| Notiz-Icon-Button | `h-7 w-7` | Standard |
-| Notiz-Wrapper (aufgeklappt) | `mt-1.5` | `mt-2` |
-
-**Umsetzungs-Detail Frage-Textarea:** zwei vollständige, sich gegenseitig ausschließende Klassenstrings bauen (`"flex-1 min-h-0"` vs. `"flex-1"`) — kein bedingtes Anhängen von `min-h-0`, damit tailwind-merge sauber greift.
-
-Notiz-Textarea bleibt in beiden Modi `rows={1}` + `min-h-0` (bewusst). Ausrichtung `pl-12 pr-2` bleibt unverändert.
+| Frage-Text (QuestionList) | 174 | 1 kompakt / 2 standard |
+| Interviewer-Notiz (QuestionList) | 211 | 1 |
+| Einstieg / Begrüßung (`intro`) | 459 | 3 |
+| KI-Instruktionen (`ki_instruktionen`) | 472 | 3 |
+| Abschluss (`abschluss`) | 529 | 3 |
+| Redaktionelle Hinweise (`redaktionelle_hinweise`) | 537 | 4 |
+| Notizen (`notes`) | 542 | 2 |
 
 ### 5. Nicht enthalten
-- Keine Persistierung.
-- Keine Änderungen an Speaker-Ansicht, Datenmodell, Save-Logik, KI-Priorisierung, Edge Functions.
-- Nur `src/components/leitfaden/LeitfadenEditor.tsx` wird angefasst.
+
+- Keine Änderung an `ProfilEditor.tsx` oder anderen Editoren (kann als eigener Folgeschritt nachgezogen werden).
+- Keine Änderung an Datenmodell, Save-Logik, Edge Functions, Density-Toggle-Verhalten.
+- Keine Persistierung von Höhen — rein visuell pro Session.
