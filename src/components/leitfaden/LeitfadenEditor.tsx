@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAutoGrow } from "@/hooks/use-auto-grow";
 
 export type GuideQuestion = { id: string; text: string; active: boolean; interviewer_notiz?: string | null };
 
@@ -134,90 +135,19 @@ function QuestionList({
       <div className={cls.listWrap}>
         {items.map((q, i) => {
           if (showOnlyActive && !q.active) return null;
-          const hasNote = !!(q.interviewer_notiz && q.interviewer_notiz.trim());
-          const noteOpen = openNoteIds.has(q.id);
           return (
-            <div
+            <QuestionRow
               key={q.id}
-              className={`rounded-md border ${cls.card} ${
-                q.active ? "" : "opacity-60 bg-muted/30"
-              }`}
-            >
-              <div className="flex gap-1.5 items-start">
-                <div className="flex w-10 shrink-0 flex-col items-center gap-1 pt-1">
-                  <span className="text-xs font-mono text-muted-foreground w-6 text-center">
-                    {i + 1}.
-                  </span>
-                  <Switch
-                    checked={q.active}
-                    onCheckedChange={(v) => update(i, { active: v })}
-                    aria-label="Übernehmen"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleNote(q.id)}
-                    aria-label={hasNote ? "Interviewer-Notiz bearbeiten" : "Interviewer-Notiz hinzufügen"}
-                    aria-pressed={noteOpen}
-                    className={`relative ${cls.iconBtn} ${hasNote ? "text-primary" : "text-muted-foreground"}`}
-                  >
-                    <StickyNote className="h-4 w-4" />
-                    {hasNote && (
-                      <span
-                        aria-hidden
-                        className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"
-                      />
-                    )}
-                  </Button>
-                </div>
-                <Textarea
-                  rows={cls.textareaRows}
-                  value={q.text}
-                  onChange={(e) => update(i, { text: e.target.value })}
-                  className={cls.textareaClass}
-                />
-                <div className="flex flex-col gap-1">
-                  <Button
-                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
-                    disabled={i === 0}
-                    onClick={() => move(i, -1)}
-                    aria-label="Nach oben"
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
-                    disabled={i === items.length - 1}
-                    onClick={() => move(i, 1)}
-                    aria-label="Nach unten"
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button" variant="ghost" size="icon" className={cls.iconBtn}
-                    onClick={() => remove(i)}
-                    aria-label="Entfernen"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              {noteOpen && (
-                <div className={cls.noteWrap}>
-                  <Label className="text-xs text-muted-foreground">
-                    Interviewer-Notiz (intern, nur Admin)
-                  </Label>
-                  <Textarea
-                    rows={1}
-                    className="min-h-0"
-                    value={q.interviewer_notiz ?? ""}
-                    onChange={(e) => update(i, { interviewer_notiz: e.target.value })}
-                    placeholder="Was möchtest du im Vorgespräch dazu klären?"
-                  />
-                </div>
-              )}
-            </div>
+              q={q}
+              index={i}
+              total={items.length}
+              cls={cls}
+              noteOpen={openNoteIds.has(q.id)}
+              onToggleNote={() => toggleNote(q.id)}
+              onUpdate={(patch) => update(i, patch)}
+              onMove={(dir) => move(i, dir)}
+              onRemove={() => remove(i)}
+            />
           );
         })}
       </div>
@@ -240,6 +170,124 @@ function QuestionList({
     </div>
   );
 }
+
+type RowCls = {
+  listWrap: string;
+  card: string;
+  textareaRows: number;
+  textareaClass: string;
+  iconBtn: string;
+  noteWrap: string;
+};
+
+function QuestionRow({
+  q,
+  index,
+  total,
+  cls,
+  noteOpen,
+  onToggleNote,
+  onUpdate,
+  onMove,
+  onRemove,
+}: {
+  q: GuideQuestion;
+  index: number;
+  total: number;
+  cls: RowCls;
+  noteOpen: boolean;
+  onToggleNote: () => void;
+  onUpdate: (patch: Partial<GuideQuestion>) => void;
+  onMove: (dir: -1 | 1) => void;
+  onRemove: () => void;
+}) {
+  const hasNote = !!(q.interviewer_notiz && q.interviewer_notiz.trim());
+  const textRef = useAutoGrow(q.text, cls.textareaRows);
+  const notizRef = useAutoGrow(q.interviewer_notiz ?? "", cls.textareaRows);
+  return (
+    <div
+      className={`rounded-md border ${cls.card} ${q.active ? "" : "opacity-60 bg-muted/30"}`}
+    >
+      <div className="flex gap-1.5 items-start">
+        <div className="flex w-10 shrink-0 flex-col items-center gap-1 pt-1">
+          <span className="text-xs font-mono text-muted-foreground w-6 text-center">
+            {index + 1}.
+          </span>
+          <Switch
+            checked={q.active}
+            onCheckedChange={(v) => onUpdate({ active: v })}
+            aria-label="Übernehmen"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onToggleNote}
+            aria-label={hasNote ? "Interviewer-Notiz bearbeiten" : "Interviewer-Notiz hinzufügen"}
+            aria-pressed={noteOpen}
+            className={`relative ${cls.iconBtn} ${hasNote ? "text-primary" : "text-muted-foreground"}`}
+          >
+            <StickyNote className="h-4 w-4" />
+            {hasNote && (
+              <span
+                aria-hidden
+                className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"
+              />
+            )}
+          </Button>
+        </div>
+        <Textarea
+          ref={textRef}
+          rows={cls.textareaRows}
+          value={q.text}
+          onChange={(e) => onUpdate({ text: e.target.value })}
+          className={`${cls.textareaClass} resize-none`}
+        />
+        <div className="flex flex-col gap-1">
+          <Button
+            type="button" variant="ghost" size="icon" className={cls.iconBtn}
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            aria-label="Nach oben"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button" variant="ghost" size="icon" className={cls.iconBtn}
+            disabled={index === total - 1}
+            onClick={() => onMove(1)}
+            aria-label="Nach unten"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button" variant="ghost" size="icon" className={cls.iconBtn}
+            onClick={onRemove}
+            aria-label="Entfernen"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      {noteOpen && (
+        <div className={cls.noteWrap}>
+          <Label className="text-xs text-muted-foreground">
+            Interviewer-Notiz (intern, nur Admin)
+          </Label>
+          <Textarea
+            ref={notizRef}
+            rows={1}
+            className="min-h-0 resize-none"
+            value={q.interviewer_notiz ?? ""}
+            onChange={(e) => onUpdate({ interviewer_notiz: e.target.value })}
+            placeholder="Was möchtest du im Vorgespräch dazu klären?"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 export function LeitfadenEditor({
   postId,
@@ -265,6 +313,14 @@ export function LeitfadenEditor({
   const [prioritizing, setPrioritizing] = useState(false);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [compact, setCompact] = useState(true);
+
+  // Auto-Grow für alle freien Textareas — MUSS vor dem `if (!guide)` Return stehen,
+  // damit die Hook-Reihenfolge über beide Render-Pfade stabil bleibt.
+  const introRef = useAutoGrow(guide?.intro ?? "");
+  const kiRef = useAutoGrow(guide?.ki_instruktionen ?? "");
+  const abschlussRef = useAutoGrow(guide?.abschluss ?? "");
+  const hinweiseRef = useAutoGrow(guide?.redaktionelle_hinweise ?? "");
+  const notesRef = useAutoGrow(guide?.notes ?? "");
 
   async function generate() {
     setGenerating(true);
@@ -456,7 +512,7 @@ export function LeitfadenEditor({
         <fieldset disabled={isFinal} className="space-y-5 disabled:opacity-70">
           <div className="space-y-2">
             <Label>Einstieg / Begrüßung</Label>
-            <Textarea rows={3} value={guide.intro ?? ""} onChange={(e) => patch({ intro: e.target.value })} />
+            <Textarea ref={introRef} rows={3} className="resize-none" value={guide.intro ?? ""} onChange={(e) => patch({ intro: e.target.value })} />
           </div>
 
           {/* KI-gestützte Priorisierung */}
@@ -470,7 +526,9 @@ export function LeitfadenEditor({
               Nicht ausgewählte Fragen werden auf inaktiv gesetzt, aber nicht gelöscht.
             </p>
             <Textarea
+              ref={kiRef}
               rows={3}
+              className="resize-none"
               placeholder="Beschreibe, worauf die KI beim Priorisieren/Ergänzen achten soll (z. B. Fokus auf X, wenige Nachfragen zu Y, kritische Frage zu Z ergänzen)…"
               value={guide.ki_instruktionen ?? ""}
               onChange={(e) => patch({ ki_instruktionen: e.target.value })}
@@ -526,7 +584,7 @@ export function LeitfadenEditor({
 
           <div className="space-y-2">
             <Label>Abschluss</Label>
-            <Textarea rows={3} value={guide.abschluss ?? ""} onChange={(e) => patch({ abschluss: e.target.value })} />
+            <Textarea ref={abschlussRef} rows={3} className="resize-none" value={guide.abschluss ?? ""} onChange={(e) => patch({ abschluss: e.target.value })} />
           </div>
 
           <div className="space-y-2">
@@ -534,12 +592,12 @@ export function LeitfadenEditor({
               Redaktionelle Hinweise
               <span className="ml-2 text-xs text-muted-foreground">(intern — Speaker sieht das NICHT)</span>
             </Label>
-            <Textarea rows={4} value={guide.redaktionelle_hinweise ?? ""} onChange={(e) => patch({ redaktionelle_hinweise: e.target.value })} />
+            <Textarea ref={hinweiseRef} rows={4} className="resize-none" value={guide.redaktionelle_hinweise ?? ""} onChange={(e) => patch({ redaktionelle_hinweise: e.target.value })} />
           </div>
 
           <div className="space-y-2">
             <Label>Notizen</Label>
-            <Textarea rows={2} value={guide.notes ?? ""} onChange={(e) => patch({ notes: e.target.value })} />
+            <Textarea ref={notesRef} rows={2} className="resize-none" value={guide.notes ?? ""} onChange={(e) => patch({ notes: e.target.value })} />
           </div>
         </fieldset>
 
