@@ -181,6 +181,8 @@ export function AppSidebar() {
                                   ? "border-primary/40 text-primary"
                                   : m.status === "in-progress"
                                   ? "border-amber-500/40 text-amber-500"
+                                  : m.status === "update"
+                                  ? "border-blue-500/40 text-blue-500"
                                   : "text-muted-foreground"
                               )}
                             >
@@ -188,6 +190,8 @@ export function AppSidebar() {
                                 ? "Aktiv"
                                 : m.status === "in-progress"
                                 ? "Umsetzung"
+                                : m.status === "update"
+                                ? "Update"
                                 : "Geplant"}
                             </Badge>
                           </>
