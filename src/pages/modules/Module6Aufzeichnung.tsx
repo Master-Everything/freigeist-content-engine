@@ -233,6 +233,26 @@ export default function Module6Aufzeichnung() {
         });
       }
 
+      // Klärungsantworten aus Vorgespräch (für Admin und Speaker)
+      const { data: pc } = await (supabase as any)
+        .from("pre_interview_calls")
+        .select("clarifications")
+        .eq("post_id", postId!)
+        .maybeSingle();
+      if (pc?.clarifications && Array.isArray(pc.clarifications)) {
+        const map: Record<string, { answer: string; clarified: boolean }> = {};
+        for (const c of pc.clarifications as any[]) {
+          if (c?.question_id) {
+            map[c.question_id] = { answer: c.answer ?? "", clarified: !!c.clarified };
+          }
+        }
+        setClarifications(map);
+      } else {
+        setClarifications({});
+      }
+
+
+
       setLoading(false);
     })();
   }, [postId, hasContext, role, isAdmin]);
