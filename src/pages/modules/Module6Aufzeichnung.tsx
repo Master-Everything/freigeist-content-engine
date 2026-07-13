@@ -239,6 +239,9 @@ export default function Module6Aufzeichnung() {
         setSession(sess as Session);
         setInterviewerNotiz(sess.interviewer_notiz ?? "");
         setMarkers(Array.isArray(sess.recording_markers) ? sess.recording_markers : []);
+        setScheduledAt(isoToLocalInput(sess.scheduled_at));
+        setStreamUrl(sess.stream_url ?? "");
+        setStreamPlatform(sess.stream_platform ?? "");
       }
 
       // Medientraining
