@@ -375,7 +375,7 @@ export default function DashboardHome() {
             { label: "kuratiert", value: agg.m3.kuratiert.length, tone: "yellow" },
             { label: "freigegeben", value: agg.m3.freigegeben.length, tone: "green" },
           ]}
-          details={[...agg.m3.kuratiert, ...agg.m3.entwurf].slice(0, 8).map((r) => {
+          details={[...agg.m3.kuratiert, ...agg.m3.entwurf, ...agg.m3.freigegeben].slice(0, 8).map((r) => {
             const p = r.post_id ? postById.get(r.post_id) : undefined;
             return {
               id: r.id,
