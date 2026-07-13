@@ -88,18 +88,7 @@ function fmtScheduled(iso: string | null | undefined): string {
   });
 }
 
-function relativeChip(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const diffMs = d.getTime() - Date.now();
-  const rtf = new Intl.RelativeTimeFormat("de-DE", { numeric: "auto" });
-  const abs = Math.abs(diffMs);
-  const min = 60_000, hr = 60 * min, day = 24 * hr;
-  if (abs < hr) return rtf.format(Math.round(diffMs / min), "minute");
-  if (abs < day) return rtf.format(Math.round(diffMs / hr), "hour");
-  return rtf.format(Math.round(diffMs / day), "day");
-}
+// relativeChip wird jetzt aus src/lib/relative-time.ts importiert
 
 function StatusBadge({ postStatus, sessionStatus }: { postStatus?: string; sessionStatus?: string }) {
   if (postStatus === "aufzeichnung_done")
