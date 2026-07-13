@@ -526,7 +526,9 @@ export function LeitfadenEditor({
               Nicht ausgewählte Fragen werden auf inaktiv gesetzt, aber nicht gelöscht.
             </p>
             <Textarea
+              ref={kiRef}
               rows={3}
+              className="resize-none"
               placeholder="Beschreibe, worauf die KI beim Priorisieren/Ergänzen achten soll (z. B. Fokus auf X, wenige Nachfragen zu Y, kritische Frage zu Z ergänzen)…"
               value={guide.ki_instruktionen ?? ""}
               onChange={(e) => patch({ ki_instruktionen: e.target.value })}
