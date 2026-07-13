@@ -589,7 +589,10 @@ export type Database = {
           question_order: Json
           recording_markers: Json
           resumed_at: string | null
+          scheduled_at: string | null
           status: string
+          stream_platform: string | null
+          stream_url: string | null
           updated_at: string
         }
         Insert: {
@@ -602,7 +605,10 @@ export type Database = {
           question_order?: Json
           recording_markers?: Json
           resumed_at?: string | null
+          scheduled_at?: string | null
           status?: string
+          stream_platform?: string | null
+          stream_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -615,7 +621,10 @@ export type Database = {
           question_order?: Json
           recording_markers?: Json
           resumed_at?: string | null
+          scheduled_at?: string | null
           status?: string
+          stream_platform?: string | null
+          stream_url?: string | null
           updated_at?: string
         }
         Relationships: [

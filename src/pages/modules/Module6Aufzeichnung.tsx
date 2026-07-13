@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Video, Loader2, ArrowRight, Play, Pause, RotateCcw, CheckCircle2,
   Sparkles, BookOpen, Save, Flag, Trash2, Plus, BookOpenCheck,
+  CalendarClock, Copy, ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,9 @@ type Session = {
   asked_question_ids: string[];
   interviewer_notiz: string | null;
   recording_markers: Marker[];
+  scheduled_at: string | null;
+  stream_url: string | null;
+  stream_platform: string | null;
 };
 
 type QueueRow = {
@@ -58,6 +62,43 @@ function fmtMMSS(total: number) {
   const sec = s % 60;
   const pad = (n: number) => n.toString().padStart(2, "0");
   return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+}
+
+function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function localInputToIso(local: string): string | null {
+  if (!local) return null;
+  const d = new Date(local);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function fmtScheduled(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("de-DE", {
+    weekday: "short", day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+function relativeChip(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const diffMs = d.getTime() - Date.now();
+  const rtf = new Intl.RelativeTimeFormat("de-DE", { numeric: "auto" });
+  const abs = Math.abs(diffMs);
+  const min = 60_000, hr = 60 * min, day = 24 * hr;
+  if (abs < hr) return rtf.format(Math.round(diffMs / min), "minute");
+  if (abs < day) return rtf.format(Math.round(diffMs / hr), "hour");
+  return rtf.format(Math.round(diffMs / day), "day");
 }
 
 function StatusBadge({ postStatus, sessionStatus }: { postStatus?: string; sessionStatus?: string }) {
@@ -119,6 +160,10 @@ export default function Module6Aufzeichnung() {
   const [newMarkerComment, setNewMarkerComment] = useState("");
   const [saving, setSaving] = useState(false);
   const [decisionBusy, setDecisionBusy] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string>("");
+  const [streamUrl, setStreamUrl] = useState<string>("");
+  const [streamPlatform, setStreamPlatform] = useState<string>("");
+  const [sendeSaving, setSendeSaving] = useState(false);
 
   // Live-Timer (nur Anzeige)
   const [tick, setTick] = useState(0);
@@ -182,7 +227,7 @@ export default function Module6Aufzeichnung() {
       // Session laden oder anlegen (Admin only)
       const sessionSelect = role === "admin"
         ? "*"
-        : "id, post_id, status, accumulated_seconds, resumed_at, question_order, asked_question_ids";
+        : "id, post_id, status, accumulated_seconds, resumed_at, question_order, asked_question_ids, scheduled_at, stream_url, stream_platform";
       let { data: sess } = await (supabase as any)
         .from("recording_sessions")
         .select(sessionSelect)
@@ -231,6 +276,9 @@ export default function Module6Aufzeichnung() {
         setSession(sess as Session);
         setInterviewerNotiz(sess.interviewer_notiz ?? "");
         setMarkers(Array.isArray(sess.recording_markers) ? sess.recording_markers : []);
+        setScheduledAt(isoToLocalInput(sess.scheduled_at));
+        setStreamUrl(sess.stream_url ?? "");
+        setStreamPlatform(sess.stream_platform ?? "");
       }
 
       // Medientraining
@@ -302,6 +350,29 @@ export default function Module6Aufzeichnung() {
     if (!session) return;
     await patchSession({ status: "nicht_gestartet", accumulated_seconds: 0, resumed_at: null } as any);
   }
+
+  async function saveSendeplanung() {
+    if (!session) return;
+    setSendeSaving(true);
+    await patchSession({
+      scheduled_at: localInputToIso(scheduledAt),
+      stream_url: streamUrl.trim() || null,
+      stream_platform: streamPlatform.trim() || null,
+    } as any);
+    setSendeSaving(false);
+    toast({ title: "Sendeplanung gespeichert" });
+  }
+
+  async function copyStreamUrl() {
+    if (!streamUrl) return;
+    try {
+      await navigator.clipboard.writeText(streamUrl);
+      toast({ title: "Link kopiert" });
+    } catch {
+      toast({ title: "Kopieren fehlgeschlagen", variant: "destructive" });
+    }
+  }
+
 
   async function addMarker() {
     if (!session) return;
@@ -502,6 +573,95 @@ export default function Module6Aufzeichnung() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Sendeplanung */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-primary" /> Sendeplanung
+              </CardTitle>
+              <CardDescription>
+                {isAdmin
+                  ? "Termin, Plattform und Streaming-Link für die Aufzeichnung."
+                  : "Termin und Zugang zur Aufzeichnung."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isAdmin ? (
+                <>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Termin</label>
+                      <Input
+                        type="datetime-local"
+                        value={scheduledAt}
+                        onChange={(e) => setScheduledAt(e.target.value)}
+                      />
+                      {scheduledAt && (
+                        <div className="text-xs text-muted-foreground">
+                          {relativeChip(localInputToIso(scheduledAt))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Plattform</label>
+                      <Input
+                        placeholder="z. B. Zoom, StreamYard, Riverside"
+                        value={streamPlatform}
+                        onChange={(e) => setStreamPlatform(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Streaming-Link</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="url"
+                        placeholder="https://…"
+                        value={streamUrl}
+                        onChange={(e) => setStreamUrl(e.target.value)}
+                      />
+                      <Button type="button" variant="outline" size="icon" onClick={copyStreamUrl} disabled={!streamUrl}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={saveSendeplanung} disabled={sendeSaving}>
+                      {sendeSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                      Speichern
+                    </Button>
+                  </div>
+                </>
+              ) : session.scheduled_at || session.stream_url ? (
+                <div className="space-y-3 text-sm">
+                  {session.scheduled_at && (
+                    <div>
+                      <div className="font-medium">{fmtScheduled(session.scheduled_at)}</div>
+                      <div className="text-xs text-muted-foreground">{relativeChip(session.scheduled_at)}</div>
+                    </div>
+                  )}
+                  {session.stream_platform && (
+                    <div className="text-muted-foreground">Plattform: <span className="text-foreground">{session.stream_platform}</span></div>
+                  )}
+                  {session.stream_url && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button asChild size="sm">
+                        <a href={session.stream_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-1.5 h-4 w-4" /> Zum Stream öffnen
+                        </a>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={copyStreamUrl}>
+                        <Copy className="mr-1.5 h-4 w-4" /> Link kopieren
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">Termin wird noch bekannt gegeben.</div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Timer */}
           <Card>
