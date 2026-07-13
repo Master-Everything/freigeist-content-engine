@@ -149,8 +149,9 @@ export default function Module5Vorgespraech() {
   const [onlyOpen, setOnlyOpen] = useState(true);
   const [saving, setSaving] = useState(false);
   const [decisionBusy, setDecisionBusy] = useState(false);
+  const [flowNotesMode, setFlowNotesMode] = useState<"edit" | "preview">("preview");
 
-  const flowRef = useAutoGrow(flowNotes);
+  const flowRef = useAutoGrow(flowNotes, flowNotesMode);
   const internalRef = useAutoGrow(internalNotes);
 
   useEffect(() => {
