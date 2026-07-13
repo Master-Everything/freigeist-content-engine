@@ -590,12 +590,37 @@ export function LeitfadenEditor({
           </div>
 
           <div className="space-y-2">
-            <Label>
-              Redaktionelle Hinweise
-              <span className="ml-2 text-xs text-muted-foreground">(intern — Speaker sieht das NICHT)</span>
-            </Label>
-            <Textarea ref={hinweiseRef} rows={4} className="resize-none" value={guide.redaktionelle_hinweise ?? ""} onChange={(e) => patch({ redaktionelle_hinweise: e.target.value })} />
+            <div className="flex items-center justify-between gap-2">
+              <Label>
+                Redaktionelle Hinweise
+                <span className="ml-2 text-xs text-muted-foreground">(intern — Speaker sieht das NICHT)</span>
+              </Label>
+              <div className="inline-flex rounded-md border p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setHinweiseMode("edit")}
+                  className={`px-2 py-1 rounded-sm transition-colors ${hinweiseMode === "edit" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Bearbeiten
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHinweiseMode("preview")}
+                  className={`px-2 py-1 rounded-sm transition-colors ${hinweiseMode === "preview" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Vorschau
+                </button>
+              </div>
+            </div>
+            {hinweiseMode === "edit" ? (
+              <Textarea ref={hinweiseRef} rows={4} className="resize-none" value={guide.redaktionelle_hinweise ?? ""} onChange={(e) => patch({ redaktionelle_hinweise: e.target.value })} />
+            ) : (
+              <div className="rounded-md border bg-muted/30 px-3 py-2 min-h-[6rem]">
+                <SimpleMarkdown text={guide.redaktionelle_hinweise ?? ""} />
+              </div>
+            )}
           </div>
+
 
           <div className="space-y-2">
             <Label>Notizen</Label>
