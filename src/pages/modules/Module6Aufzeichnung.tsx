@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Video, Loader2, ArrowRight, Play, Pause, RotateCcw, CheckCircle2,
   Sparkles, BookOpen, Save, Flag, Trash2, Plus, BookOpenCheck,
+  CalendarClock, Copy, ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
