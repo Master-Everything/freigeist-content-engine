@@ -574,6 +574,95 @@ export default function Module6Aufzeichnung() {
             </Card>
           </div>
 
+          {/* Sendeplanung */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-primary" /> Sendeplanung
+              </CardTitle>
+              <CardDescription>
+                {isAdmin
+                  ? "Termin, Plattform und Streaming-Link für die Aufzeichnung."
+                  : "Termin und Zugang zur Aufzeichnung."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isAdmin ? (
+                <>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Termin</label>
+                      <Input
+                        type="datetime-local"
+                        value={scheduledAt}
+                        onChange={(e) => setScheduledAt(e.target.value)}
+                      />
+                      {scheduledAt && (
+                        <div className="text-xs text-muted-foreground">
+                          {relativeChip(localInputToIso(scheduledAt))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Plattform</label>
+                      <Input
+                        placeholder="z. B. Zoom, StreamYard, Riverside"
+                        value={streamPlatform}
+                        onChange={(e) => setStreamPlatform(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Streaming-Link</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="url"
+                        placeholder="https://…"
+                        value={streamUrl}
+                        onChange={(e) => setStreamUrl(e.target.value)}
+                      />
+                      <Button type="button" variant="outline" size="icon" onClick={copyStreamUrl} disabled={!streamUrl}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={saveSendeplanung} disabled={sendeSaving}>
+                      {sendeSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                      Speichern
+                    </Button>
+                  </div>
+                </>
+              ) : session.scheduled_at || session.stream_url ? (
+                <div className="space-y-3 text-sm">
+                  {session.scheduled_at && (
+                    <div>
+                      <div className="font-medium">{fmtScheduled(session.scheduled_at)}</div>
+                      <div className="text-xs text-muted-foreground">{relativeChip(session.scheduled_at)}</div>
+                    </div>
+                  )}
+                  {session.stream_platform && (
+                    <div className="text-muted-foreground">Plattform: <span className="text-foreground">{session.stream_platform}</span></div>
+                  )}
+                  {session.stream_url && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button asChild size="sm">
+                        <a href={session.stream_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-1.5 h-4 w-4" /> Zum Stream öffnen
+                        </a>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={copyStreamUrl}>
+                        <Copy className="mr-1.5 h-4 w-4" /> Link kopieren
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">Termin wird noch bekannt gegeben.</div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Timer */}
           <Card>
             <CardHeader>
