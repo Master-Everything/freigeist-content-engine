@@ -511,9 +511,25 @@ export function LeitfadenEditor({
               {guide.generated_at && <span className="ml-3 text-xs">generiert: {new Date(guide.generated_at).toLocaleString("de-DE")}</span>}
             </CardDescription>
           </div>
-          <Button size="sm" variant="outline" onClick={generate} disabled={generating}>
-            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="mr-2 h-4 w-4" />Neu generieren</>}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline" disabled={generating}>
+                {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="mr-2 h-4 w-4" />Neu generieren</>}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Leitfaden neu generieren?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Der bestehende Entwurf inkl. aller Fragen, Toggle-Zustände, Interviewer-Notizen und redaktioneller Hinweise wird vollständig durch einen neuen KI-Vorschlag ersetzt. Diese Aktion kann nicht rückgängig gemacht werden.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction onClick={generate}>Neu generieren</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
