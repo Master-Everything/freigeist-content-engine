@@ -418,13 +418,13 @@ export default function DashboardHome() {
         {/* M5 */}
         <ModulePanel
           meta={workflow[4]}
-          bigNumber={agg.m5.geplant.length + agg.m5.durchgefuehrt.length}
+          bigNumber={agg.m5.geplant.length + agg.m5.durchgefuehrt.length + agg.m5.abgesagt.length}
           chips={[
             { label: "geplant", value: agg.m5.geplant.length, tone: "yellow" },
             { label: "durchgeführt", value: agg.m5.durchgefuehrt.length, tone: "green" },
             { label: "abgesagt", value: agg.m5.abgesagt.length, tone: "muted" },
           ]}
-          details={[...agg.m5.geplant, ...agg.m5.durchgefuehrt].slice(0, 8).map((r) => {
+          details={[...agg.m5.geplant, ...agg.m5.durchgefuehrt, ...agg.m5.abgesagt].slice(0, 8).map((r) => {
             const p = postById.get(r.post_id);
             return {
               id: r.id,
