@@ -597,7 +597,7 @@ export function LeitfadenEditor({
 
           <div className="space-y-2">
             <Label>Notizen</Label>
-            <Textarea rows={2} value={guide.notes ?? ""} onChange={(e) => patch({ notes: e.target.value })} />
+            <Textarea ref={notesRef} rows={2} className="resize-none" value={guide.notes ?? ""} onChange={(e) => patch({ notes: e.target.value })} />
           </div>
         </fieldset>
 
