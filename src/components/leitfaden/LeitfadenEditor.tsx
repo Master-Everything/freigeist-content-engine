@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAutoGrow } from "@/hooks/use-auto-grow";
 
 export type GuideQuestion = { id: string; text: string; active: boolean; interviewer_notiz?: string | null };
 
