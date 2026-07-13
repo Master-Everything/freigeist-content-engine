@@ -375,7 +375,7 @@ export default function DashboardHome() {
             { label: "kuratiert", value: agg.m3.kuratiert.length, tone: "yellow" },
             { label: "freigegeben", value: agg.m3.freigegeben.length, tone: "green" },
           ]}
-          details={[...agg.m3.kuratiert, ...agg.m3.entwurf].slice(0, 8).map((r) => {
+          details={[...agg.m3.kuratiert, ...agg.m3.entwurf, ...agg.m3.freigegeben].slice(0, 8).map((r) => {
             const p = r.post_id ? postById.get(r.post_id) : undefined;
             return {
               id: r.id,
@@ -418,13 +418,13 @@ export default function DashboardHome() {
         {/* M5 */}
         <ModulePanel
           meta={workflow[4]}
-          bigNumber={agg.m5.geplant.length + agg.m5.durchgefuehrt.length}
+          bigNumber={agg.m5.geplant.length + agg.m5.durchgefuehrt.length + agg.m5.abgesagt.length}
           chips={[
             { label: "geplant", value: agg.m5.geplant.length, tone: "yellow" },
             { label: "durchgeführt", value: agg.m5.durchgefuehrt.length, tone: "green" },
             { label: "abgesagt", value: agg.m5.abgesagt.length, tone: "muted" },
           ]}
-          details={[...agg.m5.geplant, ...agg.m5.durchgefuehrt].slice(0, 8).map((r) => {
+          details={[...agg.m5.geplant, ...agg.m5.durchgefuehrt, ...agg.m5.abgesagt].slice(0, 8).map((r) => {
             const p = postById.get(r.post_id);
             return {
               id: r.id,
@@ -458,7 +458,7 @@ export default function DashboardHome() {
               </div>
             )
           }
-          details={[...agg.m6.laeuft, ...agg.m6.pausiert, ...agg.m6.nicht_gestartet].slice(0, 8).map((r) => {
+          details={[...agg.m6.laeuft, ...agg.m6.pausiert, ...agg.m6.nicht_gestartet, ...agg.m6.beendet].slice(0, 8).map((r) => {
             const p = postById.get(r.post_id);
             return {
               id: r.id,
