@@ -578,6 +578,56 @@ export type Database = {
           },
         ]
       }
+      recording_sessions: {
+        Row: {
+          accumulated_seconds: number
+          asked_question_ids: Json
+          created_at: string
+          id: string
+          interviewer_notiz: string | null
+          post_id: string
+          question_order: Json
+          recording_markers: Json
+          resumed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accumulated_seconds?: number
+          asked_question_ids?: Json
+          created_at?: string
+          id?: string
+          interviewer_notiz?: string | null
+          post_id: string
+          question_order?: Json
+          recording_markers?: Json
+          resumed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accumulated_seconds?: number
+          asked_question_ids?: Json
+          created_at?: string
+          id?: string
+          interviewer_notiz?: string | null
+          post_id?: string
+          question_order?: Json
+          recording_markers?: Json
+          resumed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recording_sessions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speaker_profiles: {
         Row: {
           created_at: string
