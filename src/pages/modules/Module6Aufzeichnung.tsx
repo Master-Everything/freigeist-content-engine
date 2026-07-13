@@ -581,7 +581,8 @@ export default function Module6Aufzeichnung() {
             </CardContent>
           </Card>
 
-          {/* Marker */}
+          {/* Marker (Admin only) */}
+          {isAdmin && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -591,29 +592,25 @@ export default function Module6Aufzeichnung() {
                 </Badge>
               </CardTitle>
               <CardDescription>
-                {isAdmin
-                  ? "Setze Marker beim aktuellen Timer-Stand — auch nach Abschluss editierbar."
-                  : "Von der Redaktion gesetzte Marker für Schnitt und Nachbearbeitung."}
+                Setze Marker beim aktuellen Timer-Stand — auch nach Abschluss editierbar.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {isAdmin && (
-                <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
-                  <div className="font-mono text-sm tabular-nums px-2 py-1 rounded bg-background border">
-                    {fmtMMSS(currentSeconds)}
-                  </div>
-                  <Input
-                    value={newMarkerComment}
-                    onChange={(e) => setNewMarkerComment(e.target.value)}
-                    placeholder='Kommentar (optional) — z. B. „Kernaussage", „Schnitt hier", „Rückfrage" …'
-                    className="flex-1 min-w-[200px]"
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMarker(); } }}
-                  />
-                  <Button size="sm" onClick={addMarker}>
-                    <Plus className="mr-1.5 h-4 w-4" /> Marker setzen
-                  </Button>
+              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
+                <div className="font-mono text-sm tabular-nums px-2 py-1 rounded bg-background border">
+                  {fmtMMSS(currentSeconds)}
                 </div>
-              )}
+                <Input
+                  value={newMarkerComment}
+                  onChange={(e) => setNewMarkerComment(e.target.value)}
+                  placeholder='Kommentar (optional) — z. B. „Kernaussage", „Schnitt hier", „Rückfrage" …'
+                  className="flex-1 min-w-[200px]"
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMarker(); } }}
+                />
+                <Button size="sm" onClick={addMarker}>
+                  <Plus className="mr-1.5 h-4 w-4" /> Marker setzen
+                </Button>
+              </div>
 
               {markers.length === 0 ? (
                 <div className="py-4 text-center text-sm text-muted-foreground italic">
@@ -626,34 +623,44 @@ export default function Module6Aufzeichnung() {
                       <div className="font-mono text-sm tabular-nums px-2 py-1 rounded bg-muted/50 shrink-0">
                         {fmtMMSS(m.ts)}
                       </div>
-                      {isAdmin ? (
-                        <>
-                          <Input
-                            value={m.comment}
-                            onChange={(e) => updateMarker(m.id, { comment: e.target.value })}
-                            placeholder="Kommentar …"
-                            className="flex-1 h-8"
-                          />
-                          <Button
-                            variant="ghost" size="icon"
-                            onClick={() => removeMarker(m.id)}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            title="Marker löschen"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <div className="flex-1 text-sm py-1">
-                          {m.comment || <span className="italic text-muted-foreground">Kein Kommentar</span>}
-                        </div>
-                      )}
+                      <Input
+                        value={m.comment}
+                        onChange={(e) => updateMarker(m.id, { comment: e.target.value })}
+                        placeholder="Kommentar …"
+                        className="flex-1 h-8"
+                      />
+                      <Button
+                        variant="ghost" size="icon"
+                        onClick={() => removeMarker(m.id)}
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        title="Marker löschen"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </li>
                   ))}
                 </ul>
               )}
             </CardContent>
           </Card>
+          )}
+
+          {/* Ablauf & Aufbau (aus Vorgespräch — beide Rollen) */}
+          {flowNotes?.trim() && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" /> Ablauf & Aufbau
+                </CardTitle>
+                <CardDescription>
+                  Aus dem Vorgespräch übernommen — Referenz für den Interview-Ablauf.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SimpleMarkdown text={flowNotes} />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Interviewer-Notiz (Admin only) */}
           {isAdmin && (
