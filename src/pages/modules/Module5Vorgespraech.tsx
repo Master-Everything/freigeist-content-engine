@@ -194,10 +194,13 @@ export default function Module5Vorgespraech() {
       }
       setGuide(g ?? null);
 
-      // pre_interview_calls (Admin: ggf. anlegen)
+      // pre_interview_calls — Spalten-Whitelist: Speaker sieht kein internal_notes
+      const callSelect = role === "admin"
+        ? "*"
+        : "id, post_id, scheduled_at, meeting_link, status, flow_notes, clarifications";
       let { data: c } = await (supabase as any)
         .from("pre_interview_calls")
-        .select("*")
+        .select(callSelect)
         .eq("post_id", postId!)
         .maybeSingle();
       if (!c && role === "admin") {
@@ -205,7 +208,7 @@ export default function Module5Vorgespraech() {
         const { data: created, error: createErr } = await (supabase as any)
           .from("pre_interview_calls")
           .insert({ post_id: postId!, clarifications: fresh })
-          .select("*")
+          .select(callSelect)
           .single();
         if (createErr) {
           toast({ title: "Vorgespräch konnte nicht angelegt werden", description: createErr.message, variant: "destructive" });
