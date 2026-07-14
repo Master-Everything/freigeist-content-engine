@@ -17,6 +17,7 @@ import PreviewPost from "./pages/PreviewPost";
 import TechStack from "./pages/TechStack";
 import Auth from "./pages/Auth";
 import Module1Erfassung from "./pages/modules/Module1Erfassung";
+import AdminSpeakerFormPage from "./pages/modules/erfassung/AdminSpeakerFormPage";
 import Module2VorabScan from "./pages/modules/Module2VorabScan";
 import Module3Profil from "./pages/modules/Module3Profil";
 import Module4Leitfaden from "./pages/modules/Module4Leitfaden";
@@ -65,6 +66,22 @@ const App = () => (
 
               {/* Gemeinsam: Speaker + Admin */}
               <Route path="/module/erfassung" element={<Module1Erfassung />} />
+              <Route
+                path="/module/erfassung/neu"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminSpeakerFormPage mode="create" />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/module/erfassung/bearbeiten/:id"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminSpeakerFormPage mode="edit" />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/module/erfassung/danke" element={<ErfassungDanke />} />
               <Route path="/module/interview/neu" element={<InterviewForm />} />
               <Route path="/module/interview/edit/:id" element={<InterviewEdit />} />

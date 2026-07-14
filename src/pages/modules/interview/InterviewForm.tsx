@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,16 +11,43 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Send, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { InterviewFieldset, type AffiliateEntry } from "./InterviewFieldset";
 
+type SpeakerLite = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar_url: string | null;
+  bio_third_person: string | null;
+  website: string | null;
+  top_affiliate_products: any;
+};
+
 export default function InterviewForm() {
   const { user, role } = useAuth();
+  const isAdmin = role === "admin";
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedSpeakerId = searchParams.get("speaker_id");
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [speaker, setSpeaker] = useState<any | null>(null);
+  const [speakerOptions, setSpeakerOptions] = useState<SpeakerLite[]>([]);
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(
+    preselectedSpeakerId
+  );
   const [selectedAffiliateIndices, setSelectedAffiliateIndices] = useState<number[]>([]);
 
   const form = useForm<InterviewFormValues>({
@@ -35,18 +62,38 @@ export default function InterviewForm() {
     },
   });
 
+  // Speaker-Datensatz laden — für Admin nach speaker_id, für Speaker nach eigenem user_id.
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("speakers")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setSpeaker(data);
+      setLoading(true);
+      if (isAdmin) {
+        // Alle Speaker für Combobox
+        const { data: list } = await supabase
+          .from("speakers")
+          .select("id, first_name, last_name, email, avatar_url, bio_third_person, website, top_affiliate_products")
+          .order("first_name", { ascending: true });
+        setSpeakerOptions((list as SpeakerLite[]) ?? []);
+        if (selectedSpeakerId) {
+          const { data } = await supabase
+            .from("speakers")
+            .select("*")
+            .eq("id", selectedSpeakerId)
+            .maybeSingle();
+          setSpeaker(data);
+        }
+      } else {
+        const { data } = await supabase
+          .from("speakers")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setSpeaker(data);
+      }
       setLoading(false);
     })();
-  }, [user]);
+     
+  }, [user, isAdmin, selectedSpeakerId]);
 
   const affiliates: AffiliateEntry[] = Array.isArray(speaker?.top_affiliate_products)
     ? (speaker.top_affiliate_products as AffiliateEntry[])
@@ -58,9 +105,11 @@ export default function InterviewForm() {
     );
   };
 
+  const canSubmit = useMemo(() => !!speaker, [speaker]);
+
   async function onSubmit(values: InterviewFormValues) {
-    if (!speaker) {
-      toast.error("Bitte zuerst dein Profil ausfüllen");
+    if (!speaker || !user) {
+      toast.error(isAdmin ? "Bitte zuerst einen Speaker auswählen" : "Bitte zuerst dein Profil ausfüllen");
       return;
     }
     setSubmitting(true);
@@ -81,10 +130,11 @@ export default function InterviewForm() {
         previous_interviews: values.previous_interviews || null,
         critical_voices: values.critical_voices || null,
         selected_affiliate_indices: selectedAffiliateIndices,
+        created_by: user.id,
       } as any);
       if (error) throw error;
       toast.success("Interview angelegt");
-      navigate(role === "admin" ? "/module/interview-beitraege" : "/module/interview-beitraege/mine");
+      navigate(isAdmin ? "/module/erfassung" : "/module/interview-beitraege/mine");
     } catch (err: any) {
       toast.error(err.message || "Fehler beim Speichern");
     } finally {
@@ -100,7 +150,8 @@ export default function InterviewForm() {
     );
   }
 
-  if (!speaker) {
+  // Speaker-Rolle ohne eigenes Profil → Blocker
+  if (!isAdmin && !speaker) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-10">
         <Card>
@@ -134,16 +185,63 @@ export default function InterviewForm() {
         </div>
       </div>
 
+      {isAdmin && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Speaker</CardTitle>
+            <CardDescription>
+              Wähle den Speaker, für den du dieses Interview anlegst.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label>Speaker auswählen</Label>
+              <Select
+                value={selectedSpeakerId ?? undefined}
+                onValueChange={(v) => setSelectedSpeakerId(v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Speaker auswählen…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {speakerOptions.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.first_name} {s.last_name} · {s.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {speakerOptions.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Noch keine Speaker im System.{" "}
+                <Link to="/module/erfassung/neu" className="text-primary underline">
+                  Ersten Speaker anlegen
+                </Link>
+                .
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <InterviewFieldset
-            form={form}
-            affiliates={affiliates}
-            selectedAffiliateIndices={selectedAffiliateIndices}
-            toggleAffiliate={toggleAffiliate}
-          />
+          <fieldset disabled={!canSubmit} className="space-y-6 disabled:opacity-60">
+            <InterviewFieldset
+              form={form}
+              affiliates={affiliates}
+              selectedAffiliateIndices={selectedAffiliateIndices}
+              toggleAffiliate={toggleAffiliate}
+            />
+          </fieldset>
           <div className="flex justify-end">
-            <Button type="submit" size="lg" disabled={submitting} className="min-w-[200px]">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={submitting || !canSubmit}
+              className="min-w-[200px]"
+            >
               {submitting ? (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
               ) : (
