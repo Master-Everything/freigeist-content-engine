@@ -1,10 +1,17 @@
-Kommentar-Nit in `src/pages/modules/erfassung/SpeakerForm.tsx` (Zeilen 226–228) aktualisieren, damit die Begründung zum aktuellen Stand passt.
+## M7-Refactor: pausiert
 
-**Änderung**
+Für Modul 7 wurde bisher **kein Code** geschrieben – wir waren nur in der Konzeptphase mit offenen Scope-Fragen. Es gibt daher nichts zu löschen oder zurückzusetzen.
 
-Alten Kommentar:
-> Dank Migration ist first_name jetzt nullable — kein Sonderfall nötig.
+### Status
+- `src/pages/EditPost.tsx`, `NewPost.tsx`, `MyPosts.tsx` bleiben unverändert (Legacy Block-Editor)
+- `supabase/functions/push-to-hub/` bleibt aktiv
+- Sidebar-Badge „Update" auf M7 bleibt bestehen
 
-ersetzen durch eine Formulierung, die den aktuellen Rollentausch widerspiegelt — Vorname/Nachname sind Zod-Pflicht, `email` ist optional und dank Migration nullable in der DB.
+### Nächster Schritt
+Ich warte auf dein eigenes M7-Konzept. Sobald du es schickst, erstelle ich daraus einen neuen Plan.
 
-Keine Logikänderung, kein weiteres File betroffen.
+Falls du zusätzlich noch nicht committete Änderungen aus früheren Turns loswerden willst: nutze am besten den **Revert**-Button an der jeweiligen Nachricht oder den History-Tab oben im Chat.
+
+<presentation-actions>
+  <presentation-open-history>View History</presentation-open-history>
+</presentation-actions>
