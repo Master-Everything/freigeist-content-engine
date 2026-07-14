@@ -32,6 +32,8 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
   CalendarClock,
   Activity,
   CheckCircle2,
@@ -122,7 +124,37 @@ export default function DashboardHome() {
   const [stepFilter, setStepFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const [openPanels, setOpenPanels] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(sessionStorage.getItem("dashboard.openPanels") || "{}");
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.setItem("dashboard.openPanels", JSON.stringify(openPanels));
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [openPanels]);
+
+  const allOpen = workflow.every((w) => openPanels[w.key]);
+  const toggleAllPanels = () => {
+    const next = !allOpen;
+    setOpenPanels(Object.fromEntries(workflow.map((w) => [w.key, next])));
+  };
+  const panelOpenProps = (key: string) => ({
+    open: !!openPanels[key],
+    onOpenChange: (v: boolean) =>
+      setOpenPanels((p) => ({ ...p, [key]: v })),
+  });
+
   const listRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     (async () => {
@@ -274,10 +306,31 @@ export default function DashboardHome() {
                 : "Ihre Interviews im Überblick."}
             </p>
           </div>
-          <Button onClick={() => navigate("/module/erfassung")} size="lg" className="shrink-0">
-            <Plus className="mr-1.5 h-4 w-4" />
-            {role === "admin" ? "Neues Interview" : "Neues Interview anstoßen"}
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAllPanels}
+              title={allOpen ? "Alle Details schließen" : "Alle Details öffnen"}
+            >
+              {allOpen ? (
+                <>
+                  <ChevronsUp className="mr-1.5 h-4 w-4" />
+                  Alle schließen
+                </>
+              ) : (
+                <>
+                  <ChevronsDown className="mr-1.5 h-4 w-4" />
+                  Alle öffnen
+                </>
+              )}
+            </Button>
+            <Button onClick={() => navigate("/module/erfassung")} size="lg">
+              <Plus className="mr-1.5 h-4 w-4" />
+              {role === "admin" ? "Neues Interview" : "Neues Interview anstoßen"}
+            </Button>
+          </div>
+
         </div>
       </div>
 
@@ -326,6 +379,7 @@ export default function DashboardHome() {
         {/* M1 */}
         <ModulePanel
           meta={workflow[0]}
+          {...panelOpenProps(workflow[0].key)}
           bigNumber={agg.m1.length}
           chips={[{ label: "in Erfassung", value: agg.m1.length, tone: "muted" }]}
           details={agg.m1.slice(0, 8).map((p) => ({
@@ -343,6 +397,7 @@ export default function DashboardHome() {
         {/* M2 */}
         <ModulePanel
           meta={workflow[1]}
+          {...panelOpenProps(workflow[1].key)}
           bigNumber={agg.m2.buckets.green + agg.m2.buckets.yellow + agg.m2.buckets.red}
           chips={[
             { label: "grün", value: agg.m2.buckets.green, tone: "green" },
@@ -369,6 +424,7 @@ export default function DashboardHome() {
         {/* M3 */}
         <ModulePanel
           meta={workflow[2]}
+          {...panelOpenProps(workflow[2].key)}
           bigNumber={agg.m3.entwurf.length + agg.m3.kuratiert.length + agg.m3.freigegeben.length}
           chips={[
             { label: "Entwurf", value: agg.m3.entwurf.length, tone: "muted" },
@@ -394,6 +450,7 @@ export default function DashboardHome() {
         {/* M4 */}
         <ModulePanel
           meta={workflow[3]}
+          {...panelOpenProps(workflow[3].key)}
           bigNumber={agg.m4.entwurf.length + agg.m4.final.length}
           chips={[
             { label: "Entwurf", value: agg.m4.entwurf.length, tone: "muted" },
@@ -418,6 +475,7 @@ export default function DashboardHome() {
         {/* M5 */}
         <ModulePanel
           meta={workflow[4]}
+          {...panelOpenProps(workflow[4].key)}
           bigNumber={agg.m5.geplant.length + agg.m5.durchgefuehrt.length + agg.m5.abgesagt.length}
           chips={[
             { label: "geplant", value: agg.m5.geplant.length, tone: "yellow" },
@@ -443,6 +501,7 @@ export default function DashboardHome() {
         {/* M6 */}
         <ModulePanel
           meta={workflow[5]}
+          {...panelOpenProps(workflow[5].key)}
           bigNumber={agg.m6.nicht_gestartet.length + agg.m6.laeuft.length + agg.m6.pausiert.length + agg.m6.beendet.length}
           chips={[
             { label: "geplant", value: agg.m6.nicht_gestartet.length, tone: "muted" },
@@ -477,6 +536,7 @@ export default function DashboardHome() {
         {/* M7 */}
         <ModulePanel
           meta={workflow[6]}
+          {...panelOpenProps(workflow[6].key)}
           bigNumber={agg.m7.draft.length + agg.m7.in_progress.length}
           chips={[
             { label: "Entwurf", value: agg.m7.draft.length, tone: "muted" },
@@ -498,6 +558,7 @@ export default function DashboardHome() {
         {/* M8 */}
         <ModulePanel
           meta={workflow[7]}
+          {...panelOpenProps(workflow[7].key)}
           bigNumber={agg.m8.exported.length}
           chips={[
             { label: "gepusht", value: agg.m8.pushed, tone: "green" },
@@ -680,6 +741,8 @@ function ModulePanel({
   onShowAll,
   totalCount,
   loading,
+  open,
+  onOpenChange,
 }: {
   meta: (typeof workflow)[number];
   bigNumber: number;
@@ -690,8 +753,10 @@ function ModulePanel({
   onShowAll: () => void;
   totalCount: number;
   loading: boolean;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+
   const Icon = meta.icon;
 
   return (
@@ -737,7 +802,7 @@ function ModulePanel({
         {footer && <div className="mt-2">{footer}</div>}
       </div>
 
-      <Collapsible open={open} onOpenChange={setOpen}>
+      <Collapsible open={open} onOpenChange={onOpenChange}>
         <CollapsibleTrigger asChild>
           <button className="flex w-full items-center justify-between border-t bg-muted/30 px-5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50">
             <span className="inline-flex items-center gap-1">
