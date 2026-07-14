@@ -560,7 +560,7 @@ export default function SpeakerForm({
                   name="affiliate_available"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Affiliate-Anmeldung möglich? <span className="text-primary">*</span></FormLabel>
+                      <FormLabel>Affiliate-Anmeldung möglich? {!isAdminMode && <span className="text-primary">*</span>}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
