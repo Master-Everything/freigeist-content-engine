@@ -342,7 +342,7 @@ export default function SpeakerForm({
             {isAdminMode && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-foreground">
                 <strong className="font-semibold">Schnellerfassung:</strong>{" "}
-                Nur <em>Nachname</em> und <em>E-Mail</em> sind Pflicht. Alle weiteren Angaben
+                Nur <em>Vorname</em> und <em>Nachname</em> sind Pflicht. Alle weiteren Angaben
                 können der Speaker oder du später ergänzen.
               </div>
             )}
