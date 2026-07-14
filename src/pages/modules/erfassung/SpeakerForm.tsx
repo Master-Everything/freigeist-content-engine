@@ -103,7 +103,7 @@ export default function SpeakerForm({
     : [];
 
   const form = useForm<SpeakerFormValues>({
-    resolver: zodResolver(speakerSchema),
+    resolver: zodResolver((isAdminMode ? speakerAdminSchema : speakerSchema) as any),
     defaultValues: {
       salutation: existing?.salutation || undefined,
       first_name: existing?.first_name || "",
