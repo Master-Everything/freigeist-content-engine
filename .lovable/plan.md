@@ -1,20 +1,11 @@
-## Sidebar-Status vereinheitlichen
+## Ziel
+Doppeltes „Powered by Martina Hautau"-Badge vermeiden: Badge nur aus der Sidebar entfernen. In `Wissensbasis.tsx` existiert es bereits oben rechts neben der H1 — dort keine Änderung.
 
-In `src/components/AppSidebar.tsx`:
+## Umsetzung
 
-**adminModules & speakerModules:**
-- M1 Erfassung → `active`
-- M2 Vorab-Scan → `active`
-- M3 Profil & Sprechermappe → `active`
-- M4 Interview-Leitfaden → `active`
-- M5 Vorgespräch → `active`
-- M6 Aufzeichnung / Live → `active`
-- **M7 Interview-Beiträge → neuer Status `update`**
-- M8 News-Plattform → `active`
+**`src/components/AppSidebar.tsx`**
+- Den kompletten `{!collapsed && ( <SidebarMenuItem> …Powered by Martina Hautau… </SidebarMenuItem> )}`-Block im `SidebarFooter` (Zeilen ~240–252) entfernen.
+- Datei danach kurz auf weitere `Sparkles`-Vorkommen prüfen; ist keins mehr vorhanden, `Sparkles` aus dem `lucide-react`-Import entfernen.
 
-**Neuer Status "update":**
-- Erweitere den `Module`-Typ (`status: "active" | "in-progress" | "planned" | "update"`)
-- Badge-Styling: blaue Akzentfarbe (z.B. `border-blue-500/40 text-blue-500`), Label: "Update"
-- Ergänze die entsprechenden Zweige im Badge-`className` und Label-Ausdruck
-
-Keine weiteren Änderungen (Routing, Guards, Inhalte bleiben unangetastet).
+## Nicht Teil des Plans
+- `src/pages/admin/Wissensbasis.tsx` bleibt unverändert (Badge ist dort bereits korrekt platziert).
