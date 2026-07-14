@@ -20,6 +20,7 @@ import { InlineImageUpload } from "@/components/InlineImageUpload";
 import { SpeakerAvatarField } from "@/components/SpeakerAvatarField";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePushToHub } from "@/hooks/usePushToHub";
+import { ContextSheet } from "@/components/context/ContextSheet";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
