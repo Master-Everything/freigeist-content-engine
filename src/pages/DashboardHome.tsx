@@ -773,7 +773,7 @@ function ModulePanel({
         {footer && <div className="mt-2">{footer}</div>}
       </div>
 
-      <Collapsible open={open} onOpenChange={setOpen}>
+      <Collapsible open={open} onOpenChange={onOpenChange}>
         <CollapsibleTrigger asChild>
           <button className="flex w-full items-center justify-between border-t bg-muted/30 px-5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50">
             <span className="inline-flex items-center gap-1">
