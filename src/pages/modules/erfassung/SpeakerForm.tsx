@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
-import { speakerSchema, SpeakerFormValues } from "@/lib/validation/speaker-schema";
+import { speakerSchema, speakerAdminSchema, SpeakerFormValues } from "@/lib/validation/speaker-schema";
 import { convertToWebP } from "@/lib/image-utils";
 import { toast } from "sonner";
 
