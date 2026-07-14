@@ -141,7 +141,7 @@ export function ContextSheet({ postId }: { postId: string }) {
                     Für dieses Interview ist noch kein freigegebenes Profil vorhanden.
                   </div>
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/module/profil?post_id=${postId}`} onClick={() => setOpen(false)}>
+                    <Link to={`/module/profil?post_id=${postId}&speaker_id=${post?.speaker_id ?? ""}`} onClick={() => setOpen(false)}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Zu Modul 3 (Profil)
                     </Link>
