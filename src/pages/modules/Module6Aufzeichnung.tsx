@@ -25,6 +25,7 @@ import { useAutoGrow } from "@/hooks/use-auto-grow";
 import { SimpleMarkdown } from "@/lib/simple-markdown";
 import { relativeChip } from "@/lib/relative-time";
 import { GuideViewer } from "@/components/vorgespraech/GuideViewer";
+import { ContextSheet } from "@/components/context/ContextSheet";
 import {
   GuideQuestionsChecklist,
   collectOrderedQuestions,
