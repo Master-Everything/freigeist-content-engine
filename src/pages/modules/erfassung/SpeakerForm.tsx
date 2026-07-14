@@ -542,7 +542,7 @@ export default function SpeakerForm({
                   name="email_list_size"
                   label="Größe Ihrer E-Mail-Liste"
                   type="number"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   help="Wie viele Kontakte werden Sie nutzen, um den Freigeist Kongress zu bewerben?"
                 />
