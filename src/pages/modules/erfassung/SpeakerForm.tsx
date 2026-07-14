@@ -111,7 +111,7 @@ export default function SpeakerForm({
       title_role: existing?.title_role || "",
       industry: existing?.industry || "",
       phone: existing?.phone || "",
-      email: existing?.email || userEmail,
+      email: existing?.email || (isAdminMode ? "" : userEmail),
       website: existing?.website || "",
       slogan: existing?.slogan || "",
       bio_third_person: existing?.bio_third_person || "",
