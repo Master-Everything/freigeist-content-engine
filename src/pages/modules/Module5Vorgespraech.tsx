@@ -28,6 +28,7 @@ import { SimpleMarkdown } from "@/lib/simple-markdown";
 import { GuideQuestionsCompact } from "@/components/vorgespraech/GuideQuestionsCompact";
 import { GuideViewer } from "@/components/vorgespraech/GuideViewer";
 import type { GuideQuestion } from "@/components/leitfaden/LeitfadenEditor";
+import { ContextSheet } from "@/components/context/ContextSheet";
 
 type Clarification = {
   question_id: string;
@@ -412,7 +413,10 @@ export default function Module5Vorgespraech() {
             Live-Cockpit für Interviewer und Speaker.
           </p>
         </div>
-        <StatusBadge callStatus={call?.status} postStatus={post?.status} />
+        <div className="flex items-center gap-2">
+          {postId && <ContextSheet postId={postId} />}
+          <StatusBadge callStatus={call?.status} postStatus={post?.status} />
+        </div>
       </div>
 
       {loading ? (

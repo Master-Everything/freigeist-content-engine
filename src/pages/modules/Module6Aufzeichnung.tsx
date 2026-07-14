@@ -531,7 +531,10 @@ export default function Module6Aufzeichnung() {
               : "Fortschritt deiner Aufzeichnung und Vorbereitung."}
           </p>
         </div>
-        <StatusBadge postStatus={post?.status} sessionStatus={session?.status} />
+        <div className="flex items-center gap-2">
+          {postId && <ContextSheet postId={postId} />}
+          <StatusBadge postStatus={post?.status} sessionStatus={session?.status} />
+        </div>
       </div>
 
       {loading ? (

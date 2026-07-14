@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { LeitfadenEditor, type InterviewGuide } from "@/components/leitfaden/LeitfadenEditor";
 import { LeitfadenReadonly } from "@/components/leitfaden/LeitfadenReadonly";
+import { ContextSheet } from "@/components/context/ContextSheet";
 
 type QueueRow = {
   id: string;
@@ -135,7 +136,10 @@ export default function Module4Leitfaden() {
               Strukturierter Leitfaden für Moderation und Vorbereitung.
             </p>
           </div>
-          {post && <StatusBadge status={post.status} />}
+          <div className="flex items-center gap-2">
+            {postId && <ContextSheet postId={postId} />}
+            {post && <StatusBadge status={post.status} />}
+          </div>
         </div>
 
         {loading ? (
