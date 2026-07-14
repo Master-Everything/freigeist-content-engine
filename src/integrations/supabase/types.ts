@@ -804,7 +804,7 @@ export type Database = {
           bio_third_person: string | null
           created_at: string
           created_by: string | null
-          email: string
+          email: string | null
           email_list_size: number | null
           first_name: string | null
           has_newsletter: boolean | null
@@ -833,7 +833,7 @@ export type Database = {
           bio_third_person?: string | null
           created_at?: string
           created_by?: string | null
-          email: string
+          email?: string | null
           email_list_size?: number | null
           first_name?: string | null
           has_newsletter?: boolean | null
@@ -862,7 +862,7 @@ export type Database = {
           bio_third_person?: string | null
           created_at?: string
           created_by?: string | null
-          email?: string
+          email?: string | null
           email_list_size?: number | null
           first_name?: string | null
           has_newsletter?: boolean | null

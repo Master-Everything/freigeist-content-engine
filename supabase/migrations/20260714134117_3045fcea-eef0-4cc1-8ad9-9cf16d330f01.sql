@@ -1,0 +1,1 @@
+ALTER TABLE public.speakers ALTER COLUMN email DROP NOT NULL;
