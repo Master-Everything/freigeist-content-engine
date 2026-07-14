@@ -73,12 +73,20 @@ export default function EditPost() {
       if (!migrated.summary_paragraphs?.length && (p.blocks as any).summary_points?.length) {
         migrated.summary_paragraphs = (p.blocks as any).summary_points;
       }
+      // Einmalige Migration: Top-Level-Guest-Felder in blocks vorbefüllen,
+      // falls dort noch leer. blocks.* ist ab jetzt alleinige Quelle.
+      if (!migrated.guest_short_bio && (p as any).guest_short_bio) {
+        migrated.guest_short_bio = (p as any).guest_short_bio;
+      }
+      if (!migrated.guest_image_url && (p as any).guest_image_url) {
+        migrated.guest_image_url = (p as any).guest_image_url;
+      }
       setBlocks(migrated);
       setShowAdditionalVideo(!!p.blocks.additional_video_embed);
       setShowPrettyLink(!!p.blocks.pretty_link_shortcode);
       setShowResources(!!p.blocks.resource_links || !!p.blocks.resource_notes);
     } else {
-      setBlocks({ ...defaultBlocks, main_video_url: p.youtube_url || "" });
+      setBlocks({ ...defaultBlocks, main_video_url: p.youtube_url || "", guest_short_bio: (p as any).guest_short_bio || "", guest_image_url: (p as any).guest_image_url || "" });
     }
     setLoading(false);
   }
