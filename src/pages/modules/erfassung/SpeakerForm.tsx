@@ -378,11 +378,11 @@ export default function SpeakerForm({
                 />
 
                 <div className="grid gap-5 md:grid-cols-2">
-                  <TextInput name="first_name" label="Vorname" required form={form} />
+                  <TextInput name="first_name" label="Vorname" required={!isAdminMode} form={form} />
                   <TextInput name="last_name" label="Nachname" required form={form} />
                   <TextAreaInput name="title_role" label="Titel & Berufsbezeichnung" form={form} />
                   <TextInput name="industry" label="Branche" form={form} />
-                  <TextInput name="phone" label="Telefonnummer" required form={form} />
+                  <TextInput name="phone" label="Telefonnummer" required={!isAdminMode} form={form} />
                   <TextInput name="email" label="E-Mail-Adresse" type="email" required form={form} />
                   <TextInput name="website" label="Homepage" form={form} placeholder="https://..." />
                 </div>
