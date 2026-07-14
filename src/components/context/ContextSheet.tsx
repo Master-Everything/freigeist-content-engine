@@ -96,12 +96,12 @@ export function ContextSheet({ postId }: { postId: string }) {
           aria-label={open ? "Kontext schließen" : "Kontext öffnen"}
           className={cn(
             "fixed top-1/2 -translate-y-1/2 z-[60] transition-[right] duration-300 ease-out",
-            "flex items-center gap-2 py-4 pl-2 pr-1.5",
+            "flex items-center gap-2 py-4 pl-1.5 pr-2",
             "rounded-l-lg rounded-r-none",
             "bg-primary text-primary-foreground shadow-lg",
-            "[writing-mode:vertical-rl] rotate-180",
+            "[writing-mode:vertical-rl]",
             "text-sm font-medium tracking-wide",
-            open ? "right-0 sm:right-[36rem]" : "right-0 hover:pr-2.5 hover:pl-2.5"
+            open ? "right-0 sm:right-[36rem]" : "right-0 hover:pl-2.5"
           )}
         >
           <BookOpen className="h-4 w-4" />
