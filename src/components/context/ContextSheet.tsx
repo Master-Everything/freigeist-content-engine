@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfilContextView } from "@/components/profil/ProfilContextView";
 import { InterviewContextView } from "./InterviewContextView";
 import type { SpeakerProfile } from "@/components/profil/ProfilEditor";
+import { cn } from "@/lib/utils";
 
 type PostData = {
   id: string;
