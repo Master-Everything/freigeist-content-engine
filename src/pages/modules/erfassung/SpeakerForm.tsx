@@ -62,6 +62,12 @@ interface Props {
   existing: any | null;
   userId: string;
   userEmail: string;
+  /** "self" = Speaker füllt eigenes Profil, "admin" = Admin legt im Auftrag an */
+  mode?: "self" | "admin";
+  /** Nur im Admin-Modus: id des bestehenden Datensatzes (falls edit) */
+  initialSpeakerId?: string | null;
+  /** Nur im Admin-Modus: Callback nach erfolgreichem Insert (id des neuen Datensatzes) */
+  onCreated?: (id: string) => void;
 }
 
 const sections = [
@@ -74,12 +80,21 @@ const sections = [
   { id: "legal", label: "Rechtliches" },
 ];
 
-export default function SpeakerForm({ existing, userId, userEmail }: Props) {
+export default function SpeakerForm({
+  existing,
+  userId,
+  userEmail,
+  mode = "self",
+  initialSpeakerId = null,
+  onCreated,
+}: Props) {
   const navigate = useNavigate();
+  const isAdminMode = mode === "admin";
   const [submitting, setSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(existing?.avatar_url ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const social = (existing?.social_links as Record<string, string>) || {};
   const hot: string[] = Array.isArray(existing?.hot_topics) ? existing.hot_topics : [];
@@ -127,8 +142,11 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
       aff_3_url: affs[2]?.url || "",
       aff_3_freebie: affs[2]?.freebie || "",
       aff_3_ebook: affs[2]?.ebook || "",
-      agb_accepted: existing?.agb_accepted_at ? true : (undefined as any),
-      privacy_accepted: existing?.privacy_accepted_at ? true : (undefined as any),
+      // Im Admin-Modus werden AGB/Datenschutz durch den Speaker beim späteren Owner-Handover
+      // bestätigt — die Checkboxes werden ausgeblendet und pauschal gesetzt, damit die Zod-Schema
+      // Literal-Constraint passt. Timestamps im Payload spiegeln aber die tatsächliche Zustimmung.
+      agb_accepted: isAdminMode ? true : existing?.agb_accepted_at ? true : (undefined as any),
+      privacy_accepted: isAdminMode ? true : existing?.privacy_accepted_at ? true : (undefined as any),
     },
   });
 
@@ -150,7 +168,9 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
       toast.error("Profilbild über 500 KB nach Konvertierung – bitte kleineres Bild wählen");
       throw new Error("avatar too large");
     }
-    const path = `${userId}/avatar-${Date.now()}.webp`;
+    // Admin-Anlage ohne user_id: Bilder im Admin-Namespace ablegen, damit Storage-RLS greift.
+    const scope = isAdminMode ? `admin-${userId}` : userId;
+    const path = `${scope}/avatar-${Date.now()}.webp`;
     const { error } = await supabase.storage
       .from("speaker-avatars")
       .upload(path, webp, { contentType: "image/webp", upsert: true });
@@ -159,7 +179,8 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
   };
 
   const onSubmit = async (values: SpeakerFormValues) => {
-    if (!avatarFile && !existing?.avatar_url) {
+    // Avatar ist im Self-Modus Pflicht, im Admin-Modus optional.
+    if (!isAdminMode && !avatarFile && !existing?.avatar_url) {
       toast.error("Bitte ein Profilbild hochladen");
       return;
     }
@@ -167,8 +188,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
     try {
       const avatar_url = await uploadAvatar();
 
-      const payload = {
-        user_id: userId,
+      const basePayload = {
         salutation: values.salutation,
         first_name: values.first_name,
         last_name: values.last_name,
@@ -200,22 +220,52 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
           { name: values.aff_2_name, url: values.aff_2_url, freebie: values.aff_2_freebie, ebook: values.aff_2_ebook },
           { name: values.aff_3_name, url: values.aff_3_url, freebie: values.aff_3_freebie, ebook: values.aff_3_ebook },
         ].filter((a) => a.name || a.url),
-        agb_accepted_at: values.agb_accepted ? new Date().toISOString() : null,
-        privacy_accepted_at: values.privacy_accepted ? new Date().toISOString() : null,
       };
 
-      const { data: speaker, error: spkErr } = await supabase
-        .from("speakers")
-        .upsert(payload, { onConflict: "user_id" })
-        .select()
-        .single();
-
-      if (spkErr) throw spkErr;
-
-      // Hinweis: Interview-Beiträge werden separat über das Interview-Formular angelegt.
-
-      toast.success(existing ? "Profil aktualisiert" : "Anmeldung erfolgreich");
-      navigate("/module/erfassung/danke");
+      if (isAdminMode) {
+        // Legal-Timestamps bleiben leer, bis der Speaker sein Profil selbst bestätigt.
+        const adminPayload = {
+          ...basePayload,
+          agb_accepted_at: null as string | null,
+          privacy_accepted_at: null as string | null,
+        };
+        if (initialSpeakerId) {
+          // Update über id — user_id/created_by unangetastet lassen
+          const { error } = await supabase
+            .from("speakers")
+            .update(adminPayload)
+            .eq("id", initialSpeakerId);
+          if (error) throw error;
+          toast.success("Profil gespeichert");
+        } else {
+          // Erst-Insert: user_id = null, created_by = aktueller Admin
+          const { data: created, error } = await supabase
+            .from("speakers")
+            .insert({ ...adminPayload, user_id: null, created_by: userId } as any)
+            .select("id")
+            .single();
+          if (error) throw error;
+          toast.success("Speaker angelegt");
+          if (created?.id && onCreated) onCreated(created.id);
+          else navigate("/module/erfassung");
+        }
+      } else {
+        // Self-Modus: unverändert — upsert über user_id
+        const payload = {
+          ...basePayload,
+          user_id: userId,
+          agb_accepted_at: values.agb_accepted ? new Date().toISOString() : null,
+          privacy_accepted_at: values.privacy_accepted ? new Date().toISOString() : null,
+        };
+        const { error: spkErr } = await supabase
+          .from("speakers")
+          .upsert(payload, { onConflict: "user_id" })
+          .select()
+          .single();
+        if (spkErr) throw spkErr;
+        toast.success(existing ? "Profil aktualisiert" : "Anmeldung erfolgreich");
+        navigate("/module/erfassung/danke");
+      }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Fehler beim Speichern");
