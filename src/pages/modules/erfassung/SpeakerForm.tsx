@@ -235,7 +235,7 @@ export default function SpeakerForm({
           title_role: nn(values.title_role),
           industry: nn(values.industry),
           phone: nn(values.phone),
-          email: values.email,
+          email: nn(values.email),
           website: nn(values.website),
           slogan: nn(values.slogan),
           bio_third_person: nn(values.bio_third_person),
