@@ -88,14 +88,28 @@ export function ContextSheet({ postId }: { postId: string }) {
   const roleSafe: "admin" | "speaker" = role === "admin" ? "admin" : "speaker";
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={setOpen} modal={false}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
+        <button
+          type="button"
+          aria-label="Kontext öffnen"
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-40
+                     flex items-center gap-2 py-4 pl-2 pr-1.5
+                     rounded-l-lg rounded-r-none
+                     bg-primary text-primary-foreground shadow-lg
+                     hover:pr-2.5 hover:pl-2.5 transition-all
+                     [writing-mode:vertical-rl] rotate-180
+                     text-sm font-medium tracking-wide"
+        >
           <BookOpen className="h-4 w-4" />
           Kontext
-        </Button>
+        </button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+      <SheetContent
+        className="w-full sm:max-w-xl overflow-y-auto [&>[data-radix-dialog-overlay]]:hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <SheetHeader>
           <SheetTitle>Kontext</SheetTitle>
           <SheetDescription>
