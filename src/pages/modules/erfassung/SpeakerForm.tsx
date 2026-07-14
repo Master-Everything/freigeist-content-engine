@@ -414,7 +414,7 @@ export default function SpeakerForm({
 
                 <div>
                   <Label className="text-sm font-medium">
-                    Profilbild <span className="text-primary">*</span>
+                    Profilbild {!isAdminMode && <span className="text-primary">*</span>}
                   </Label>
                   <p className="mt-1 mb-2 text-xs text-muted-foreground">
                     Bitte ein klares Profilbild hochladen. Max. 500 KB (wird automatisch optimiert).
