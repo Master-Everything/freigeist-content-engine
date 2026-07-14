@@ -62,13 +62,14 @@ const optionalString = (max: number) =>
 
 export const speakerAdminSchema = z.object({
   salutation: z.enum(["Herr", "Frau", "Divers"]).optional(),
-  first_name: optionalString(80),
+  first_name: z.string().trim().min(1, "Pflichtfeld").max(80),
   last_name: z.string().trim().min(1, "Pflichtfeld").max(80),
   title_role: optionalString(160),
   industry: optionalString(120),
   phone: optionalString(40),
-  email: z.string().trim().email("Ungültige E-Mail").max(255),
+  email: z.string().trim().max(255).email("Ungültige E-Mail").optional().or(z.literal("")),
   website: optionalString(255),
+
 
   slogan: optionalString(300),
   bio_third_person: optionalString(2000),
