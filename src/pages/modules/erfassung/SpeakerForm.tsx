@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
-import { speakerSchema, SpeakerFormValues } from "@/lib/validation/speaker-schema";
+import { speakerSchema, speakerAdminSchema, SpeakerFormValues } from "@/lib/validation/speaker-schema";
 import { convertToWebP } from "@/lib/image-utils";
 import { toast } from "sonner";
 
@@ -103,7 +103,7 @@ export default function SpeakerForm({
     : [];
 
   const form = useForm<SpeakerFormValues>({
-    resolver: zodResolver(speakerSchema),
+    resolver: zodResolver((isAdminMode ? speakerAdminSchema : speakerSchema) as any),
     defaultValues: {
       salutation: existing?.salutation || undefined,
       first_name: existing?.first_name || "",
@@ -223,14 +223,45 @@ export default function SpeakerForm({
       };
 
       if (isAdminMode) {
-        // Legal-Timestamps bleiben leer, bis der Speaker sein Profil selbst bestätigt.
-        const adminPayload = {
-          ...basePayload,
-          agb_accepted_at: null as string | null,
-          privacy_accepted_at: null as string | null,
+        // Schnellerfassung: leere Strings → null für alle optionalen Felder, damit die DB
+        // sauber bleibt und Enum-Spalten (has_newsletter, affiliate_available) nicht mit ""
+        // befüllt werden. Dank Migration ist first_name jetzt nullable — kein Sonderfall nötig.
+        const nn = <T,>(v: T): T | null =>
+          v === "" || v === undefined ? null : v;
+        const adminPayload: any = {
+          salutation: nn(values.salutation),
+          first_name: nn(values.first_name),
+          last_name: values.last_name,
+          title_role: nn(values.title_role),
+          industry: nn(values.industry),
+          phone: nn(values.phone),
+          email: values.email,
+          website: nn(values.website),
+          slogan: nn(values.slogan),
+          bio_third_person: nn(values.bio_third_person),
+          short_vita: nn(values.short_vita),
+          avatar_url,
+          topic_suggestions: nn(values.topic_suggestions),
+          hot_topics: [values.hot_topic_1, values.hot_topic_2, values.hot_topic_3].filter(Boolean),
+          social_links: basePayload.social_links,
+          has_newsletter:
+            values.has_newsletter === "ja" ? true : values.has_newsletter === "nein" ? false : null,
+          email_list_size:
+            values.email_list_size == null || (values.email_list_size as any) === ""
+              ? null
+              : Number(values.email_list_size),
+          affiliate_available:
+            values.affiliate_available === "ja"
+              ? true
+              : values.affiliate_available === "nein"
+              ? false
+              : null,
+          affiliate_registration_url: nn(values.affiliate_registration_url),
+          top_affiliate_products: basePayload.top_affiliate_products,
+          agb_accepted_at: null,
+          privacy_accepted_at: null,
         };
         if (initialSpeakerId) {
-          // Update über id — user_id/created_by unangetastet lassen
           const { error } = await supabase
             .from("speakers")
             .update(adminPayload)
@@ -238,7 +269,6 @@ export default function SpeakerForm({
           if (error) throw error;
           toast.success("Profil gespeichert");
         } else {
-          // Erst-Insert: user_id = null, created_by = aktueller Admin
           const { data: created, error } = await supabase
             .from("speakers")
             .insert({ ...adminPayload, user_id: null, created_by: userId } as any)
@@ -309,6 +339,13 @@ export default function SpeakerForm({
       <div className="grid gap-10 lg:grid-cols-[1fr_220px]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {isAdminMode && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-foreground">
+                <strong className="font-semibold">Schnellerfassung:</strong>{" "}
+                Nur <em>Nachname</em> und <em>E-Mail</em> sind Pflicht. Alle weiteren Angaben
+                können der Speaker oder du später ergänzen.
+              </div>
+            )}
             {/* PERSÖNLICH */}
             <Card id="personal">
               <CardHeader>
@@ -320,7 +357,7 @@ export default function SpeakerForm({
                   name="salutation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Anrede <span className="text-primary">*</span></FormLabel>
+                      <FormLabel>Anrede {!isAdminMode && <span className="text-primary">*</span>}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
@@ -341,11 +378,11 @@ export default function SpeakerForm({
                 />
 
                 <div className="grid gap-5 md:grid-cols-2">
-                  <TextInput name="first_name" label="Vorname" required form={form} />
+                  <TextInput name="first_name" label="Vorname" required={!isAdminMode} form={form} />
                   <TextInput name="last_name" label="Nachname" required form={form} />
                   <TextAreaInput name="title_role" label="Titel & Berufsbezeichnung" form={form} />
                   <TextInput name="industry" label="Branche" form={form} />
-                  <TextInput name="phone" label="Telefonnummer" required form={form} />
+                  <TextInput name="phone" label="Telefonnummer" required={!isAdminMode} form={form} />
                   <TextInput name="email" label="E-Mail-Adresse" type="email" required form={form} />
                   <TextInput name="website" label="Homepage" form={form} placeholder="https://..." />
                 </div>
@@ -358,18 +395,18 @@ export default function SpeakerForm({
                 <CardTitle>Profil & Bio</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                <TextAreaInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required form={form} />
+                <TextAreaInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required={!isAdminMode} form={form} />
                 <TextAreaInput
                   name="bio_third_person"
                   label="Ich über mich in 3. Person"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   rows={4}
                 />
                 <TextAreaInput
                   name="short_vita"
                   label="Kurze Vita"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   rows={5}
                   help="Wer du bist, was du machst und warum dein Thema wichtig ist."
@@ -377,7 +414,7 @@ export default function SpeakerForm({
 
                 <div>
                   <Label className="text-sm font-medium">
-                    Profilbild <span className="text-primary">*</span>
+                    Profilbild {!isAdminMode && <span className="text-primary">*</span>}
                   </Label>
                   <p className="mt-1 mb-2 text-xs text-muted-foreground">
                     Bitte ein klares Profilbild hochladen. Max. 500 KB (wird automatisch optimiert).
@@ -423,7 +460,7 @@ export default function SpeakerForm({
                 <TextAreaInput
                   name="topic_suggestions"
                   label="Interview-Themenvorschläge"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   rows={3}
                 />
@@ -480,7 +517,7 @@ export default function SpeakerForm({
                   name="has_newsletter"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Newsletter-Anmeldung auf Homepage <span className="text-primary">*</span></FormLabel>
+                      <FormLabel>Newsletter-Anmeldung auf Homepage {!isAdminMode && <span className="text-primary">*</span>}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
@@ -505,7 +542,7 @@ export default function SpeakerForm({
                   name="email_list_size"
                   label="Größe Ihrer E-Mail-Liste"
                   type="number"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   help="Wie viele Kontakte werden Sie nutzen, um den Freigeist Kongress zu bewerben?"
                 />
@@ -523,7 +560,7 @@ export default function SpeakerForm({
                   name="affiliate_available"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Affiliate-Anmeldung möglich? <span className="text-primary">*</span></FormLabel>
+                      <FormLabel>Affiliate-Anmeldung möglich? {!isAdminMode && <span className="text-primary">*</span>}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
