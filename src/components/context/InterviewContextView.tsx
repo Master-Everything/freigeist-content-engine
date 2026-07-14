@@ -13,7 +13,7 @@ type PostFields = {
 type SpeakerFields = {
   first_name: string | null;
   last_name: string | null;
-  top_affiliate_products: string[] | null;
+  top_affiliate_products: Array<string | { name?: string; url?: string; ebook?: boolean; freebie?: boolean }> | null;
 };
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
