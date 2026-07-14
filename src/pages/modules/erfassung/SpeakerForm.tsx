@@ -247,7 +247,7 @@ export default function SpeakerForm({
           has_newsletter:
             values.has_newsletter === "ja" ? true : values.has_newsletter === "nein" ? false : null,
           email_list_size:
-            values.email_list_size === "" || values.email_list_size === undefined
+            values.email_list_size == null || (values.email_list_size as any) === ""
               ? null
               : Number(values.email_list_size),
           affiliate_available:
