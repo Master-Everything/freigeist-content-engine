@@ -20,6 +20,7 @@ import { InlineImageUpload } from "@/components/InlineImageUpload";
 import { SpeakerAvatarField } from "@/components/SpeakerAvatarField";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePushToHub } from "@/hooks/usePushToHub";
+import { ContextSheet } from "@/components/context/ContextSheet";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -72,12 +73,20 @@ export default function EditPost() {
       if (!migrated.summary_paragraphs?.length && (p.blocks as any).summary_points?.length) {
         migrated.summary_paragraphs = (p.blocks as any).summary_points;
       }
+      // Einmalige Migration: Top-Level-Guest-Felder in blocks vorbefüllen,
+      // falls dort noch leer. blocks.* ist ab jetzt alleinige Quelle.
+      if (!migrated.guest_short_bio && (p as any).guest_short_bio) {
+        migrated.guest_short_bio = (p as any).guest_short_bio;
+      }
+      if (!migrated.guest_image_url && (p as any).guest_image_url) {
+        migrated.guest_image_url = (p as any).guest_image_url;
+      }
       setBlocks(migrated);
       setShowAdditionalVideo(!!p.blocks.additional_video_embed);
       setShowPrettyLink(!!p.blocks.pretty_link_shortcode);
       setShowResources(!!p.blocks.resource_links || !!p.blocks.resource_notes);
     } else {
-      setBlocks({ ...defaultBlocks, main_video_url: p.youtube_url || "" });
+      setBlocks({ ...defaultBlocks, main_video_url: p.youtube_url || "", guest_short_bio: (p as any).guest_short_bio || "", guest_image_url: (p as any).guest_image_url || "" });
     }
     setLoading(false);
   }
@@ -341,6 +350,7 @@ export default function EditPost() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
+      {id && <ContextSheet postId={id} />}
       <div className="shrink-0 border-b bg-card/80 backdrop-blur z-20">
         <div className="flex items-center justify-between px-4 py-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/module/interview-beitraege")} className="gap-2">
