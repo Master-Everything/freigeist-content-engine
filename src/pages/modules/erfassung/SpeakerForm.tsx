@@ -517,7 +517,7 @@ export default function SpeakerForm({
                   name="has_newsletter"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Newsletter-Anmeldung auf Homepage <span className="text-primary">*</span></FormLabel>
+                      <FormLabel>Newsletter-Anmeldung auf Homepage {!isAdminMode && <span className="text-primary">*</span>}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
