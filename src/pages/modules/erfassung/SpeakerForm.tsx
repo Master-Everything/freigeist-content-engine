@@ -357,7 +357,7 @@ export default function SpeakerForm({
                   name="salutation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Anrede <span className="text-primary">*</span></FormLabel>
+                      <FormLabel>Anrede {!isAdminMode && <span className="text-primary">*</span>}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
