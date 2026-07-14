@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfilContextView } from "@/components/profil/ProfilContextView";
 import { InterviewContextView } from "./InterviewContextView";
 import type { SpeakerProfile } from "@/components/profil/ProfilEditor";
+import { cn } from "@/lib/utils";
 
 type PostData = {
   id: string;
@@ -92,14 +93,16 @@ export function ContextSheet({ postId }: { postId: string }) {
       <SheetTrigger asChild>
         <button
           type="button"
-          aria-label="Kontext öffnen"
-          className="fixed right-0 top-1/2 -translate-y-1/2 z-40
-                     flex items-center gap-2 py-4 pl-2 pr-1.5
-                     rounded-l-lg rounded-r-none
-                     bg-primary text-primary-foreground shadow-lg
-                     hover:pr-2.5 hover:pl-2.5 transition-all
-                     [writing-mode:vertical-rl] rotate-180
-                     text-sm font-medium tracking-wide"
+          aria-label={open ? "Kontext schließen" : "Kontext öffnen"}
+          className={cn(
+            "fixed top-1/2 -translate-y-1/2 z-[60] transition-[right] duration-300 ease-out",
+            "flex items-center gap-2 py-4 pl-2 pr-1.5",
+            "rounded-l-lg rounded-r-none",
+            "bg-primary text-primary-foreground shadow-lg",
+            "[writing-mode:vertical-rl] rotate-180",
+            "text-sm font-medium tracking-wide",
+            open ? "right-0 sm:right-[36rem]" : "right-0 hover:pr-2.5 hover:pl-2.5"
+          )}
         >
           <BookOpen className="h-4 w-4" />
           Kontext

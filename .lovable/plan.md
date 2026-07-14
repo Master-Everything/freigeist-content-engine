@@ -1,57 +1,37 @@
-## Kontext-Lasche statt Header-Button
+## Lasche mit Sheet verbinden
 
-Der bisherige „Kontext"-Button im Header von M4/M5/M6 wird durch eine **fixierte Lasche am rechten Bildschirmrand** ersetzt, die den Sheet öffnet.
+Die fixierte Lasche wird so umgebaut, dass sie sich beim Öffnen des Sheets mitverschiebt und bündig an der linken Kante des herausgezogenen Panels „andockt". Ein weiterer Klick auf die Lasche schließt das Sheet wieder ein.
 
-### 1. `ContextSheet.tsx` — Trigger umbauen
+### Änderungen in `src/components/context/ContextSheet.tsx`
 
-- Der bisherige `SheetTrigger` mit `Button variant="ghost"` wird ersetzt durch eine **vertikale Lasche**, `position: fixed; right: 0; top: 50%`, per `-translate-y-1/2` zentriert.
-- Styling: schmaler Pill (`rounded-l-lg`, `rounded-r-none`), Primärfarbe, Schatten, Hover-Effekt (leichtes Herausschieben nach links via `hover:pr-4` / `translate-x`).
-- Inhalt: `BookOpen`-Icon + Label „Kontext" mit `writing-mode: vertical-rl` (vertikal von unten nach oben lesbar), oder alternativ nur Icon + horizontales Label unterhalb – **Variante vertikal** wird gewählt, damit die Lasche schlank bleibt.
-- `z-index: 40`, damit sie über normalem Content, aber unter Dialog/Sheet-Overlays liegt.
+1. **Sichtbarkeit im geöffneten Zustand**
+   - Der `SheetTrigger` ist standardmäßig weiterhin `fixed right-0 top-1/2 -translate-y-1/2`.
+   - `z-index` auf `z-[60]` erhöhen, damit die Lasche über dem portal-gerenderten `SheetContent` (`z-50`) liegt.
+   - Beim Öffnen mit dynamischer Positionierung an die Sheet-Kante schieben:
+     - Desktop (`sm:`): `right-[36rem]` (entspricht `sm:max-w-xl` des Sheets).
+     - Mobil: Sheet ist `w-full`, Lasche darf hinter dem Sheet verschwinden — der Nutzer schließt dort über das X.
+   - Klasse zusammengesetzt via `cn(...)`:
+     ```tsx
+     cn(
+       "fixed top-1/2 -translate-y-1/2 z-[60] transition-[right] duration-300 ease-out",
+       "flex items-center gap-2 py-4 pl-2 pr-1.5",
+       "rounded-l-lg rounded-r-none bg-primary text-primary-foreground shadow-lg",
+       "[writing-mode:vertical-rl] rotate-180 text-sm font-medium tracking-wide",
+       open ? "right-0 sm:right-[36rem]" : "right-0 hover:pr-2.5"
+     )
+     ```
 
-### 2. Sheet „sichtbar bleiben" — Overlay entfernen
+2. **Klick schließt das Sheet**
+   - `SheetTrigger` von Radix togglet standardmäßig — bei `modal={false}` und `open` state greift das bereits. Zusätzlich `onClick={() => setOpen((o) => !o)}` explizit setzen, damit das Toggle-Verhalten deterministisch bleibt.
 
-Das Standard-`SheetContent` von shadcn rendert ein dunkles Overlay und schließt bei Klick daneben. Damit der Nutzer parallel im Modul weiterarbeiten kann:
+3. **Optische Verbindung**
+   - `rounded-l-lg rounded-r-none` bleibt — im geöffneten Zustand sitzt die Lasche direkt links an der Sheet-Kante und wirkt wie ein Griff.
+   - Kein extra Trennstrich; Schatten (`shadow-lg`) genügt.
 
-- Eigenes `SheetContent` mit `modal={false}` am `Sheet`-Root, sodass Interaktion mit dem Rest der Seite möglich bleibt.
-- Overlay per CSS ausblenden (`[&>[data-radix-dialog-overlay]]:hidden`) bzw. eine leichte Variante des `SheetContent` verwenden ohne Overlay-Element.
-- Sheet bleibt geöffnet, bis der Nutzer explizit über das `X` oder erneut die Lasche schließt.
-- Breite bleibt `sm:max-w-xl`, weiterhin scrollbar.
-
-### 3. Header-Aufräumen in M4/M5/M6
-
-- `<ContextSheet postId={postId} />` bleibt eingebunden — wird aber aus dem Header-Actions-Bereich entfernt, da die Komponente sich selbst am rechten Rand fixiert rendert.
-- Empfohlener Ort: einmal am Ende des Return-JSX jedes Moduls (nach dem Haupt-Content), damit die Fixed-Positionierung sauber greift.
-- Betroffen:
-  - `src/pages/modules/Module4Leitfaden.tsx`
-  - `src/pages/modules/Module5Vorgespraech.tsx`
-  - `src/pages/modules/Module6Aufzeichnung.tsx`
-
-### 4. Technische Details
-
-```tsx
-<Sheet open={open} onOpenChange={setOpen} modal={false}>
-  <SheetTrigger asChild>
-    <button
-      className="fixed right-0 top-1/2 -translate-y-1/2 z-40
-                 flex items-center gap-2 py-4 px-2
-                 rounded-l-lg rounded-r-none
-                 bg-primary text-primary-foreground shadow-lg
-                 hover:pr-3 transition-all
-                 [writing-mode:vertical-rl] rotate-180">
-      <BookOpen className="h-4 w-4" />
-      Kontext
-    </button>
-  </SheetTrigger>
-  <SheetContent
-    className="w-full sm:max-w-xl overflow-y-auto"
-    onInteractOutside={(e) => e.preventDefault()}>
-    …
-  </SheetContent>
-</Sheet>
-```
+4. **SheetContent**
+   - Bleibt unverändert (`sm:max-w-xl`, non-modal, `onInteractOutside`/`onPointerDownOutside` verhindert).
 
 ### Out of Scope
 
-- Kein Umbau der Tab-Inhalte (Profil/Interview) — nur Trigger + Öffnungsverhalten.
-- Keine Änderung an Datenladelogik oder Rollenlogik.
+- Keine Änderungen an den Modul-Seiten (M4/M5/M6).
+- Keine Änderung an Datenladen, Tabs oder Rollenlogik.
