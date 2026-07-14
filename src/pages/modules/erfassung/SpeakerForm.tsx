@@ -339,6 +339,13 @@ export default function SpeakerForm({
       <div className="grid gap-10 lg:grid-cols-[1fr_220px]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {isAdminMode && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-foreground">
+                <strong className="font-semibold">Schnellerfassung:</strong>{" "}
+                Nur <em>Nachname</em> und <em>E-Mail</em> sind Pflicht. Alle weiteren Angaben
+                können der Speaker oder du später ergänzen.
+              </div>
+            )}
             {/* PERSÖNLICH */}
             <Card id="personal">
               <CardHeader>
