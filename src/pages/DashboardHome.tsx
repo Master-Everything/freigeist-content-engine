@@ -358,6 +358,7 @@ export default function DashboardHome() {
         {/* M1 */}
         <ModulePanel
           meta={workflow[0]}
+          {...panelOpenProps(workflow[0].key)}
           bigNumber={agg.m1.length}
           chips={[{ label: "in Erfassung", value: agg.m1.length, tone: "muted" }]}
           details={agg.m1.slice(0, 8).map((p) => ({
@@ -375,6 +376,7 @@ export default function DashboardHome() {
         {/* M2 */}
         <ModulePanel
           meta={workflow[1]}
+          {...panelOpenProps(workflow[1].key)}
           bigNumber={agg.m2.buckets.green + agg.m2.buckets.yellow + agg.m2.buckets.red}
           chips={[
             { label: "grün", value: agg.m2.buckets.green, tone: "green" },
@@ -401,6 +403,7 @@ export default function DashboardHome() {
         {/* M3 */}
         <ModulePanel
           meta={workflow[2]}
+          {...panelOpenProps(workflow[2].key)}
           bigNumber={agg.m3.entwurf.length + agg.m3.kuratiert.length + agg.m3.freigegeben.length}
           chips={[
             { label: "Entwurf", value: agg.m3.entwurf.length, tone: "muted" },
@@ -426,6 +429,7 @@ export default function DashboardHome() {
         {/* M4 */}
         <ModulePanel
           meta={workflow[3]}
+          {...panelOpenProps(workflow[3].key)}
           bigNumber={agg.m4.entwurf.length + agg.m4.final.length}
           chips={[
             { label: "Entwurf", value: agg.m4.entwurf.length, tone: "muted" },
@@ -450,6 +454,7 @@ export default function DashboardHome() {
         {/* M5 */}
         <ModulePanel
           meta={workflow[4]}
+          {...panelOpenProps(workflow[4].key)}
           bigNumber={agg.m5.geplant.length + agg.m5.durchgefuehrt.length + agg.m5.abgesagt.length}
           chips={[
             { label: "geplant", value: agg.m5.geplant.length, tone: "yellow" },
@@ -475,6 +480,7 @@ export default function DashboardHome() {
         {/* M6 */}
         <ModulePanel
           meta={workflow[5]}
+          {...panelOpenProps(workflow[5].key)}
           bigNumber={agg.m6.nicht_gestartet.length + agg.m6.laeuft.length + agg.m6.pausiert.length + agg.m6.beendet.length}
           chips={[
             { label: "geplant", value: agg.m6.nicht_gestartet.length, tone: "muted" },
@@ -509,6 +515,7 @@ export default function DashboardHome() {
         {/* M7 */}
         <ModulePanel
           meta={workflow[6]}
+          {...panelOpenProps(workflow[6].key)}
           bigNumber={agg.m7.draft.length + agg.m7.in_progress.length}
           chips={[
             { label: "Entwurf", value: agg.m7.draft.length, tone: "muted" },
@@ -530,6 +537,7 @@ export default function DashboardHome() {
         {/* M8 */}
         <ModulePanel
           meta={workflow[7]}
+          {...panelOpenProps(workflow[7].key)}
           bigNumber={agg.m8.exported.length}
           chips={[
             { label: "gepusht", value: agg.m8.pushed, tone: "green" },
