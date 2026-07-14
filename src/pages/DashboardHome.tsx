@@ -124,7 +124,37 @@ export default function DashboardHome() {
   const [stepFilter, setStepFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const [openPanels, setOpenPanels] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(sessionStorage.getItem("dashboard.openPanels") || "{}");
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.setItem("dashboard.openPanels", JSON.stringify(openPanels));
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [openPanels]);
+
+  const allOpen = workflow.every((w) => openPanels[w.key]);
+  const toggleAllPanels = () => {
+    const next = !allOpen;
+    setOpenPanels(Object.fromEntries(workflow.map((w) => [w.key, next])));
+  };
+  const panelOpenProps = (key: string) => ({
+    open: !!openPanels[key],
+    onOpenChange: (v: boolean) =>
+      setOpenPanels((p) => ({ ...p, [key]: v })),
+  });
+
   const listRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     (async () => {
