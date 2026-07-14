@@ -460,7 +460,7 @@ export default function SpeakerForm({
                 <TextAreaInput
                   name="topic_suggestions"
                   label="Interview-Themenvorschläge"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   rows={3}
                 />
