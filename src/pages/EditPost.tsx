@@ -350,6 +350,7 @@ export default function EditPost() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
+      {id && <ContextSheet postId={id} />}
       <div className="shrink-0 border-b bg-card/80 backdrop-blur z-20">
         <div className="flex items-center justify-between px-4 py-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/module/interview-beitraege")} className="gap-2">
