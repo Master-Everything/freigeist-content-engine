@@ -1,72 +1,57 @@
-# Kontext-Panel für Modul 4, 5 und 6
+## Kontext-Lasche statt Header-Button
 
-Ziel: Interviewer und Speaker können in M4, M5 und M6 jederzeit das freigegebene Sprecher-Profil und die Interview-Eckdaten einblenden, ohne das Modul zu verlassen.
+Der bisherige „Kontext"-Button im Header von M4/M5/M6 wird durch eine **fixierte Lasche am rechten Bildschirmrand** ersetzt, die den Sheet öffnet.
 
-## 1. Neue Komponente `ProfilContextView`
+### 1. `ContextSheet.tsx` — Trigger umbauen
 
-`src/components/profil/ProfilContextView.tsx` — neue read-only Komponente.
-- Props: `profile: SpeakerProfile`, `role: "admin" | "speaker"`
-- Rendert dieselben Profil-Felder wie `ProfilReadonly` (Kurzbio, Langbio, Positionierung, Zielgruppe, Themen, Kernaussagen, mediale Hooks, Expertise-Score) — **rein lesend**.
-- **Kein** „Zur Freigabe"-Badge, **keine** Buttons, **kein** Aufruf von `speaker-profile-decision`.
-- `ProfilReadonly` bleibt unverändert und weiter nur für Modul 3 zuständig.
+- Der bisherige `SheetTrigger` mit `Button variant="ghost"` wird ersetzt durch eine **vertikale Lasche**, `position: fixed; right: 0; top: 50%`, per `-translate-y-1/2` zentriert.
+- Styling: schmaler Pill (`rounded-l-lg`, `rounded-r-none`), Primärfarbe, Schatten, Hover-Effekt (leichtes Herausschieben nach links via `hover:pr-4` / `translate-x`).
+- Inhalt: `BookOpen`-Icon + Label „Kontext" mit `writing-mode: vertical-rl` (vertikal von unten nach oben lesbar), oder alternativ nur Icon + horizontales Label unterhalb – **Variante vertikal** wird gewählt, damit die Lasche schlank bleibt.
+- `z-index: 40`, damit sie über normalem Content, aber unter Dialog/Sheet-Overlays liegt.
 
-## 2. Rollenlogik `kritische_punkte`
+### 2. Sheet „sichtbar bleiben" — Overlay entfernen
 
-In `ProfilContextView` wird das Feld für Speaker per Conditional komplett ausgeblendet:
+Das Standard-`SheetContent` von shadcn rendert ein dunkles Overlay und schließt bei Klick daneben. Damit der Nutzer parallel im Modul weiterarbeiten kann:
+
+- Eigenes `SheetContent` mit `modal={false}` am `Sheet`-Root, sodass Interaktion mit dem Rest der Seite möglich bleibt.
+- Overlay per CSS ausblenden (`[&>[data-radix-dialog-overlay]]:hidden`) bzw. eine leichte Variante des `SheetContent` verwenden ohne Overlay-Element.
+- Sheet bleibt geöffnet, bis der Nutzer explizit über das `X` oder erneut die Lasche schließt.
+- Breite bleibt `sm:max-w-xl`, weiterhin scrollbar.
+
+### 3. Header-Aufräumen in M4/M5/M6
+
+- `<ContextSheet postId={postId} />` bleibt eingebunden — wird aber aus dem Header-Actions-Bereich entfernt, da die Komponente sich selbst am rechten Rand fixiert rendert.
+- Empfohlener Ort: einmal am Ende des Return-JSX jedes Moduls (nach dem Haupt-Content), damit die Fixed-Positionierung sauber greift.
+- Betroffen:
+  - `src/pages/modules/Module4Leitfaden.tsx`
+  - `src/pages/modules/Module5Vorgespraech.tsx`
+  - `src/pages/modules/Module6Aufzeichnung.tsx`
+
+### 4. Technische Details
+
 ```tsx
-{role === "admin" && <ChipRow label="Kritische Punkte" items={profile.kritische_punkte} />}
+<Sheet open={open} onOpenChange={setOpen} modal={false}>
+  <SheetTrigger asChild>
+    <button
+      className="fixed right-0 top-1/2 -translate-y-1/2 z-40
+                 flex items-center gap-2 py-4 px-2
+                 rounded-l-lg rounded-r-none
+                 bg-primary text-primary-foreground shadow-lg
+                 hover:pr-3 transition-all
+                 [writing-mode:vertical-rl] rotate-180">
+      <BookOpen className="h-4 w-4" />
+      Kontext
+    </button>
+  </SheetTrigger>
+  <SheetContent
+    className="w-full sm:max-w-xl overflow-y-auto"
+    onInteractOutside={(e) => e.preventDefault()}>
+    …
+  </SheetContent>
+</Sheet>
 ```
-Alle anderen Profil-Felder sind für beide Rollen sichtbar.
 
-## 3. Interview-Eckdaten — Feldherkunft
+### Out of Scope
 
-Faktencheck bestätigt: Die Migration hat die Interview-Felder von `speakers` nach `posts` verschoben. `src/components/context/InterviewContextView.tsx` zeigt:
-
-| Anzeige | Quelle |
-|---|---|
-| Titel | `posts.interview_title` |
-| Thema | `posts.interview_topic` |
-| Produkt | `posts.product` |
-| Marktdauer | `posts.product_market_since` |
-| Bisherige Interviews | `posts.previous_interviews` |
-| Kritische Stimmen | `posts.critical_voices` |
-| Affiliate-Produkte | `speakers.top_affiliate_products`, gefiltert über `posts.selected_affiliate_indices` |
-
-Sichtbar für Admin und Speaker.
-
-## 4. `ContextSheet.tsx`
-
-`src/components/context/ContextSheet.tsx`
-- shadcn `Sheet` rechts, `sm:max-w-xl`, Trigger vom Modul-Header.
-- Props: `postId: string`.
-- Lädt parallel per `Promise.all`:
-  - `posts` — benötigte Felder inkl. `speaker_id`
-  - `speakers` — `first_name, last_name, top_affiliate_products`
-  - `speaker_profiles` — **per `post_id`** (analog Modul 3):
-    ```ts
-    supabase.from("speaker_profiles")
-      .select("*")
-      .eq("post_id", postId)
-      .eq("status", "freigegeben")
-      .maybeSingle()
-    ```
-    Grund: `post_id` ist UNIQUE auf `speaker_profiles`; Abfrage per `speaker_id` würde bei Wiederholungsgästen ein Profil aus einem anderen Interview treffen.
-- Tabs (`shadcn Tabs`): **Profil** | **Interview**.
-- Rolle via `useAuth()`.
-- Loading-Skeleton + Fehler-Fallback.
-- Kein freigegebenes Profil vorhanden → Hinweis + Deep-Link `/module/profil?post_id=…` (Admin) bzw. Text „Profil noch nicht freigegeben" (Speaker).
-
-## 5. Integration in Modul-Header
-
-Trigger-Button (Ghost, `BookOpen`-Icon, Label „Kontext") in den Headerbereich von:
-- `src/pages/modules/Module4Leitfaden.tsx`
-- `src/pages/modules/Module5Vorgespraech.tsx`
-- `src/pages/modules/Module6Aufzeichnung.tsx`
-
-Position: rechts neben Rolle/Status-Anzeige, vor bestehenden Action-Buttons.
-
-## Out of Scope
-
-- Keine Änderungen an Datenmodell, Edge Functions oder RLS-Policies.
-- Keine Änderung an `ProfilReadonly` (Modul 3 unverändert).
-- Keine Änderung an M7.
+- Kein Umbau der Tab-Inhalte (Profil/Interview) — nur Trigger + Öffnungsverhalten.
+- Keine Änderung an Datenladelogik oder Rollenlogik.
