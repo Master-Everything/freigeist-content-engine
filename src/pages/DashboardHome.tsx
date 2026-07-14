@@ -700,7 +700,7 @@ function KpiTile({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground">{label}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/70">{label}</div>
         <Icon className={cn("h-4 w-4", accent)} />
       </div>
       <div className={cn(
