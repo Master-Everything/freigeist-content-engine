@@ -306,10 +306,31 @@ export default function DashboardHome() {
                 : "Ihre Interviews im Überblick."}
             </p>
           </div>
-          <Button onClick={() => navigate("/module/erfassung")} size="lg" className="shrink-0">
-            <Plus className="mr-1.5 h-4 w-4" />
-            {role === "admin" ? "Neues Interview" : "Neues Interview anstoßen"}
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAllPanels}
+              title={allOpen ? "Alle Details schließen" : "Alle Details öffnen"}
+            >
+              {allOpen ? (
+                <>
+                  <ChevronsUp className="mr-1.5 h-4 w-4" />
+                  Alle schließen
+                </>
+              ) : (
+                <>
+                  <ChevronsDown className="mr-1.5 h-4 w-4" />
+                  Alle öffnen
+                </>
+              )}
+            </Button>
+            <Button onClick={() => navigate("/module/erfassung")} size="lg">
+              <Plus className="mr-1.5 h-4 w-4" />
+              {role === "admin" ? "Neues Interview" : "Neues Interview anstoßen"}
+            </Button>
+          </div>
+
         </div>
       </div>
 
