@@ -395,18 +395,18 @@ export default function SpeakerForm({
                 <CardTitle>Profil & Bio</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                <TextAreaInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required form={form} />
+                <TextAreaInput name="slogan" label="Slogan, Motto, Leitsatz, Vision" required={!isAdminMode} form={form} />
                 <TextAreaInput
                   name="bio_third_person"
                   label="Ich über mich in 3. Person"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   rows={4}
                 />
                 <TextAreaInput
                   name="short_vita"
                   label="Kurze Vita"
-                  required
+                  required={!isAdminMode}
                   form={form}
                   rows={5}
                   help="Wer du bist, was du machst und warum dein Thema wichtig ist."
