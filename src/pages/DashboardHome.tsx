@@ -770,7 +770,7 @@ function ModulePanel({
       <div className="pl-5 pr-4 pt-4 pb-3">
         <button onClick={onOpen} className="flex w-full items-start justify-between gap-2 text-left">
           <div>
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-foreground/80">
               <span className="tabular-nums">0{meta.num}</span>
               <span>·</span>
               <span>{meta.title}</span>
