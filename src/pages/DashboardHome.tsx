@@ -712,6 +712,8 @@ function ModulePanel({
   onShowAll,
   totalCount,
   loading,
+  open,
+  onOpenChange,
 }: {
   meta: (typeof workflow)[number];
   bigNumber: number;
@@ -722,8 +724,10 @@ function ModulePanel({
   onShowAll: () => void;
   totalCount: number;
   loading: boolean;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+
   const Icon = meta.icon;
 
   return (
