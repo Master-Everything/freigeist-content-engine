@@ -32,6 +32,8 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
   CalendarClock,
   Activity,
   CheckCircle2,
