@@ -223,14 +223,45 @@ export default function SpeakerForm({
       };
 
       if (isAdminMode) {
-        // Legal-Timestamps bleiben leer, bis der Speaker sein Profil selbst bestätigt.
-        const adminPayload = {
-          ...basePayload,
-          agb_accepted_at: null as string | null,
-          privacy_accepted_at: null as string | null,
+        // Schnellerfassung: leere Strings → null für alle optionalen Felder, damit die DB
+        // sauber bleibt und Enum-Spalten (has_newsletter, affiliate_available) nicht mit ""
+        // befüllt werden. Dank Migration ist first_name jetzt nullable — kein Sonderfall nötig.
+        const nn = <T,>(v: T): T | null =>
+          v === "" || v === undefined ? null : v;
+        const adminPayload: any = {
+          salutation: nn(values.salutation),
+          first_name: nn(values.first_name),
+          last_name: values.last_name,
+          title_role: nn(values.title_role),
+          industry: nn(values.industry),
+          phone: nn(values.phone),
+          email: values.email,
+          website: nn(values.website),
+          slogan: nn(values.slogan),
+          bio_third_person: nn(values.bio_third_person),
+          short_vita: nn(values.short_vita),
+          avatar_url,
+          topic_suggestions: nn(values.topic_suggestions),
+          hot_topics: [values.hot_topic_1, values.hot_topic_2, values.hot_topic_3].filter(Boolean),
+          social_links: basePayload.social_links,
+          has_newsletter:
+            values.has_newsletter === "ja" ? true : values.has_newsletter === "nein" ? false : null,
+          email_list_size:
+            values.email_list_size === "" || values.email_list_size === undefined
+              ? null
+              : Number(values.email_list_size),
+          affiliate_available:
+            values.affiliate_available === "ja"
+              ? true
+              : values.affiliate_available === "nein"
+              ? false
+              : null,
+          affiliate_registration_url: nn(values.affiliate_registration_url),
+          top_affiliate_products: basePayload.top_affiliate_products,
+          agb_accepted_at: null,
+          privacy_accepted_at: null,
         };
         if (initialSpeakerId) {
-          // Update über id — user_id/created_by unangetastet lassen
           const { error } = await supabase
             .from("speakers")
             .update(adminPayload)
@@ -238,7 +269,6 @@ export default function SpeakerForm({
           if (error) throw error;
           toast.success("Profil gespeichert");
         } else {
-          // Erst-Insert: user_id = null, created_by = aktueller Admin
           const { data: created, error } = await supabase
             .from("speakers")
             .insert({ ...adminPayload, user_id: null, created_by: userId } as any)
