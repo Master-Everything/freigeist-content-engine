@@ -285,14 +285,20 @@ export default function SpeakerForm({
           <div>
             <div className="text-sm text-muted-foreground tabular-nums">Modul 1</div>
             <h1 className="font-display text-3xl font-bold tracking-tight">
-              Anmeldung zum Freigeist Kongress
+              {isAdminMode
+                ? existing
+                  ? "Speaker-Profil bearbeiten"
+                  : "Neuen Speaker anlegen"
+                : "Anmeldung zum Freigeist Kongress"}
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Registrieren Sie sich als Speaker oder Interview-Gast
+              {isAdminMode
+                ? "Im Auftrag anlegen. Owner-Zuweisung erfolgt später über die Übersicht."
+                : "Registrieren Sie sich als Speaker oder Interview-Gast"}
             </p>
           </div>
         </div>
-        {existing && (
+        {!isAdminMode && existing && (
           <Button onClick={() => navigate("/module/interview/neu")} size="lg">
             <Send className="mr-1.5 h-4 w-4" />
             Neues Interview anstoßen
@@ -590,73 +596,82 @@ export default function SpeakerForm({
               </CardContent>
             </Card>
 
-            {/* RECHTLICHES */}
-            <Card id="legal">
-              <CardHeader>
-                <CardTitle>Rechtliches</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <FormField
-                  control={form.control}
-                  name="agb_accepted"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-start gap-3">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-tight">
-                          <FormLabel className="font-normal">
-                            AGB-Bestätigung inkl. E-Mail-Promotion <span className="text-primary">*</span>
-                          </FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Mit der Einreichung bestätige ich, die AGB zu akzeptieren und meine
-                            E-Mail-Liste mindestens dreimal vor dem Kongress mit dem Link
-                            freigeistkongress.com anzuschreiben.
-                          </p>
-                          <FormMessage />
+            {/* RECHTLICHES — im Admin-Modus ausgeblendet (Speaker bestätigt später selbst) */}
+            {!isAdminMode && (
+              <Card id="legal">
+                <CardHeader>
+                  <CardTitle>Rechtliches</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <FormField
+                    control={form.control}
+                    name="agb_accepted"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-tight">
+                            <FormLabel className="font-normal">
+                              AGB-Bestätigung inkl. E-Mail-Promotion <span className="text-primary">*</span>
+                            </FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Mit der Einreichung bestätige ich, die AGB zu akzeptieren und meine
+                              E-Mail-Liste mindestens dreimal vor dem Kongress mit dem Link
+                              freigeistkongress.com anzuschreiben.
+                            </p>
+                            <FormMessage />
+                          </div>
                         </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="privacy_accepted"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-start gap-3">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-tight">
-                          <FormLabel className="font-normal">
-                            Datenschutz <span className="text-primary">*</span>
-                          </FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Ich bestätige die Datenschutzbestimmungen und die Verarbeitung meiner
-                            Daten. (Bestätigungs-E-Mail folgt.)
-                          </p>
-                          <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="privacy_accepted"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-tight">
+                            <FormLabel className="font-normal">
+                              Datenschutz <span className="text-primary">*</span>
+                            </FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Ich bestätige die Datenschutzbestimmungen und die Verarbeitung meiner
+                              Daten. (Bestätigungs-E-Mail folgt.)
+                            </p>
+                            <FormMessage />
+                          </div>
                         </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-            <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
-              Ihre Daten werden sicher verarbeitet. Sie erhalten eine Bestätigungs-E-Mail.
-            </div>
+            {isAdminMode ? (
+              <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Du legst dieses Profil im Auftrag an. AGB und Datenschutz werden vom Speaker
+                später beim Owner-Handover selbst bestätigt.
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Ihre Daten werden sicher verarbeitet. Sie erhalten eine Bestätigungs-E-Mail.
+              </div>
+            )}
 
             <div className="flex justify-end">
               <Button type="submit" size="lg" disabled={submitting} className="min-w-[220px]">
@@ -665,7 +680,13 @@ export default function SpeakerForm({
                 ) : (
                   <CheckCircle2 className="mr-1.5 h-4 w-4" />
                 )}
-                {existing ? "Profil speichern" : "Anmeldung absenden"}
+                {isAdminMode
+                  ? existing
+                    ? "Änderungen speichern"
+                    : "Speaker anlegen"
+                  : existing
+                  ? "Profil speichern"
+                  : "Anmeldung absenden"}
               </Button>
             </div>
           </form>
