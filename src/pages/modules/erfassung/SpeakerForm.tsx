@@ -225,7 +225,8 @@ export default function SpeakerForm({
       if (isAdminMode) {
         // Schnellerfassung: leere Strings → null für alle optionalen Felder, damit die DB
         // sauber bleibt und Enum-Spalten (has_newsletter, affiliate_available) nicht mit ""
-        // befüllt werden. Dank Migration ist first_name jetzt nullable — kein Sonderfall nötig.
+        // befüllt werden. Pflicht sind nur first_name + last_name (via Zod erzwungen);
+        // email ist optional und dank Migration in der DB nullable.
         const nn = <T,>(v: T): T | null =>
           v === "" || v === undefined ? null : v;
         const adminPayload: any = {
