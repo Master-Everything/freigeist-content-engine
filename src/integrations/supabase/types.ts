@@ -437,6 +437,7 @@ export type Database = {
         Row: {
           blocks: Json | null
           created_at: string
+          created_by: string | null
           critical_voices: string | null
           guest_image_url: string | null
           guest_name: string
@@ -466,6 +467,7 @@ export type Database = {
         Insert: {
           blocks?: Json | null
           created_at?: string
+          created_by?: string | null
           critical_voices?: string | null
           guest_image_url?: string | null
           guest_name: string
@@ -495,6 +497,7 @@ export type Database = {
         Update: {
           blocks?: Json | null
           created_at?: string
+          created_by?: string | null
           critical_voices?: string | null
           guest_image_url?: string | null
           guest_name?: string
@@ -800,6 +803,7 @@ export type Database = {
           avatar_url: string | null
           bio_third_person: string | null
           created_at: string
+          created_by: string | null
           email: string
           email_list_size: number | null
           first_name: string
@@ -818,7 +822,7 @@ export type Database = {
           top_affiliate_products: Json | null
           topic_suggestions: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           website: string | null
         }
         Insert: {
@@ -828,6 +832,7 @@ export type Database = {
           avatar_url?: string | null
           bio_third_person?: string | null
           created_at?: string
+          created_by?: string | null
           email: string
           email_list_size?: number | null
           first_name: string
@@ -846,7 +851,7 @@ export type Database = {
           top_affiliate_products?: Json | null
           topic_suggestions?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           website?: string | null
         }
         Update: {
@@ -856,6 +861,7 @@ export type Database = {
           avatar_url?: string | null
           bio_third_person?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string
           email_list_size?: number | null
           first_name?: string
@@ -874,7 +880,7 @@ export type Database = {
           top_affiliate_products?: Json | null
           topic_suggestions?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           website?: string | null
         }
         Relationships: []

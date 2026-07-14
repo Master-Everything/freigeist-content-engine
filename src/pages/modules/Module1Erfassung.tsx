@@ -6,14 +6,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, LogIn, UserPlus, Loader2 } from "lucide-react";
 import SpeakerForm from "./erfassung/SpeakerForm";
+import AdminErfassungOverview from "./erfassung/AdminErfassungOverview";
 
 export default function Module1Erfassung() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const [speaker, setSpeaker] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    // Admin lädt die Übersicht separat — kein eigenes Speaker-Fetch nötig.
+    if (!user || role === "admin") {
       setLoading(false);
       return;
     }
@@ -26,7 +28,7 @@ export default function Module1Erfassung() {
         setSpeaker(data);
         setLoading(false);
       });
-  }, [user]);
+  }, [user, role]);
 
   if (authLoading || loading) {
     return (
@@ -78,6 +80,10 @@ export default function Module1Erfassung() {
         </Card>
       </div>
     );
+  }
+
+  if (role === "admin") {
+    return <AdminErfassungOverview />;
   }
 
   return <SpeakerForm existing={speaker} userId={user.id} userEmail={user.email ?? ""} />;

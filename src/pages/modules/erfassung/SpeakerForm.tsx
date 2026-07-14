@@ -62,6 +62,12 @@ interface Props {
   existing: any | null;
   userId: string;
   userEmail: string;
+  /** "self" = Speaker füllt eigenes Profil, "admin" = Admin legt im Auftrag an */
+  mode?: "self" | "admin";
+  /** Nur im Admin-Modus: id des bestehenden Datensatzes (falls edit) */
+  initialSpeakerId?: string | null;
+  /** Nur im Admin-Modus: Callback nach erfolgreichem Insert (id des neuen Datensatzes) */
+  onCreated?: (id: string) => void;
 }
 
 const sections = [
@@ -74,12 +80,21 @@ const sections = [
   { id: "legal", label: "Rechtliches" },
 ];
 
-export default function SpeakerForm({ existing, userId, userEmail }: Props) {
+export default function SpeakerForm({
+  existing,
+  userId,
+  userEmail,
+  mode = "self",
+  initialSpeakerId = null,
+  onCreated,
+}: Props) {
   const navigate = useNavigate();
+  const isAdminMode = mode === "admin";
   const [submitting, setSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(existing?.avatar_url ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const social = (existing?.social_links as Record<string, string>) || {};
   const hot: string[] = Array.isArray(existing?.hot_topics) ? existing.hot_topics : [];
@@ -127,8 +142,11 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
       aff_3_url: affs[2]?.url || "",
       aff_3_freebie: affs[2]?.freebie || "",
       aff_3_ebook: affs[2]?.ebook || "",
-      agb_accepted: existing?.agb_accepted_at ? true : (undefined as any),
-      privacy_accepted: existing?.privacy_accepted_at ? true : (undefined as any),
+      // Im Admin-Modus werden AGB/Datenschutz durch den Speaker beim späteren Owner-Handover
+      // bestätigt — die Checkboxes werden ausgeblendet und pauschal gesetzt, damit die Zod-Schema
+      // Literal-Constraint passt. Timestamps im Payload spiegeln aber die tatsächliche Zustimmung.
+      agb_accepted: isAdminMode ? true : existing?.agb_accepted_at ? true : (undefined as any),
+      privacy_accepted: isAdminMode ? true : existing?.privacy_accepted_at ? true : (undefined as any),
     },
   });
 
@@ -150,7 +168,9 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
       toast.error("Profilbild über 500 KB nach Konvertierung – bitte kleineres Bild wählen");
       throw new Error("avatar too large");
     }
-    const path = `${userId}/avatar-${Date.now()}.webp`;
+    // Admin-Anlage ohne user_id: Bilder im Admin-Namespace ablegen, damit Storage-RLS greift.
+    const scope = isAdminMode ? `admin-${userId}` : userId;
+    const path = `${scope}/avatar-${Date.now()}.webp`;
     const { error } = await supabase.storage
       .from("speaker-avatars")
       .upload(path, webp, { contentType: "image/webp", upsert: true });
@@ -159,7 +179,8 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
   };
 
   const onSubmit = async (values: SpeakerFormValues) => {
-    if (!avatarFile && !existing?.avatar_url) {
+    // Avatar ist im Self-Modus Pflicht, im Admin-Modus optional.
+    if (!isAdminMode && !avatarFile && !existing?.avatar_url) {
       toast.error("Bitte ein Profilbild hochladen");
       return;
     }
@@ -167,8 +188,7 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
     try {
       const avatar_url = await uploadAvatar();
 
-      const payload = {
-        user_id: userId,
+      const basePayload = {
         salutation: values.salutation,
         first_name: values.first_name,
         last_name: values.last_name,
@@ -200,22 +220,52 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
           { name: values.aff_2_name, url: values.aff_2_url, freebie: values.aff_2_freebie, ebook: values.aff_2_ebook },
           { name: values.aff_3_name, url: values.aff_3_url, freebie: values.aff_3_freebie, ebook: values.aff_3_ebook },
         ].filter((a) => a.name || a.url),
-        agb_accepted_at: values.agb_accepted ? new Date().toISOString() : null,
-        privacy_accepted_at: values.privacy_accepted ? new Date().toISOString() : null,
       };
 
-      const { data: speaker, error: spkErr } = await supabase
-        .from("speakers")
-        .upsert(payload, { onConflict: "user_id" })
-        .select()
-        .single();
-
-      if (spkErr) throw spkErr;
-
-      // Hinweis: Interview-Beiträge werden separat über das Interview-Formular angelegt.
-
-      toast.success(existing ? "Profil aktualisiert" : "Anmeldung erfolgreich");
-      navigate("/module/erfassung/danke");
+      if (isAdminMode) {
+        // Legal-Timestamps bleiben leer, bis der Speaker sein Profil selbst bestätigt.
+        const adminPayload = {
+          ...basePayload,
+          agb_accepted_at: null as string | null,
+          privacy_accepted_at: null as string | null,
+        };
+        if (initialSpeakerId) {
+          // Update über id — user_id/created_by unangetastet lassen
+          const { error } = await supabase
+            .from("speakers")
+            .update(adminPayload)
+            .eq("id", initialSpeakerId);
+          if (error) throw error;
+          toast.success("Profil gespeichert");
+        } else {
+          // Erst-Insert: user_id = null, created_by = aktueller Admin
+          const { data: created, error } = await supabase
+            .from("speakers")
+            .insert({ ...adminPayload, user_id: null, created_by: userId } as any)
+            .select("id")
+            .single();
+          if (error) throw error;
+          toast.success("Speaker angelegt");
+          if (created?.id && onCreated) onCreated(created.id);
+          else navigate("/module/erfassung");
+        }
+      } else {
+        // Self-Modus: unverändert — upsert über user_id
+        const payload = {
+          ...basePayload,
+          user_id: userId,
+          agb_accepted_at: values.agb_accepted ? new Date().toISOString() : null,
+          privacy_accepted_at: values.privacy_accepted ? new Date().toISOString() : null,
+        };
+        const { error: spkErr } = await supabase
+          .from("speakers")
+          .upsert(payload, { onConflict: "user_id" })
+          .select()
+          .single();
+        if (spkErr) throw spkErr;
+        toast.success(existing ? "Profil aktualisiert" : "Anmeldung erfolgreich");
+        navigate("/module/erfassung/danke");
+      }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Fehler beim Speichern");
@@ -235,14 +285,20 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
           <div>
             <div className="text-sm text-muted-foreground tabular-nums">Modul 1</div>
             <h1 className="font-display text-3xl font-bold tracking-tight">
-              Anmeldung zum Freigeist Kongress
+              {isAdminMode
+                ? existing
+                  ? "Speaker-Profil bearbeiten"
+                  : "Neuen Speaker anlegen"
+                : "Anmeldung zum Freigeist Kongress"}
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Registrieren Sie sich als Speaker oder Interview-Gast
+              {isAdminMode
+                ? "Im Auftrag anlegen. Owner-Zuweisung erfolgt später über die Übersicht."
+                : "Registrieren Sie sich als Speaker oder Interview-Gast"}
             </p>
           </div>
         </div>
-        {existing && (
+        {!isAdminMode && existing && (
           <Button onClick={() => navigate("/module/interview/neu")} size="lg">
             <Send className="mr-1.5 h-4 w-4" />
             Neues Interview anstoßen
@@ -540,73 +596,82 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
               </CardContent>
             </Card>
 
-            {/* RECHTLICHES */}
-            <Card id="legal">
-              <CardHeader>
-                <CardTitle>Rechtliches</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <FormField
-                  control={form.control}
-                  name="agb_accepted"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-start gap-3">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-tight">
-                          <FormLabel className="font-normal">
-                            AGB-Bestätigung inkl. E-Mail-Promotion <span className="text-primary">*</span>
-                          </FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Mit der Einreichung bestätige ich, die AGB zu akzeptieren und meine
-                            E-Mail-Liste mindestens dreimal vor dem Kongress mit dem Link
-                            freigeistkongress.com anzuschreiben.
-                          </p>
-                          <FormMessage />
+            {/* RECHTLICHES — im Admin-Modus ausgeblendet (Speaker bestätigt später selbst) */}
+            {!isAdminMode && (
+              <Card id="legal">
+                <CardHeader>
+                  <CardTitle>Rechtliches</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <FormField
+                    control={form.control}
+                    name="agb_accepted"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-tight">
+                            <FormLabel className="font-normal">
+                              AGB-Bestätigung inkl. E-Mail-Promotion <span className="text-primary">*</span>
+                            </FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Mit der Einreichung bestätige ich, die AGB zu akzeptieren und meine
+                              E-Mail-Liste mindestens dreimal vor dem Kongress mit dem Link
+                              freigeistkongress.com anzuschreiben.
+                            </p>
+                            <FormMessage />
+                          </div>
                         </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="privacy_accepted"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-start gap-3">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-tight">
-                          <FormLabel className="font-normal">
-                            Datenschutz <span className="text-primary">*</span>
-                          </FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Ich bestätige die Datenschutzbestimmungen und die Verarbeitung meiner
-                            Daten. (Bestätigungs-E-Mail folgt.)
-                          </p>
-                          <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="privacy_accepted"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-tight">
+                            <FormLabel className="font-normal">
+                              Datenschutz <span className="text-primary">*</span>
+                            </FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Ich bestätige die Datenschutzbestimmungen und die Verarbeitung meiner
+                              Daten. (Bestätigungs-E-Mail folgt.)
+                            </p>
+                            <FormMessage />
+                          </div>
                         </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-            <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
-              Ihre Daten werden sicher verarbeitet. Sie erhalten eine Bestätigungs-E-Mail.
-            </div>
+            {isAdminMode ? (
+              <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Du legst dieses Profil im Auftrag an. AGB und Datenschutz werden vom Speaker
+                später beim Owner-Handover selbst bestätigt.
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Ihre Daten werden sicher verarbeitet. Sie erhalten eine Bestätigungs-E-Mail.
+              </div>
+            )}
 
             <div className="flex justify-end">
               <Button type="submit" size="lg" disabled={submitting} className="min-w-[220px]">
@@ -615,7 +680,13 @@ export default function SpeakerForm({ existing, userId, userEmail }: Props) {
                 ) : (
                   <CheckCircle2 className="mr-1.5 h-4 w-4" />
                 )}
-                {existing ? "Profil speichern" : "Anmeldung absenden"}
+                {isAdminMode
+                  ? existing
+                    ? "Änderungen speichern"
+                    : "Speaker anlegen"
+                  : existing
+                  ? "Profil speichern"
+                  : "Anmeldung absenden"}
               </Button>
             </div>
           </form>
