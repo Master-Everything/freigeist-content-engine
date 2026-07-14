@@ -111,7 +111,7 @@ export default function SpeakerForm({
       title_role: existing?.title_role || "",
       industry: existing?.industry || "",
       phone: existing?.phone || "",
-      email: existing?.email || userEmail,
+      email: existing?.email || (isAdminMode ? "" : userEmail),
       website: existing?.website || "",
       slogan: existing?.slogan || "",
       bio_third_person: existing?.bio_third_person || "",
@@ -235,7 +235,7 @@ export default function SpeakerForm({
           title_role: nn(values.title_role),
           industry: nn(values.industry),
           phone: nn(values.phone),
-          email: values.email,
+          email: nn(values.email),
           website: nn(values.website),
           slogan: nn(values.slogan),
           bio_third_person: nn(values.bio_third_person),
@@ -342,7 +342,7 @@ export default function SpeakerForm({
             {isAdminMode && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-foreground">
                 <strong className="font-semibold">Schnellerfassung:</strong>{" "}
-                Nur <em>Nachname</em> und <em>E-Mail</em> sind Pflicht. Alle weiteren Angaben
+                Nur <em>Vorname</em> und <em>Nachname</em> sind Pflicht. Alle weiteren Angaben
                 können der Speaker oder du später ergänzen.
               </div>
             )}
@@ -378,12 +378,12 @@ export default function SpeakerForm({
                 />
 
                 <div className="grid gap-5 md:grid-cols-2">
-                  <TextInput name="first_name" label="Vorname" required={!isAdminMode} form={form} />
+                  <TextInput name="first_name" label="Vorname" required form={form} />
                   <TextInput name="last_name" label="Nachname" required form={form} />
                   <TextAreaInput name="title_role" label="Titel & Berufsbezeichnung" form={form} />
                   <TextInput name="industry" label="Branche" form={form} />
                   <TextInput name="phone" label="Telefonnummer" required={!isAdminMode} form={form} />
-                  <TextInput name="email" label="E-Mail-Adresse" type="email" required form={form} />
+                  <TextInput name="email" label="E-Mail-Adresse" type="email" required={!isAdminMode} form={form} />
                   <TextInput name="website" label="Homepage" form={form} placeholder="https://..." />
                 </div>
               </CardContent>
