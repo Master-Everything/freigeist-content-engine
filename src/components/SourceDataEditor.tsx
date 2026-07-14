@@ -73,7 +73,6 @@ export function SourceDataEditor({ post, open, onOpenChange, onPostUpdate, onBlo
         newsletter_text: post.newsletter_text,
         telegram_text: post.telegram_text,
         guest_website_url: post.guest_website_url,
-        guest_short_bio: post.guest_short_bio,
         prettylink_shortcodes: post.prettylink_shortcodes,
         video_transcript: (post as any).video_transcript || null,
         interview_topic: (post as any).interview_topic || null,
@@ -87,6 +86,8 @@ export function SourceDataEditor({ post, open, onOpenChange, onPostUpdate, onBlo
       // Call generate-content
       const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-content", {
         body: {
+          post_id: post.id,
+          speaker_id: (post as any).speaker_id ?? null,
           guest_name: post.guest_name,
           interview_title: post.interview_title,
           youtube_url: post.youtube_url || "",
