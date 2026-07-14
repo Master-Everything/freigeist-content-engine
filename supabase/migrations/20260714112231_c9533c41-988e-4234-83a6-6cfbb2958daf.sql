@@ -1,0 +1,1 @@
+ALTER TABLE public.speakers ALTER COLUMN first_name DROP NOT NULL;

@@ -806,7 +806,7 @@ export type Database = {
           created_by: string | null
           email: string
           email_list_size: number | null
-          first_name: string
+          first_name: string | null
           has_newsletter: boolean | null
           hot_topics: Json | null
           id: string
@@ -835,7 +835,7 @@ export type Database = {
           created_by?: string | null
           email: string
           email_list_size?: number | null
-          first_name: string
+          first_name?: string | null
           has_newsletter?: boolean | null
           hot_topics?: Json | null
           id?: string
@@ -864,7 +864,7 @@ export type Database = {
           created_by?: string | null
           email?: string
           email_list_size?: number | null
-          first_name?: string
+          first_name?: string | null
           has_newsletter?: boolean | null
           hot_topics?: Json | null
           id?: string
