@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { fieldLabel } from "@/lib/field-labels";
 
 export type Finding = {
   kind: "banned_word" | "compliance" | "hint";
@@ -47,8 +48,8 @@ export function ScanFindingsList({ findings }: { findings: Finding[] }) {
             <Badge variant="outline" className={cn("text-xs", sevCls[f.severity])}>
               {sevLabel[f.severity]}
             </Badge>
-            <span className="text-xs font-mono text-muted-foreground">
-              {f.field}
+            <span className="text-xs font-medium text-muted-foreground">
+              {fieldLabel(f.field)}
             </span>
             {f.rule_code && (
               <Badge variant="outline" className="text-xs font-mono">
