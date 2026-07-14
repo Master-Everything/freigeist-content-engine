@@ -62,9 +62,10 @@ export function InterviewContextView({
             Affiliate-Produkte
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {affiliates.map((it, i) => (
-              <Badge key={i} variant="secondary" className="font-normal">{it}</Badge>
-            ))}
+            {affiliates.map((it, i) => {
+              const label = typeof it === "string" ? it : (it?.name || it?.url || "—");
+              return <Badge key={i} variant="secondary" className="font-normal">{label}</Badge>;
+            })}
           </div>
         </div>
       )}
