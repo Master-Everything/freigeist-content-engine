@@ -17,18 +17,19 @@ const STATIC_LABELS: Record<string, string> = {
   critical_voices: "Kritische Stimmen",
 };
 
+const CONTEXT_SUFFIX: Record<string, string> = {
+  interview: " · Interview",
+  speaker: " · Speaker",
+  post: "",
+};
+
 function humanize(key: string): string {
   const cleaned = key.replace(/[._]+/g, " ").trim();
   if (!cleaned) return "—";
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
-export function fieldLabel(field: string | null | undefined): string {
-  if (!field || field === "—") return "—";
-
-  // Präfix wie "interview." / "speaker." abschneiden
-  const stripped = field.replace(/^(interview|speaker|post)\./i, "");
-
+function baseLabel(stripped: string): string {
   if (STATIC_LABELS[stripped]) return STATIC_LABELS[stripped];
 
   const hot = stripped.match(/^hot_topic_(\d+)$/i);
@@ -38,4 +39,15 @@ export function fieldLabel(field: string | null | undefined): string {
   if (aff) return `Affiliate-Produkt ${aff[1]}`;
 
   return humanize(stripped);
+}
+
+export function fieldLabel(field: string | null | undefined): string {
+  if (!field || field === "—") return "—";
+
+  const prefixMatch = field.match(/^(interview|speaker|post)\./i);
+  const prefix = prefixMatch ? prefixMatch[1].toLowerCase() : null;
+  const stripped = prefix ? field.slice(prefixMatch![0].length) : field;
+
+  const suffix = prefix ? CONTEXT_SUFFIX[prefix] ?? "" : "";
+  return baseLabel(stripped) + suffix;
 }
