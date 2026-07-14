@@ -13,7 +13,7 @@ type PostFields = {
 type SpeakerFields = {
   first_name: string | null;
   last_name: string | null;
-  top_affiliate_products: string[] | null;
+  top_affiliate_products: Array<string | { name?: string; url?: string; ebook?: boolean; freebie?: boolean }> | null;
 };
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
@@ -62,9 +62,10 @@ export function InterviewContextView({
             Affiliate-Produkte
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {affiliates.map((it, i) => (
-              <Badge key={i} variant="secondary" className="font-normal">{it}</Badge>
-            ))}
+            {affiliates.map((it, i) => {
+              const label = typeof it === "string" ? it : (it?.name || it?.url || "—");
+              return <Badge key={i} variant="secondary" className="font-normal">{label}</Badge>;
+            })}
           </div>
         </div>
       )}
