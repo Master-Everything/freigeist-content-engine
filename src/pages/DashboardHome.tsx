@@ -83,24 +83,34 @@ const statusToStep: Record<string, number> = {
   erfassung: 1,
   scan_pending: 2,
   scan_done: 2,
-  profil_pending: 3,
-  profil_done: 3,
-  leitfaden_pending: 4,
+  redaktion_angefragt: 3,
+  in_bearbeitung: 3,
+  profil: 3,
+  profil_review: 3,
+  leitfaden: 4,
   leitfaden_final: 4,
-  vorgespraech_pending: 5,
+  vorgespraech: 5,
   vorgespraech_done: 5,
-  aufzeichnung_pending: 6,
-  aufzeichnung_done: 6,
-  draft: 7,
-  in_progress: 7,
-  exported: 8,
+  aufzeichnung: 6,
+  aufzeichnung_done: 7,
+  hub_pushed: 8,
 };
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   erfassung: { label: "In Erfassung", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-  draft: { label: "Entwurf", className: "bg-muted text-muted-foreground" },
-  in_progress: { label: "In Arbeit", className: "bg-warning text-warning-foreground" },
-  exported: { label: "Exportiert", className: "bg-success text-success-foreground" },
+  scan_pending: { label: "Scan läuft", className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  scan_done: { label: "Scan fertig", className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  redaktion_angefragt: { label: "Redaktion angefragt", className: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200" },
+  in_bearbeitung: { label: "In Bearbeitung", className: "bg-warning text-warning-foreground" },
+  profil: { label: "Profil", className: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200" },
+  profil_review: { label: "Profil-Review", className: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200" },
+  leitfaden: { label: "Leitfaden", className: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200" },
+  leitfaden_final: { label: "Leitfaden final", className: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200" },
+  vorgespraech: { label: "Vorgespräch", className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
+  vorgespraech_done: { label: "Vorgespräch fertig", className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
+  aufzeichnung: { label: "Aufzeichnung", className: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200" },
+  aufzeichnung_done: { label: "Aufzeichnung fertig", className: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200" },
+  hub_pushed: { label: "An Hub gesendet", className: "bg-success text-success-foreground" },
 };
 
 /* ============================================================
@@ -214,9 +224,17 @@ export default function DashboardHome() {
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const exportedThisMonth = posts.filter(
-      (p) => p.status === "exported" && new Date(p.updated_at) >= startOfMonth
+    const pushedThisMonth = posts.filter(
+      (p) => p.status === "hub_pushed" && new Date(p.updated_at) >= startOfMonth
     ).length;
+
+    // M7 = Beiträge zwischen aufzeichnung_done und hub_pushed
+    const m7Ready = posts.filter((p) => p.status === "aufzeichnung_done");
+    const m7InProgress = posts.filter((p) =>
+      ["redaktion_angefragt", "in_bearbeitung", "profil", "profil_review",
+       "leitfaden", "leitfaden_final", "vorgespraech", "vorgespraech_done",
+       "aufzeichnung"].includes(p.status)
+    );
 
     return {
       m1: posts.filter((p) => p.status === "erfassung"),
@@ -246,17 +264,17 @@ export default function DashboardHome() {
         next: nextRec,
       },
       m7: {
-        draft: posts.filter((p) => p.status === "draft"),
-        in_progress: posts.filter((p) => p.status === "in_progress"),
+        draft: m7Ready,
+        in_progress: m7InProgress,
       },
       m8: {
-        exported: posts.filter((p) => p.status === "exported"),
+        exported: posts.filter((p) => p.status === "hub_pushed"),
         pushed: posts.filter((p) => !!p.hub_pushed_at).length,
         errors: posts.filter((p) => !!p.hub_last_error).length,
-        thisMonth: exportedThisMonth,
+        thisMonth: pushedThisMonth,
       },
       kpi: {
-        active: posts.filter((p) => p.status !== "exported").length,
+        active: posts.filter((p) => p.status !== "hub_pushed").length,
         review: profiles.filter((r) => r.status === "kuratiert").length + guides.filter((r) => r.status === "entwurf").length,
       },
     };
@@ -366,11 +384,11 @@ export default function DashboardHome() {
           isText
         />
         <KpiTile
-          label="Diesen Monat exportiert"
+          label="Diesen Monat an Hub gesendet"
           value={agg.m8.thisMonth}
           icon={Sparkles}
           accent="text-primary"
-          onClick={() => jumpToList(8, "exported")}
+          onClick={() => jumpToList(8, "hub_pushed")}
         />
       </div>
 
@@ -539,14 +557,14 @@ export default function DashboardHome() {
           {...panelOpenProps(workflow[6].key)}
           bigNumber={agg.m7.draft.length + agg.m7.in_progress.length}
           chips={[
-            { label: "Entwurf", value: agg.m7.draft.length, tone: "muted" },
+            { label: "bereit", value: agg.m7.draft.length, tone: "muted" },
             { label: "in Arbeit", value: agg.m7.in_progress.length, tone: "yellow" },
           ]}
           details={[...agg.m7.in_progress, ...agg.m7.draft].slice(0, 8).map((p) => ({
             id: p.id,
             title: p.interview_title,
             sub: p.guest_name,
-            tone: p.status === "in_progress" ? "yellow" : "muted",
+            tone: p.status === "aufzeichnung_done" ? "muted" : "yellow",
             onClick: () => navigate(`/module/interview-beitraege/edit/${p.id}`),
           }))}
           onOpen={() => navigate(workflow[6].url)}
@@ -573,7 +591,7 @@ export default function DashboardHome() {
             onClick: () => navigate(`/module/interview-beitraege/edit/${p.id}`),
           }))}
           onOpen={() => navigate(workflow[7].url)}
-          onShowAll={() => jumpToList(8, "exported")}
+          onShowAll={() => jumpToList(8, "hub_pushed")}
           totalCount={agg.m8.exported.length}
           loading={loading}
         />
@@ -611,13 +629,15 @@ export default function DashboardHome() {
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Status</SelectItem>
               <SelectItem value="erfassung">In Erfassung</SelectItem>
-              <SelectItem value="draft">Entwurf</SelectItem>
-              <SelectItem value="in_progress">In Arbeit</SelectItem>
-              <SelectItem value="exported">Exportiert</SelectItem>
+              <SelectItem value="scan_done">Scan fertig</SelectItem>
+              <SelectItem value="in_bearbeitung">In Bearbeitung</SelectItem>
+              <SelectItem value="leitfaden_final">Leitfaden final</SelectItem>
+              <SelectItem value="aufzeichnung_done">Aufzeichnung fertig</SelectItem>
+              <SelectItem value="hub_pushed">An Hub gesendet</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -636,7 +656,7 @@ export default function DashboardHome() {
         ) : (
           <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-2">
             {filtered.map((post) => {
-              const cfg = statusConfig[post.status] || statusConfig.draft;
+              const cfg = statusConfig[post.status] || { label: post.status, className: "bg-muted text-muted-foreground" };
               const step = statusToStep[post.status] ?? 7;
               const wf = workflow.find((w) => w.num === step);
               return (

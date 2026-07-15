@@ -136,6 +136,7 @@ Deno.serve(async (req) => {
         hub_slug: hubJson.hub_slug ?? null,
         hub_pushed_at: new Date().toISOString(),
         hub_last_error: null,
+        status: "hub_pushed",
       })
       .eq("id", post_id);
 

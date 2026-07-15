@@ -15,8 +15,23 @@ import { Loader2, Save, ClipboardList, Lock, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { InterviewFieldset, type AffiliateEntry } from "./InterviewFieldset";
 
-// Status ab dem Speaker nicht mehr bearbeiten darf
-const LOCKED_FOR_SPEAKER = new Set(["scan_pending", "scan_done", "in_progress", "exported"]);
+// Status ab dem Speaker nicht mehr bearbeiten darf.
+// Ab `redaktion_angefragt` verantwortet die Redaktion die Interview-Stammdaten.
+const LOCKED_FOR_SPEAKER = new Set([
+  "scan_pending",
+  "scan_done",
+  "redaktion_angefragt",
+  "in_bearbeitung",
+  "profil",
+  "profil_review",
+  "leitfaden",
+  "leitfaden_final",
+  "vorgespraech",
+  "vorgespraech_done",
+  "aufzeichnung",
+  "aufzeichnung_done",
+  "hub_pushed",
+]);
 
 export default function InterviewEdit() {
   const { id } = useParams<{ id: string }>();
