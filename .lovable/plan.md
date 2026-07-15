@@ -1,50 +1,36 @@
-## Root-Cause-Fix für `guest_image_url` + `guest_short_bio` Migration
+## Phase A — Sofort-Fixes für Linter-Warnungen
 
-Claudes Review bestätigt: 3 von 5 Posts haben `blocks.guest_image_url` leer, obwohl die Top-Level-Spalte gefüllt ist. Für `guest_short_bio` gilt dieselbe Ursache (identisches Migrations-Muster in `loadPost()`), also gleich verbindlich mit-backfillen statt vorab prüfen.
+Zwei aufwandslose Schritte, keine Code-Änderungen, keine Migration.
 
-### Schritt 1 — Backfill-Migration (beide Felder in einem Rutsch)
+### Schritt 1 — Punkt 3 identifizieren (read-only)
+
+`pg_proc`-Abfrage, um zu bestätigen, welche `SECURITY DEFINER`-Funktion der Linter meint:
 
 ```sql
-UPDATE public.posts
-SET blocks = jsonb_set(
-  jsonb_set(
-    COALESCE(blocks, '{}'::jsonb),
-    '{guest_image_url}',
-    to_jsonb(guest_image_url)
-  ),
-  '{guest_short_bio}',
-  to_jsonb(guest_short_bio)
-)
-WHERE
-  (guest_image_url IS NOT NULL AND guest_image_url <> ''
-    AND (blocks->>'guest_image_url' IS NULL OR blocks->>'guest_image_url' = ''))
-  OR
-  (guest_short_bio IS NOT NULL AND guest_short_bio <> ''
-    AND (blocks->>'guest_short_bio' IS NULL OR blocks->>'guest_short_bio' = ''));
+SELECT n.nspname AS schema, p.proname AS function, p.prosecdef AS security_definer,
+       pg_catalog.pg_get_function_identity_arguments(p.oid) AS args
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.prosecdef = true;
 ```
 
-### Schritt 2 — Fallbacks entfernen
+Erwartung (laut Claude): `has_role` und `handle_new_user_role`. Ergebnis als Doku festhalten:
+- `has_role` → bewusst so (Standardmuster gegen RLS-Rekursion, `STABLE`, `search_path` gepinnt) → **False-Positive, ignorieren**.
+- `handle_new_user_role` → `RETURNS trigger`, nicht per RPC aufrufbar → **False-Positive, ignorieren**.
 
-Nach erfolgreichem Backfill ist `blocks` wieder alleinige Quelle:
+Beide via `manage_security_finding` als *ignore* mit passender Begründung markieren, damit sie im Scanner-Panel nicht liegenbleiben.
 
-- `src/components/PostPreview.tsx` — `mergedBlocks`-Wrapper entfernen, wieder direkt `blocks` an `renderPostHtml` übergeben.
-- `supabase/functions/push-to-hub/index.ts` — den entsprechenden Fallback-Merge entfernen.
+### Schritt 2 — Punkt 4 aktivieren
 
-### Schritt 3 — Verifikation
+`configure_auth` mit `password_hibp_enabled: true`. Andere Auth-Settings unverändert lassen (`disable_signup: false`, `external_anonymous_users_enabled: false`, `auto_confirm_email: false` — Projekt-Konvention). Wirkt nur auf zukünftige Passwort-Sets, keine Downtime, keine Migration.
 
-- SQL-Check (beide Felder):
-  ```sql
-  SELECT COUNT(*) FROM posts
-  WHERE ((blocks->>'guest_image_url' IS NULL OR blocks->>'guest_image_url' = '')
-         AND guest_image_url IS NOT NULL AND guest_image_url <> '')
-     OR ((blocks->>'guest_short_bio' IS NULL OR blocks->>'guest_short_bio' = '')
-         AND guest_short_bio IS NOT NULL AND guest_short_bio <> '');
-  ```
-  → muss 0 sein.
-- Preview für Post `21837dbe…` erneut öffnen → Speaker-Block rendert zweispaltig mit Foto und Kurzbio.
-- Push-to-Hub-Payload spot-checken.
+### Verifikation
+
+- Linter nochmal laufen lassen → Punkt 4 muss weg sein; Punkt 3 bleibt evtl. sichtbar, ist aber im Findings-Panel als *ignored* markiert.
+- Punkte 1 & 2 bleiben offen — wandern in **Phase B** (eigener Strang, Storage-Policies verengen nach kurzer Use-Case-Prüfung).
 
 ### Nicht Teil des Plans
 
-- Neue Felder oder UI-Änderungen.
-- Änderungen an `loadPost()` — Migrations-Logik bleibt als Sicherheitsnetz für evtl. noch nicht erfasste Alt-Posts.
+- Keine Storage-Policy-Änderungen (Phase B).
+- Keine Änderungen an `has_role` / `handle_new_user_role` — beide sind absichtlich so gebaut.
+- Keine anderen Auth-Settings anfassen.
