@@ -11,9 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   erfassung: { label: "In Erfassung", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-  draft: { label: "Entwurf", className: "bg-muted text-muted-foreground" },
-  in_progress: { label: "In Arbeit", className: "bg-warning text-warning-foreground" },
-  exported: { label: "Exportiert", className: "bg-success text-success-foreground" },
+  scan_pending: { label: "Scan läuft", className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  scan_done: { label: "Scan fertig", className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  redaktion_angefragt: { label: "Redaktion angefragt", className: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200" },
+  in_bearbeitung: { label: "In Bearbeitung", className: "bg-warning text-warning-foreground" },
+  profil: { label: "Profil", className: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200" },
+  profil_review: { label: "Profil-Review", className: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200" },
+  leitfaden: { label: "Leitfaden", className: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200" },
+  leitfaden_final: { label: "Leitfaden final", className: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200" },
+  vorgespraech: { label: "Vorgespräch", className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
+  vorgespraech_done: { label: "Vorgespräch fertig", className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
+  aufzeichnung: { label: "Aufzeichnung", className: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200" },
+  aufzeichnung_done: { label: "Aufzeichnung fertig", className: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200" },
+  hub_pushed: { label: "An Hub gesendet", className: "bg-success text-success-foreground" },
 };
 
 export default function Dashboard() {
@@ -79,15 +89,17 @@ export default function Dashboard() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-52">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Status</SelectItem>
               <SelectItem value="erfassung">In Erfassung</SelectItem>
-              <SelectItem value="draft">Entwurf</SelectItem>
-              <SelectItem value="in_progress">In Arbeit</SelectItem>
-              <SelectItem value="exported">Exportiert</SelectItem>
+              <SelectItem value="scan_done">Scan fertig</SelectItem>
+              <SelectItem value="in_bearbeitung">In Bearbeitung</SelectItem>
+              <SelectItem value="leitfaden_final">Leitfaden final</SelectItem>
+              <SelectItem value="aufzeichnung_done">Aufzeichnung fertig</SelectItem>
+              <SelectItem value="hub_pushed">An Hub gesendet</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -116,7 +128,7 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-3">
             {filtered.map((post, i) => {
-              const cfg = statusConfig[post.status] || statusConfig.draft;
+              const cfg = statusConfig[post.status] || { label: post.status, className: "bg-muted text-muted-foreground" };
               return (
                 <Card
                   key={post.id}
