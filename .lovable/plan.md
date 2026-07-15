@@ -1,36 +1,79 @@
-## Phase A — Sofort-Fixes für Linter-Warnungen
+# Phase B — Storage-Security härten (v2, temp/-Zweig ergänzt)
 
-Zwei aufwandslose Schritte, keine Code-Änderungen, keine Migration.
+Drei Findings aus dem Linter in einem Rutsch, alle im Storage-Layer, keine App-Code-Änderung.
 
-### Schritt 1 — Punkt 3 identifizieren (read-only)
+## Ownership-Modell für `post-images`
 
-`pg_proc`-Abfrage, um zu bestätigen, welche `SECURITY DEFINER`-Funktion der Linter meint:
+Pfad-Konvention im Bucket ist **nicht einheitlich** — zwei Schreibpfade:
+
+1. `posts/<post_id>/<filename>.webp` — via `InlineImageUpload` im Block-Editor (Post existiert bereits).
+2. `temp/<filename>.webp` — via `NewPost.tsx` beim Erstanlegen, dauerhaft dort liegend (keine post_id verfügbar).
+
+`(storage.foldername(name))[2]` liefert bei `posts/…` die `post_id`, bei `temp/…` gibt es kein zweites Segment → Cast schlägt fehl → Policy würde alle Titelbild-Uploads brechen. Deshalb kommt in jede Write-Policy ein **zweiter Zweig für `temp/`** (Status quo: offen für alle authenticated), damit sich Modul 1 nicht selbst blockiert.
+
+Ownership für `posts/<post_id>/…`:
+- **Admin** (`has_role(auth.uid(), 'admin')`)
+- **Ersteller** (`posts.created_by = auth.uid()`)
+- **Zugeordneter Speaker** (`speakers.user_id = auth.uid()` via `posts.speaker_id`)
+
+Gebündelt in `SECURITY DEFINER`-Helper `public.can_write_post(_post_id uuid)` — Muster wie `has_role`, `STABLE`, `search_path` gepinnt.
+
+## 1 · Helper-Funktion
 
 ```sql
-SELECT n.nspname AS schema, p.proname AS function, p.prosecdef AS security_definer,
-       pg_catalog.pg_get_function_identity_arguments(p.oid) AS args
-FROM pg_proc p
-JOIN pg_namespace n ON n.oid = p.pronamespace
-WHERE n.nspname = 'public' AND p.prosecdef = true;
+create or replace function public.can_write_post(_post_id uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.posts p
+    left join public.speakers s on s.id = p.speaker_id
+    where p.id = _post_id
+      and (
+        public.has_role(auth.uid(), 'admin')
+        or p.created_by = auth.uid()
+        or s.user_id = auth.uid()
+      )
+  )
+$$;
 ```
 
-Erwartung (laut Claude): `has_role` und `handle_new_user_role`. Ergebnis als Doku festhalten:
-- `has_role` → bewusst so (Standardmuster gegen RLS-Rekursion, `STABLE`, `search_path` gepinnt) → **False-Positive, ignorieren**.
-- `handle_new_user_role` → `RETURNS trigger`, nicht per RPC aufrufbar → **False-Positive, ignorieren**.
+## 2 · `post-images` Write-Policies ersetzen
 
-Beide via `manage_security_finding` als *ignore* mit passender Begründung markieren, damit sie im Scanner-Panel nicht liegenbleiben.
+Drop der bisherigen `Authenticated insert/update/delete post-images`-Policies. Neu, jeweils mit `temp/`-Zweig als Status-quo-Erhalt:
 
-### Schritt 2 — Punkt 4 aktivieren
+```sql
+create policy "Write post-images (owner or temp)"
+on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'post-images' and (
+    (storage.foldername(name))[1] = 'temp'
+    or public.can_write_post( ((storage.foldername(name))[2])::uuid )
+  )
+);
+-- analog für UPDATE (USING + WITH CHECK) und DELETE (USING)
+```
 
-`configure_auth` mit `password_hibp_enabled: true`. Andere Auth-Settings unverändert lassen (`disable_signup: false`, `external_anonymous_users_enabled: false`, `auto_confirm_email: false` — Projekt-Konvention). Wirkt nur auf zukünftige Passwort-Sets, keine Downtime, keine Migration.
+Public-SELECT bleibt unverändert — nötig für Bild-Auslieferung. `speaker-avatars` wird nicht angefasst.
 
-### Verifikation
+*Restrisiko:* `temp/`-Prefix bleibt für alle Authenticated schreib-/löschbar. Identisch zum heutigen Verhalten, keine Verschlechterung. Wird in `@security-memory` als „acknowledged, revisit bei Move-Schritt `temp/ → posts/<post_id>/`" festgehalten.
 
-- Linter nochmal laufen lassen → Punkt 4 muss weg sein; Punkt 3 bleibt evtl. sichtbar, ist aber im Findings-Panel als *ignored* markiert.
-- Punkte 1 & 2 bleiben offen — wandern in **Phase B** (eigener Strang, Storage-Policies verengen nach kurzer Use-Case-Prüfung).
+## 3 · WARN-Findings (Bucket-Listing)
 
-### Nicht Teil des Plans
+Beide Buckets sind bewusst public-read für Object-URLs, aber der Linter warnt vor Listing-Möglichkeit. Voller Fix wäre Umbau auf Signed URLs — eigener Strang, hier nicht drin.
 
-- Keine Storage-Policy-Änderungen (Phase B).
-- Keine Änderungen an `has_role` / `handle_new_user_role` — beide sind absichtlich so gebaut.
-- Keine anderen Auth-Settings anfassen.
+Handling: beide Findings via `manage_security_finding → ignore` mit Begründung schließen und in `@security-memory` festhalten (public by design, kein PII in Dateinamen, Signed-URL-Umbau vorgemerkt).
+
+## 4 · Verifikation
+
+```sql
+select policyname, cmd from pg_policies
+where schemaname='storage' and tablename='objects'
+  and policyname ilike '%post-images%';
+```
+Danach Linter erneut — erwartet: ERROR `post_images_storage_authenticated_write` weg, die zwei Listing-WARNs bleiben als „ignored" markiert. Smoke-Test (Neuanlage Post + Titelbild + Block-Editor-Bild) macht der Nutzer.
+
+## Nicht Teil des Plans
+
+- Kein Umbau auf Signed URLs.
+- Kein Move `temp/ → posts/<post_id>/`.
+- Keine Änderung an `speaker-avatars`-Write-Policies.
+- Keine App-Code-Änderungen.
