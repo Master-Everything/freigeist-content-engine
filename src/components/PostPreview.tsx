@@ -13,11 +13,7 @@ interface PostPreviewProps {
  * `src/index.css`, which mirrors the Hub's own stylesheet.
  */
 export function PostPreview({ post, blocks, hideTitle }: PostPreviewProps) {
-  const mergedBlocks = {
-    ...(blocks || {}),
-    guest_image_url: blocks?.guest_image_url || post.guest_image_url || undefined,
-  } as PostBlocks;
-  const html = renderPostHtml(mergedBlocks, post.guest_name, post.interview_title);
+  const html = renderPostHtml(blocks, post.guest_name, post.interview_title);
   return (
     <article className="mx-auto max-w-2xl px-6 py-10">
       {!hideTitle && (

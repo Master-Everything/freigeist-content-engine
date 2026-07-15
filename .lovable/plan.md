@@ -1,49 +1,50 @@
-# M7 Live-Test-Plan
+## Root-Cause-Fix für `guest_image_url` + `guest_short_bio` Migration
 
-Ziel: Modul 7 (Autoren-Cockpit) im Preview end-to-end validieren — UI, Datenflüsse, ContextSheet-Tabs und AI-Kontextinjektion.
+Claudes Review bestätigt: 3 von 5 Posts haben `blocks.guest_image_url` leer, obwohl die Top-Level-Spalte gefüllt ist. Für `guest_short_bio` gilt dieselbe Ursache (identisches Migrations-Muster in `loadPost()`), also gleich verbindlich mit-backfillen statt vorab prüfen.
 
-## Testumgebung
+### Schritt 1 — Backfill-Migration (beide Felder in einem Rutsch)
 
-- Rolle: Admin (voller Zugriff auf alle Tabs und AI-Generierung)
-- Testdatensatz: Ein bestehender Post mit `speaker_id`, idealerweise mit vorhandenem Speaker-Profil (M3), finalem Leitfaden (M4), Vorgesprächs-Notiz (M5) und Aufzeichnungs-Session (M6). Falls nicht vorhanden: kurz einen Testpfad durch M1→M6 anlegen.
+```sql
+UPDATE public.posts
+SET blocks = jsonb_set(
+  jsonb_set(
+    COALESCE(blocks, '{}'::jsonb),
+    '{guest_image_url}',
+    to_jsonb(guest_image_url)
+  ),
+  '{guest_short_bio}',
+  to_jsonb(guest_short_bio)
+)
+WHERE
+  (guest_image_url IS NOT NULL AND guest_image_url <> ''
+    AND (blocks->>'guest_image_url' IS NULL OR blocks->>'guest_image_url' = ''))
+  OR
+  (guest_short_bio IS NOT NULL AND guest_short_bio <> ''
+    AND (blocks->>'guest_short_bio' IS NULL OR blocks->>'guest_short_bio' = ''));
+```
 
-## Testschritte
+### Schritt 2 — Fallbacks entfernen
 
-### 1. EditPost öffnen & Redundanz-Migration
-- `/edit/:id` öffnen.
-- Prüfen: `loadPost` verschiebt Top-Level `guest_image_url`/`guest_short_bio` einmalig nach `blocks.*` (Konsolenlog / Netzwerk-Update sichtbar).
-- Erwartung: Kein Flackern, Blocks enthalten Guest-Info, Top-Level-Felder werden nicht mehr angezeigt.
+Nach erfolgreichem Backfill ist `blocks` wieder alleinige Quelle:
 
-### 2. ContextSheet-Lasche
-- Lasche rechts sichtbar (vertikal, flush am Rand).
-- Klick öffnet Panel non-modal, Lasche dockt an Panel-Kante.
-- Klick auf Lasche schließt Panel wieder.
+- `src/components/PostPreview.tsx` — `mergedBlocks`-Wrapper entfernen, wieder direkt `blocks` an `renderPostHtml` übergeben.
+- `supabase/functions/push-to-hub/index.ts` — den entsprechenden Fallback-Merge entfernen.
 
-### 3. Alle 4 Tabs prüfen
-- **Profil**: Speaker-Stammdaten, Website, Social, Foto, generiertes Profil, Kritische Punkte (nur Admin).
-- **Interview**: Metadaten aus `posts` (Thema, Produkt, Marktdauer, bisherige Interviews, kritische Stimmen, Affiliate-Produkte als Objekt-safe Render).
-- **Scans**: M2 Speaker-Scan + M7/Post-Scans mit AmpelBadge und deutschen Feldlabels.
-- **Fragen**: Finaler Leitfaden aus `interview_guides`, Interviewer-Notiz aus `recording_sessions`, Termin und Video-Link.
+### Schritt 3 — Verifikation
 
-### 4. AI-Generierung mit Kontext
-- In `SourceDataEditor` „Blöcke generieren" auslösen.
-- Netzwerk-Request an `generate-content` prüfen: `post_id` und `speaker_id` im Body.
-- Edge-Function-Logs prüfen: Speaker-Profil, finaler Leitfaden, Compliance-Regeln und Banned-Words werden in den Prompt injiziert.
-- Ausgabe qualitativ prüfen: Generierte Blöcke referenzieren Profildaten/Leitfaden-Themen und vermeiden Banned Words.
+- SQL-Check (beide Felder):
+  ```sql
+  SELECT COUNT(*) FROM posts
+  WHERE ((blocks->>'guest_image_url' IS NULL OR blocks->>'guest_image_url' = '')
+         AND guest_image_url IS NOT NULL AND guest_image_url <> '')
+     OR ((blocks->>'guest_short_bio' IS NULL OR blocks->>'guest_short_bio' = '')
+         AND guest_short_bio IS NOT NULL AND guest_short_bio <> '');
+  ```
+  → muss 0 sein.
+- Preview für Post `21837dbe…` erneut öffnen → Speaker-Block rendert zweispaltig mit Foto und Kurzbio.
+- Push-to-Hub-Payload spot-checken.
 
-### 5. Navigation aus ContextSheet
-- „Zu Modul 3 (Profil)"-Link öffnet `ProfilEditor` mit korrekter `speaker_id` (nicht Fallback).
+### Nicht Teil des Plans
 
-### 6. Status-Flow im Cockpit
-- Status-Dropdown zeigt nur aktive Werte der neuen Whitelist.
-- Speichern eines Status ≥ `redaktion_angefragt` sperrt Speaker-Sicht (kurz mit Speaker-Login gegenchecken).
-
-## Debugging-Werkzeuge
-
-- Browser-Konsole und Netzwerk-Requests während jedes Schritts beobachten.
-- Bei AI-Aufruf: Edge-Function-Logs von `generate-content` einsehen.
-- Playwright optional für Screenshots der ContextSheet-Zustände.
-
-## Deliverable
-
-Kurzer Bericht pro Schritt: ✅ OK / ⚠️ Auffälligkeit / ❌ Bug + Screenshot bei UI-Problemen. Bugs werden anschließend als separate Fix-Runde eingeplant.
+- Neue Felder oder UI-Änderungen.
+- Änderungen an `loadPost()` — Migrations-Logik bleibt als Sicherheitsnetz für evtl. noch nicht erfasste Alt-Posts.

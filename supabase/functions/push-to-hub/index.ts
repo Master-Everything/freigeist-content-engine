@@ -90,11 +90,7 @@ Deno.serve(async (req) => {
       .single();
     if (postErr || !post) return jsonError("Beitrag nicht gefunden.");
 
-    const rawBlocks = (post.blocks ?? {}) as PostBlocks;
-    const blocks: PostBlocks = {
-      ...rawBlocks,
-      guest_image_url: rawBlocks.guest_image_url || (post as any).guest_image_url || undefined,
-    };
+    const blocks = (post.blocks ?? {}) as PostBlocks;
     const content_html = renderPostHtml(blocks, post.guest_name, post.interview_title, {
       omitMainVideo: true,
       omitExcerpt: true,
