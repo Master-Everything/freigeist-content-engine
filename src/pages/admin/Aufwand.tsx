@@ -47,8 +47,41 @@ export default function Aufwand() {
   const [to, setTo] = useState<string>("");
   const [onlyEstimated, setOnlyEstimated] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{
+    entry_date: string;
+    task: string;
+    note: string;
+    hours: string;
+  }>({ entry_date: "", task: "", note: "", hours: "" });
 
-  const displayRate = rateDraft === "" ? rate : Number(rateDraft) || 0;
+  const startEdit = (e: TimeEntry) => {
+    setEditingId(e.id);
+    setEditDraft({
+      entry_date: e.entry_date,
+      task: e.task,
+      note: e.note ?? "",
+      hours: String(e.hours),
+    });
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = (id: string) => {
+    const h = Number(editDraft.hours);
+    if (!editDraft.task.trim() || !Number.isFinite(h) || h <= 0) {
+      toast.error("Bitte Aufgabe und Stunden (> 0) ausfüllen");
+      return;
+    }
+    update({
+      id,
+      entry_date: editDraft.entry_date,
+      task: editDraft.task.trim(),
+      note: editDraft.note.trim() || null,
+      hours: h,
+    });
+    setEditingId(null);
+  };
 
   const filtered = useMemo(() => {
     return entries.filter((e) => {
