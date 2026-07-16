@@ -1,82 +1,34 @@
-## Ziel
+## Aufwand: gering (~0.5–1 h)
 
-Admin-Seite `/admin/aufwand`, die alle bisherigen und künftigen Projektaufgaben chronologisch samt Zeitaufwand auflistet, Blöcke summiert und mit einem zentral änderbaren Stundensatz (Default 40 €) die Abrechnungsgrundlage (netto) liefert.
+Die Infrastruktur ist bereits da: `useTimeEntries().update` mutiert beliebige Felder, RLS/Grants stehen, `toggleStatus` nutzt das schon. Es geht rein um UI in `src/pages/admin/Aufwand.tsx` – keine Migration, kein neuer Hook.
 
-## Datenmodell (neue Migration)
+## Umsetzung
 
-**`public.app_settings`** — generischer Key/Value-Store.
-- `key text primary key`, `value jsonb`, `updated_at`
-- RLS: nur `admin` (SELECT/INSERT/UPDATE)
-- Seed: `('hourly_rate', '40')`
+**Inline-Edit pro Zeile in der Detailliste** (pro Block-Card):
 
-**`public.time_entries`** — Zeiteinträge.
-- `id uuid pk`
-- `entry_date date not null`
-- `block text not null` (z. B. „Modul 3 — Profil-Generator")
-- `task text not null`
-- `hours numeric(6,2) not null`
-- `note text`
-- `status text not null default 'geschätzt'` — Werte `'geschätzt'` | `'bestätigt'` (CHECK)
-- `created_by uuid references auth.users(id) on delete set null`
-- `created_at`, `updated_at`
-- Index auf `(entry_date, block)`
-- RLS: nur `admin` (SELECT/INSERT/UPDATE/DELETE via `has_role`)
-- GRANTs: `authenticated` (RLS-gated) + `service_role`
-- `update_updated_at_column`-Trigger
+- Neuer lokaler State `editingId: string | null` in `Aufwand.tsx`.
+- Stift-Icon (`Pencil` aus lucide-react) neben dem Trash-Icon in der Aktions-Spalte. Klick → `setEditingId(e.id)`.
+- Ist eine Zeile im Edit-Modus, werden die Zellen durch Inputs ersetzt:
+  - Datum → `<Input type="date">`
+  - Aufgabe + Notiz → `<Input>` / kleines `<Textarea>` untereinander
+  - Stunden → `<Input type="number" step="0.25">`
+  - Netto bleibt read-only (berechnet aus Stunden × Rate)
+  - Status bleibt wie gehabt per Badge-Klick
+- Aktions-Spalte zeigt im Edit-Modus `Check` (Speichern) + `X` (Abbrechen) statt Stift/Trash.
+- Escape = Abbrechen, Enter im Task/Stunden-Feld = Speichern.
+- **Validierung vor dem `update`-Call** (identisch zum Anlegen-Dialog): `hours > 0` und `task.trim() !== ""`, sonst `toast.error` und Editor bleibt offen.
+- Speichern ruft `update({ id, entry_date, task, note, hours })` und schließt den Editor bei Erfolg.
+- Block-Feld absichtlich **nicht** inline editierbar (würde die Zeile aus der Gruppe reißen).
 
-## Seed-Daten
+**Kein Umbau nötig an:**
+- DB-Schema, Hooks, Query-Keys
+- Blockübersicht (bleibt reine Anzeige)
+- Anlege-Dialog
 
-Alle initial geseedeten Einträge bekommen `status = 'geschätzt'`. Feine Granularität (~80+ Einträge) aus dem Chatverlauf, chronologisch, in Blöcke gruppiert:
+## Bekannte UX-Kleinigkeit (nicht Teil dieses Plans)
 
-- Setup & Auth (Hybrid Roles, Sidebar, Speaker-Dashboard)
-- Modul 1 — Erfassung (Speaker/Interview-Split, Admin-Overview, Fast-Entry)
-- Modul 2 — Vorab-Scan
-- Modul 3 — Profil-Generator
-- Modul 4 — Interview-Leitfaden (+ Interviewer-Notizen, Auto-Grow)
-- Modul 5 — Vorgespräch/Cockpit
-- Modul 6 — Aufzeichnung
-- Modul 7 — Refactor (Authoring Cockpit + AI-Kontextinjektion)
-- Modul 8 — Hub-Integration
-- Wissensbasis + Seeding
-- Dashboard (LCARS)
-- ContextSheet
-- Status-Fluss + Guest-Field-Backfill
-- Security Phase A + Phase B
-- Bugfixes & Reviews
-- Tech-Stack-Seite
+`useTimeEntries().update` invalidiert nur `onSuccess` – die Zeile kann nach Klick auf „Speichern" kurz zurück zum alten Wert flackern, bis der Refetch da ist. Falls das stört, später `onMutate` + optimistisches Cache-Update im Hook ergänzen.
 
-## UI (`src/pages/admin/Aufwand.tsx`)
+## Betroffene Datei
 
-Route in `App.tsx`: `/admin/aufwand`, admin-only. Sidebar-Footer-Eintrag neben „Wissensbasis" (Icon `Euro`/`Clock`).
-
-**Layout:**
-
-1. **Header-Card „Kalkulation"**
-   - Input „Stundensatz (€)" → persistiert sofort in `app_settings.hourly_rate`
-   - Datumsbereichsfilter (shadcn Datepicker, von/bis)
-   - Toggle „Nur geschätzte anzeigen"
-   - Kacheln: **Gesamtstunden** · **Gesamtsumme (netto)** — keine USt-Ausweisung
-   - Button „CSV-Export" (aktuelle Sicht + Summenzeile, inkl. `status`-Spalte)
-
-2. **Blockübersicht** — kompakte Tabelle Block → Stunden → Netto-Betrag, Klick scrollt zum Detail.
-
-3. **Detailliste** — chronologisch, gruppiert nach `block`:
-   - Spalten: Datum · Aufgabe · Notiz · Stunden · Netto-Betrag · **Status-Badge** · Aktionen
-   - Badge gelb `Ø geschätzt` bzw. grün `✓ bestätigt`, klickbar zum Toggeln
-   - Pro Block Zwischensumme (Stunden + Netto €)
-   - „+ Eintrag hinzufügen"-Dialog (Datum, Block-Combobox, Aufgabe, Stunden, Status, Notiz)
-
-Alle Beträge reaktiv über zentralen `hourlyRate`-State. Sämtliche Beträge sind Netto — keine Steuerlogik im Code.
-
-## Technisch
-
-- Hooks: `useHourlyRate()`, `useTimeEntries(filters?)` (TanStack Query + Mutations)
-- CSV-Export clientseitig, ohne Extra-Dep
-- Änderungen außerhalb der neuen Seite: `App.tsx` (Route), `AppSidebar.tsx` (Nav-Item, admin-only)
-
-## Nicht enthalten
-
-- Umsatzsteuer/MwSt.-Ausweisung
-- PDF-Export
-- Multi-User-Erfassung
-- Historisierung von Stundensatz-Änderungen
+- `src/pages/admin/Aufwand.tsx` (nur diese)
