@@ -81,7 +81,11 @@ export default function Aufwand() {
       hours: h,
     });
     setEditingId(null);
+  };
+
   const displayRate = rateDraft === "" ? rate : Number(rateDraft) || 0;
+
+
 
 
   const filtered = useMemo(() => {
