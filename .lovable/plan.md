@@ -1,39 +1,82 @@
-## Tech Stack Seite aktualisieren
+## Ziel
 
-`src/pages/TechStack.tsx` listet nur 4 von 13 Edge Functions und ein paar Punkte sind veraltet. Nur Datenpflege in der `SECTIONS`-Konstante, keine Logik-Änderung.
+Admin-Seite `/admin/aufwand`, die alle bisherigen und künftigen Projektaufgaben chronologisch samt Zeitaufwand auflistet, Blöcke summiert und mit einem zentral änderbaren Stundensatz (Default 40 €) die Abrechnungsgrundlage (netto) liefert.
 
-### Änderungen in `SECTIONS`
+## Datenmodell (neue Migration)
 
-**Edge Functions in this project** — komplett ersetzen durch alle 13:
-- `assign-speaker-owner` — Speaker per E-Mail einem User zuordnen
-- `generate-content` — Block-Generierung via Lovable AI Gateway (mit Kontext-Injektion: Compliance, Verbotene Wörter, Profil, Leitfaden)
-- `generate-interview-guide` — AI-Leitfaden für Modul 4
-- `generate-speaker-profile` — AI-Profil für Modul 3
-- `interview-guide-decision` — Freigabe/Änderungswunsch Leitfaden
-- `interview-scan` — Vorab-Scan Interview-Text (Gemini)
-- `prioritize-interview-guide` — Fragen-Priorisierung Leitfaden
-- `push-to-hub` — Push in Freigeist Content-Hub
-- `recording-decision` — Freigabe Aufzeichnung (Modul 6)
-- `speaker-profile-decision` — Freigabe/Änderungswunsch Profil
-- `vorab-scan` — Sprecher-Vorab-Scan
-- `vorgespraech-decision` — Freigabe Vorgespräch (Modul 5)
-- `youtube-transcript` — YouTube-Transkript-Abruf
+**`public.app_settings`** — generischer Key/Value-Store.
+- `key text primary key`, `value jsonb`, `updated_at`
+- RLS: nur `admin` (SELECT/INSERT/UPDATE)
+- Seed: `('hourly_rate', '40')`
 
-**Utilities** — ergänzen:
-- `src/lib/post-status.ts` — Zentrale Status-Definition und Rollen-Locking
-- `src/lib/field-labels.ts` — DB-Feldkeys → deutsche Labels
-- `src/lib/simple-markdown.tsx` — Markdown-Renderer für redaktionelle Hinweise
-- `src/lib/relative-time.ts` — Zeitformatierung
-- `src/lib/validation/interview-schema.ts` + `speaker-schema.ts` — Zod-Schemas
+**`public.time_entries`** — Zeiteinträge.
+- `id uuid pk`
+- `entry_date date not null`
+- `block text not null` (z. B. „Modul 3 — Profil-Generator")
+- `task text not null`
+- `hours numeric(6,2) not null`
+- `note text`
+- `status text not null default 'geschätzt'` — Werte `'geschätzt'` | `'bestätigt'` (CHECK)
+- `created_by uuid references auth.users(id) on delete set null`
+- `created_at`, `updated_at`
+- Index auf `(entry_date, block)`
+- RLS: nur `admin` (SELECT/INSERT/UPDATE/DELETE via `has_role`)
+- GRANTs: `authenticated` (RLS-gated) + `service_role`
+- `update_updated_at_column`-Trigger
 
-**Routing & State** — ergänzen: `sonner` (Toasts, wird tatsächlich genutzt).
+## Seed-Daten
 
-**Backend (Lovable Cloud)** — Auth-Zeile präzisieren: „Email/Passwort + Rollen (`admin`/`speaker`) via separater `user_roles`-Tabelle und `has_role`-Security-Definer".
+Alle initial geseedeten Einträge bekommen `status = 'geschätzt'`. Feine Granularität (~80+ Einträge) aus dem Chatverlauf, chronologisch, in Blöcke gruppiert:
 
-**Neu: Sektion „Kernkonzepte"** hinzufügen:
-- **Rollenmodell** — Hybrid Admin/Speaker, `ProtectedRoute` mit `requiredRole`
-- **ContextSheet** — Non-modales Slide-in für Profil/Interview/Scans/Fragen in M4–M7
-- **AI-Kontext-Injektion** — Compliance-Regeln, Verbotene Wörter, freigegebene Profile und finale Leitfäden werden in `generate-content` gemergt
-- **Storage-Ownership** — `can_write_post`-Helper (Admin/Ersteller/Speaker) für `post-images`
+- Setup & Auth (Hybrid Roles, Sidebar, Speaker-Dashboard)
+- Modul 1 — Erfassung (Speaker/Interview-Split, Admin-Overview, Fast-Entry)
+- Modul 2 — Vorab-Scan
+- Modul 3 — Profil-Generator
+- Modul 4 — Interview-Leitfaden (+ Interviewer-Notizen, Auto-Grow)
+- Modul 5 — Vorgespräch/Cockpit
+- Modul 6 — Aufzeichnung
+- Modul 7 — Refactor (Authoring Cockpit + AI-Kontextinjektion)
+- Modul 8 — Hub-Integration
+- Wissensbasis + Seeding
+- Dashboard (LCARS)
+- ContextSheet
+- Status-Fluss + Guest-Field-Backfill
+- Security Phase A + Phase B
+- Bugfixes & Reviews
+- Tech-Stack-Seite
 
-Keine Sektion entfernen. Reine Text-/Array-Änderungen in `SECTIONS`.
+## UI (`src/pages/admin/Aufwand.tsx`)
+
+Route in `App.tsx`: `/admin/aufwand`, admin-only. Sidebar-Footer-Eintrag neben „Wissensbasis" (Icon `Euro`/`Clock`).
+
+**Layout:**
+
+1. **Header-Card „Kalkulation"**
+   - Input „Stundensatz (€)" → persistiert sofort in `app_settings.hourly_rate`
+   - Datumsbereichsfilter (shadcn Datepicker, von/bis)
+   - Toggle „Nur geschätzte anzeigen"
+   - Kacheln: **Gesamtstunden** · **Gesamtsumme (netto)** — keine USt-Ausweisung
+   - Button „CSV-Export" (aktuelle Sicht + Summenzeile, inkl. `status`-Spalte)
+
+2. **Blockübersicht** — kompakte Tabelle Block → Stunden → Netto-Betrag, Klick scrollt zum Detail.
+
+3. **Detailliste** — chronologisch, gruppiert nach `block`:
+   - Spalten: Datum · Aufgabe · Notiz · Stunden · Netto-Betrag · **Status-Badge** · Aktionen
+   - Badge gelb `Ø geschätzt` bzw. grün `✓ bestätigt`, klickbar zum Toggeln
+   - Pro Block Zwischensumme (Stunden + Netto €)
+   - „+ Eintrag hinzufügen"-Dialog (Datum, Block-Combobox, Aufgabe, Stunden, Status, Notiz)
+
+Alle Beträge reaktiv über zentralen `hourlyRate`-State. Sämtliche Beträge sind Netto — keine Steuerlogik im Code.
+
+## Technisch
+
+- Hooks: `useHourlyRate()`, `useTimeEntries(filters?)` (TanStack Query + Mutations)
+- CSV-Export clientseitig, ohne Extra-Dep
+- Änderungen außerhalb der neuen Seite: `App.tsx` (Route), `AppSidebar.tsx` (Nav-Item, admin-only)
+
+## Nicht enthalten
+
+- Umsatzsteuer/MwSt.-Ausweisung
+- PDF-Export
+- Multi-User-Erfassung
+- Historisierung von Stundensatz-Änderungen
