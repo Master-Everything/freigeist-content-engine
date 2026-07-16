@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       images: {
         Row: {
           created_at: string | null
@@ -882,6 +900,45 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      time_entries: {
+        Row: {
+          block: string
+          created_at: string
+          created_by: string | null
+          entry_date: string
+          hours: number
+          id: string
+          note: string | null
+          status: string
+          task: string
+          updated_at: string
+        }
+        Insert: {
+          block: string
+          created_at?: string
+          created_by?: string | null
+          entry_date: string
+          hours: number
+          id?: string
+          note?: string | null
+          status?: string
+          task: string
+          updated_at?: string
+        }
+        Update: {
+          block?: string
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          hours?: number
+          id?: string
+          note?: string | null
+          status?: string
+          task?: string
+          updated_at?: string
         }
         Relationships: []
       }
