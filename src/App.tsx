@@ -30,6 +30,7 @@ import InterviewEdit from "./pages/modules/interview/InterviewEdit";
 import VorabScanEingereicht from "./pages/modules/vorab-scan/Eingereicht";
 import SpeakerModulePlaceholder from "./pages/SpeakerModulePlaceholder";
 import Wissensbasis from "./pages/admin/Wissensbasis";
+import Aufwand from "./pages/admin/Aufwand";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -182,6 +183,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <TechStack />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/aufwand"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Aufwand />
                   </ProtectedRoute>
                 }
               />

@@ -13,7 +13,7 @@ import {
   LogOut,
   User as UserIcon,
   Database,
-  
+  Euro,
 } from "lucide-react";
 import { useKnowledgeCounts } from "@/hooks/useKnowledgeCounts";
 import {
@@ -237,6 +237,14 @@ export function AppSidebar() {
                   </div>
                 </SidebarMenuItem>
               )}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/admin/aufwand"}>
+                  <NavLink to="/admin/aufwand" className="flex items-center gap-2">
+                    <Euro className="h-4 w-4" />
+                    {!collapsed && <span>Aufwand</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === "/tech-stack"}>
                   <NavLink to="/tech-stack" className="flex items-center gap-2">
