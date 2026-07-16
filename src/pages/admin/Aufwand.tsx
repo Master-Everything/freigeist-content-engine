@@ -128,7 +128,10 @@ export default function Aufwand() {
   };
 
   const exportCsv = () => {
+    const projectName = "Freigeist Content Creation";
     const rows = [
+      [`Aufwand – ${projectName}`],
+      [],
       ["Datum", "Block", "Aufgabe", "Notiz", "Stunden", "Netto (EUR)", "Status"],
       ...filtered.map((e) => [
         e.entry_date,
@@ -150,10 +153,11 @@ export default function Aufwand() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `aufwand-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `aufwand-freigeist-content-creation-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
+
 
   const toggleStatus = (e: TimeEntry) => {
     const next: TimeEntryStatus = e.status === "geschätzt" ? "bestätigt" : "geschätzt";
