@@ -31,55 +31,72 @@ const SECTIONS: Section[] = [
       { name: "React Router", desc: "Client-side routing" },
       { name: "TanStack Query", desc: "Server-state caching" },
       { name: "React Hook Form + Zod", desc: "Forms and schema validation" },
+      { name: "sonner", desc: "Toast-Benachrichtigungen" },
     ],
   },
   {
     title: "Backend (Lovable Cloud)",
     items: [
       { name: "Postgres", desc: "Relational database with RLS" },
-      { name: "Auth", desc: "Email/password and social login" },
-      { name: "Storage", desc: "File storage buckets" },
+      { name: "Auth", desc: "Email/Passwort + Rollen (admin/speaker) via separater user_roles-Tabelle und has_role-Security-Definer" },
+      { name: "Storage", desc: "File storage buckets (post-images, speaker-avatars)" },
       { name: "Edge Functions (Deno)", desc: "Serverless backend logic" },
     ],
   },
   {
     title: "Edge Functions in this project",
     items: [
-      { name: "generate-content", desc: "AI block generation via Lovable AI Gateway" },
-      { name: "youtube-transcript", desc: "Fetches YouTube video transcripts" },
+      { name: "assign-speaker-owner", desc: "Speaker per E-Mail einem User zuordnen" },
+      { name: "generate-content", desc: "Block-Generierung via Lovable AI Gateway mit Kontext-Injektion (Compliance, verbotene Wörter, Profil, Leitfaden)" },
+      { name: "generate-interview-guide", desc: "AI-Leitfaden für Modul 4" },
+      { name: "generate-speaker-profile", desc: "AI-Profil für Modul 3" },
+      { name: "interview-guide-decision", desc: "Freigabe/Änderungswunsch Leitfaden" },
+      { name: "interview-scan", desc: "Vorab-Scan Interview-Text via Gemini" },
+      { name: "prioritize-interview-guide", desc: "Fragen-Priorisierung im Leitfaden" },
       { name: "push-to-hub", desc: "Sendet fertige Interview-Posts an den Freigeist Content-Hub" },
-      { name: "vorab-scan", desc: "Compliance-Vorab-Scan von Interview-Texten via Gemini" },
+      { name: "recording-decision", desc: "Freigabe Aufzeichnung (Modul 6)" },
+      { name: "speaker-profile-decision", desc: "Freigabe/Änderungswunsch Sprecher-Profil" },
+      { name: "vorab-scan", desc: "Compliance-Vorab-Scan von Sprecher-Profilen via Gemini" },
+      { name: "vorgespraech-decision", desc: "Freigabe Vorgespräch (Modul 5)" },
+      { name: "youtube-transcript", desc: "Fetches YouTube video transcripts" },
     ],
   },
   {
     title: "AI",
     items: [
-      { name: "Lovable AI Gateway", desc: "Access to Gemini and GPT models without separate API keys" },
+      { name: "Lovable AI Gateway", desc: "Zugriff auf Gemini und GPT-Modelle ohne separate API-Keys" },
     ],
   },
   {
     title: "External integrations",
     items: [
       { name: "YouTube", desc: "Transcript fetching" },
-      { name: "WordPress", desc: "REST API and FTP media upload" },
+      { name: "Freigeist Content-Hub", desc: "REST-Ingest fertiger Interview-Beiträge" },
+    ],
+  },
+  {
+    title: "Kernkonzepte",
+    items: [
+      { name: "Rollenmodell", desc: "Hybrid Admin/Speaker, ProtectedRoute mit requiredRole-Gate" },
+      { name: "ContextSheet", desc: "Non-modales Slide-in für Profil/Interview/Scans/Fragen in M4–M7" },
+      { name: "AI-Kontext-Injektion", desc: "generate-content mergt Compliance-Regeln, verbotene Wörter, freigegebene Profile und finale Leitfäden in den Prompt" },
+      { name: "Storage-Ownership", desc: "can_write_post-Helper (Admin/Ersteller/zugeordneter Speaker) für post-images-Writes" },
     ],
   },
   {
     title: "Utilities",
     items: [
       { name: "src/lib/render-post-html.ts", desc: "Unified Hub-native HTML renderer (Preview + Push)" },
-      { name: "src/lib/image-utils.ts", desc: "Client-side WebP conversion and resize" },
+      { name: "src/lib/image-utils.ts", desc: "Client-seitige WebP-Konvertierung und Resize" },
+      { name: "src/lib/post-status.ts", desc: "Zentrale Status-Definition und Rollen-Locking" },
+      { name: "src/lib/field-labels.ts", desc: "DB-Feldkeys → deutsche Labels für Scan-Findings" },
+      { name: "src/lib/simple-markdown.tsx", desc: "Markdown-Renderer für redaktionelle Hinweise" },
+      { name: "src/lib/relative-time.ts", desc: "Relative Zeitangaben (de)" },
+      { name: "src/lib/validation/interview-schema.ts", desc: "Zod-Schema für Interview-Formular" },
+      { name: "src/lib/validation/speaker-schema.ts", desc: "Zod-Schema für Sprecher-Profil" },
     ],
   },
-  {
-    title: "Tooling",
-    items: [
-      { name: "ESLint", desc: "Linting" },
-      { name: "Vitest", desc: "Unit testing" },
-      { name: "Bun", desc: "Package manager / runtime" },
-      { name: "lovable-tagger", desc: "Vite plugin for the Lovable editor" },
-    ],
-  },
+
 ];
 
 function buildMarkdown(): string {
