@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Plus, Download, Clock } from "lucide-react";
+import { Trash2, Plus, Download, Clock, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 const eur = (n: number) =>
