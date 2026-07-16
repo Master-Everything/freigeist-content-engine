@@ -309,57 +309,159 @@ export default function Aufwand() {
                     <TableHead className="w-[100px] text-right">Stunden</TableHead>
                     <TableHead className="w-[120px] text-right">Netto</TableHead>
                     <TableHead className="w-[130px]">Status</TableHead>
-                    <TableHead className="w-[60px]" />
+                    <TableHead className="w-[90px]" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {b.items.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="tabular-nums text-xs text-muted-foreground">
-                        {fmtDate(e.entry_date)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{e.task}</div>
-                        {e.note && (
-                          <div className="text-xs text-muted-foreground">{e.note}</div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{hrs(e.hours)}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {eur(e.hours * displayRate)}
-                      </TableCell>
-                      <TableCell>
-                        <button onClick={() => toggleStatus(e)} className="cursor-pointer">
-                          {e.status === "geschätzt" ? (
-                            <Badge
-                              variant="outline"
-                              className="border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-                            >
-                              Ø geschätzt
-                            </Badge>
+                  {b.items.map((e) => {
+                    const isEditing = editingId === e.id;
+                    const draftHours = Number(editDraft.hours);
+                    const previewHours = isEditing && Number.isFinite(draftHours) ? draftHours : e.hours;
+                    return (
+                      <TableRow key={e.id}>
+                        <TableCell className="tabular-nums text-xs text-muted-foreground align-top">
+                          {isEditing ? (
+                            <Input
+                              type="date"
+                              className="h-8"
+                              value={editDraft.entry_date}
+                              onChange={(ev) =>
+                                setEditDraft((d) => ({ ...d, entry_date: ev.target.value }))
+                              }
+                              onKeyDown={(ev) => {
+                                if (ev.key === "Escape") cancelEdit();
+                              }}
+                            />
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400"
-                            >
-                              ✓ bestätigt
-                            </Badge>
+                            fmtDate(e.entry_date)
                           )}
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm("Eintrag löschen?")) remove(e.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          {isEditing ? (
+                            <div className="space-y-1">
+                              <Input
+                                className="h-8"
+                                value={editDraft.task}
+                                onChange={(ev) =>
+                                  setEditDraft((d) => ({ ...d, task: ev.target.value }))
+                                }
+                                onKeyDown={(ev) => {
+                                  if (ev.key === "Enter") saveEdit(e.id);
+                                  if (ev.key === "Escape") cancelEdit();
+                                }}
+                                autoFocus
+                              />
+                              <Textarea
+                                rows={2}
+                                placeholder="Notiz (optional)"
+                                value={editDraft.note}
+                                onChange={(ev) =>
+                                  setEditDraft((d) => ({ ...d, note: ev.target.value }))
+                                }
+                                onKeyDown={(ev) => {
+                                  if (ev.key === "Escape") cancelEdit();
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <div className="font-medium">{e.task}</div>
+                              {e.note && (
+                                <div className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                  {e.note}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums align-top">
+                          {isEditing ? (
+                            <Input
+                              type="number"
+                              step="0.25"
+                              min="0"
+                              className="h-8 text-right"
+                              value={editDraft.hours}
+                              onChange={(ev) =>
+                                setEditDraft((d) => ({ ...d, hours: ev.target.value }))
+                              }
+                              onKeyDown={(ev) => {
+                                if (ev.key === "Enter") saveEdit(e.id);
+                                if (ev.key === "Escape") cancelEdit();
+                              }}
+                            />
+                          ) : (
+                            hrs(e.hours)
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums align-top">
+                          {eur(previewHours * displayRate)}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <button onClick={() => toggleStatus(e)} className="cursor-pointer">
+                            {e.status === "geschätzt" ? (
+                              <Badge
+                                variant="outline"
+                                className="border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+                              >
+                                Ø geschätzt
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400"
+                              >
+                                ✓ bestätigt
+                              </Badge>
+                            )}
+                          </button>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          {isEditing ? (
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => saveEdit(e.id)}
+                                title="Speichern"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={cancelEdit}
+                                title="Abbrechen"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => startEdit(e)}
+                                title="Bearbeiten"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (confirm("Eintrag löschen?")) remove(e.id);
+                                }}
+                                title="Löschen"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
