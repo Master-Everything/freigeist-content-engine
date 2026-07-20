@@ -35,7 +35,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { hubPostUrl } from "@/lib/hub";
-import { supabase as sb } from "@/integrations/supabase/client";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   erfassung: { label: "In Erfassung", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
@@ -60,7 +59,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 function resolveCoverUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
   if (/^https?:\/\//i.test(raw)) return raw;
-  const { data } = sb.storage.from("post-images").getPublicUrl(raw);
+  const { data } = supabase.storage.from("post-images").getPublicUrl(raw);
   return data.publicUrl;
 }
 
