@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePushToHub } from "@/hooks/usePushToHub";
+import { hubPostUrl } from "@/lib/hub";
 
 export default function Module8NewsPlattform() {
   const { data: posts, isLoading } = useQuery({
