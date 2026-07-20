@@ -38,12 +38,6 @@ const modules: Record<
     description:
       "Hier siehst du später Termine, Studio-Infos und Zugangslinks für deine Aufzeichnung oder dein Live-Interview.",
   },
-  "7": {
-    title: "Interview-Beiträge",
-    icon: FileText,
-    description:
-      "Hier findest du später die fertigen Beiträge zu deinen Interviews — Audio, Video, Transkript und Veröffentlichungslinks.",
-  },
   "8": {
     title: "News-Plattform",
     icon: Newspaper,
