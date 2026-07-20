@@ -31,8 +31,11 @@ import {
   RotateCcw,
   Send,
   BookOpen,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { hubPostUrl } from "@/lib/hub";
+import { supabase as sb } from "@/integrations/supabase/client";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   erfassung: { label: "In Erfassung", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
@@ -44,10 +47,28 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   profil_review: { label: "Profil zur Freigabe", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
   leitfaden: { label: "Leitfaden in Vorbereitung", className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
   leitfaden_final: { label: "Leitfaden bereit", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  vorgespraech: { label: "Vorgespräch", className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
+  vorgespraech_done: { label: "Vorgespräch abgeschlossen", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  aufzeichnung: { label: "Aufzeichnung", className: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" },
+  aufzeichnung_done: { label: "Aufzeichnung abgeschlossen", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  hub_pushed: { label: "Veröffentlicht", className: "bg-success text-success-foreground" },
   draft: { label: "Entwurf", className: "bg-muted text-muted-foreground" },
   in_progress: { label: "In Arbeit", className: "bg-warning text-warning-foreground" },
   exported: { label: "Veröffentlicht", className: "bg-success text-success-foreground" },
 };
+
+function resolveCoverUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const { data } = sb.storage.from("post-images").getPublicUrl(raw);
+  return data.publicUrl;
+}
+
+function truncate(text: string, max = 180): string {
+  if (!text) return "";
+  const t = text.replace(/\s+/g, " ").trim();
+  return t.length > max ? t.slice(0, max).trimEnd() + "…" : t;
+}
 
 type Verdict = "green" | "yellow" | "red" | null;
 
