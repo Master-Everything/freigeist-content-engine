@@ -80,7 +80,7 @@ export default function Module8NewsPlattform() {
                         {p.hub_slug && (
                           <Button variant="ghost" size="sm" asChild>
                             <a
-                              href={`https://freigeist-content-hub.lovable.app/posts/${p.hub_slug}`}
+                              href={hubPostUrl(p.hub_slug)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="gap-1"
