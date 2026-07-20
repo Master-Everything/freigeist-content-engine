@@ -99,7 +99,6 @@ const speakerModules: Module[] = [
     items: [
       { title: "Profil", url: "/module/erfassung" },
       { title: "Neues Interview", url: "/module/interview/neu" },
-      { title: "Meine Interviews", url: "/module/interview-beitraege/mine" },
     ],
   },
   {
@@ -116,8 +115,9 @@ const speakerModules: Module[] = [
   { num: 4, title: "Interview-Leitfaden", url: "/module/leitfaden", icon: BookOpen, status: "active" },
   { num: 5, title: "Vorgespräch", url: "/module/vorgespraech", icon: MessagesSquare, status: "active" },
   { num: 6, title: "Aufzeichnung / Live", url: "/module/aufzeichnung", icon: Video, status: "active" },
-  { num: 7, title: "Interview-Beiträge", url: "/speaker/modul/7", icon: FileText, status: "update" },
+  { num: 7, title: "Interview-Beiträge", url: "/module/interview-beitraege/mine", icon: FileText, status: "active" },
   { num: 8, title: "News-Plattform", url: "/speaker/modul/8", icon: Newspaper, status: "active" },
+
 ];
 
 export function AppSidebar() {
