@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Post, PostBlocks } from "@/types/post";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
+import { hubPostUrl } from "@/lib/hub";
 import { PostPreview } from "@/components/PostPreview";
 
 type AffiliateEntry = { name?: string; url?: string };
