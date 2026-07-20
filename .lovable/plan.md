@@ -1,15 +1,9 @@
-## Ziel
-Im CSV-Export von `/admin/aufwand` den Projektnamen **„Freigeist Content Creation"** ergänzen – sowohl im Dateinamen als auch als Überschriftszeile in der Tabelle.
+## Kleiner Cleanup in `src/pages/MyPosts.tsx`
 
-## Änderungen in `src/pages/admin/Aufwand.tsx` (Funktion `exportCsv`)
+Der zweite Import `import { supabase as sb } from "@/integrations/supabase/client"` ist redundant – der bereits oben vorhandene `supabase`-Import funktioniert auch in `resolveCoverUrl()` außerhalb der Komponente.
 
-1. **Überschriftszeile** als erste Zeile der CSV einfügen:
-   `Aufwand – Freigeist Content Creation`
-   (danach eine Leerzeile, dann wie bisher Kopfzeile + Daten + Summen).
+### Änderungen
+- Zweiten Import (`supabase as sb`) entfernen.
+- In `resolveCoverUrl()` `sb.storage...` durch `supabase.storage...` ersetzen.
 
-2. **Dateiname** ändern von
-   `aufwand-YYYY-MM-DD.csv`
-   auf
-   `aufwand-freigeist-content-creation-YYYY-MM-DD.csv`.
-
-Keine weiteren Änderungen an Datenmodell, Hooks oder UI.
+Keine Verhaltensänderung, reines Aufräumen.
