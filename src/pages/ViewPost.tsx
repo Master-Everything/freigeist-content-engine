@@ -72,7 +72,22 @@ export default function ViewPost() {
           <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Zurück
           </Button>
-          <span className="text-xs text-muted-foreground">Leseansicht</span>
+          <div className="flex items-center gap-3">
+            {post.hub_slug && (
+              <Button size="sm" variant="outline" asChild>
+                <a
+                  href={hubPostUrl(post.hub_slug)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gap-1.5"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Auf News-Plattform öffnen
+                </a>
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground">Leseansicht</span>
+          </div>
         </div>
       </div>
 
